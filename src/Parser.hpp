@@ -1,13 +1,16 @@
+#include "Compiler.hpp"
 #include <iostream>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <memory>
 #include <vector>
 #include <sstream>
+#include <stack>
 
 // Token type enum
 enum TOKEN_TYPE {
-    IDENTIFIER,
+    IDENTIFIER, // var/func names
     NUMBER,
     PLUS,
     MINUS,
@@ -43,6 +46,8 @@ void performCSE(std::vector<IRNode>& ir);
 // Print IR
 void printIR(const std::vector<IRNode>& ir);
 
+// to store values of registers needed [used for graph coloring later]
+std::unordered_set<int, int> REGISTERS;
 
 // Parser class
 class Parser {

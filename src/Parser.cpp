@@ -66,14 +66,29 @@ private:
     std::unordered_map<std::string, std::string> symbolTable; // For copy propagation
     std::vector<IRNode> ir; // Intermediate representation (IR)
 
+    TOKEN tokenize() {
+        
+    }
+
     // Helper function to get next token
     TOKEN getNextToken() {
-        // Implementation omitted for brevity
+        // called: should run right after we consume current token
+        // ltrim() the string
+        // determine next TOKEN_TYPE
+        // create & return TOKEN
     }
 
     // Helper function to consume current token and advance to next token
     void consume(TOKEN_TYPE expectedType) {
         // Implementation omitted for brevity
+        int cutIdx = -1, i =0;
+        auto iit = this->source.begin();
+        while ((iit + i) != this->source.end() && cutIdx == -1) {
+            if (*iit != ' ') {
+                cutIdx = i;
+            }
+            i++;
+        }
     }
 
     // Statement parsing functions
@@ -192,6 +207,8 @@ private:
             case MINUS: return "-";
             case MULTIPLY: return "*";
             case DIVIDE: return "/";
+            case SEMICOLON: return ";";
+            case PRINT: return "PRINT"; // TODO: fix this
             default: return "";
         }
     }
