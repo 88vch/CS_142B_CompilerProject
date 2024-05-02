@@ -1,4 +1,6 @@
-## CS 142B: Language Processor (Compiler) Construction
+## Parser Tests
+
+##### NOTE: this branch should NEVER be merged with main! This branch was created specifically for testing.
 
 ### TODO
 ##### Note (prio):
@@ -56,22 +58,3 @@
         int kind; // const var
         int var; // const reg num
     }
-
-
-
-### What is a Compiler?
-- a program designed to turn the source code into a lower level representation 
-    - Source Code -> Assembly Code -> Binary Code (executable)
-        - we do NOT need to handle linking!
-    - compiler reads the source code and turns it into a .asm file
-        - ex. *.cpp, *.py turns into a .asm file
-    - assembler reads the .asm file and turns it into a .o file
-        - .asm file turns into a .o file
-- Structure
-    1. Frontend
-        1. Create a Lexical Tokenizer
-        2. Create a Parser -> IR
-    2. Backend
-        1. "Lowering": Optimize IR -> *.o (optimization step)
-            - register allocation / optimization (graph coloring)
-
