@@ -1,3 +1,7 @@
+#ifndef PARSER_HPP
+#define PARSER_HPP
+
+
 #include "Compiler.hpp"
 #include <iostream>
 #include <string>
@@ -55,7 +59,7 @@ public:
     Parser(const std::string& source) : source(source), currentPos(0) {}
 
 
-    void parse(); 
+    void parse_FIRSTPASS(); 
     // Get intermediate representation (IR)
     std::vector<IRNode> getIR();
 
@@ -102,3 +106,6 @@ private:
     // Helper function to get string representation of token
     std::string getTokenString(TOKEN_TYPE type);
 };
+
+
+#endif

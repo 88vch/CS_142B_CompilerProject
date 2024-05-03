@@ -1,3 +1,7 @@
+#ifndef SYMBOL_TABLE_HPP
+#define SYMBOL_TABLE_HPP
+
+
 #include "Compiler.hpp"
 #include <iostream>
 #include <string.h>
@@ -6,9 +10,10 @@
 // a hashtable for identifiers
 class SymbolTable {
 public:
-    SymbolTable() : {
-        this->hashTable = new std::unordered_map<int, int>();
-    }
+    SymbolTable() {}
 private:
-    std::unordered_map<int, int>hashTable;
+    std::unordered_map<int, int>hashTable();
 };
+
+
+#endif

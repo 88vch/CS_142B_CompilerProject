@@ -47,7 +47,7 @@ class Parser {
 public:
     Parser(const std::string& source) : source(source), currentPos(0) {}
 
-    void parse() {
+    void parse_FIRSTPASS() {
         currentToken = getNextToken();
         while (currentToken.type != END_OF_FILE) {
             parseStatement();
@@ -217,7 +217,7 @@ private:
 int main() {
     std::string source = "let a = 3 + 5 * (4 - 2); print a;";
     Parser parser(source);
-    parser.parse();
+    parser.parse_FIRSTPASS();
     std::vector<IRNode> ir = parser.getIR();
 
     // Perform common subexpression elimination (CSE)

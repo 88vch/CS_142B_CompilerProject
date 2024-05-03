@@ -1,8 +1,27 @@
 ## Parser Tests
-
+### Current Status: [REFACTORING]
+- [RESUME]: passing in current file tst/temp.ty throws a "LET ERRROR"
+- [TODO]; 
+    - get a working warmup P2 vzn
+    - create a suite of tests to test P2 vzn
+    - turn P2 vzn into DOT
 ##### NOTE: this branch should NEVER be merged with main! This branch was created specifically for testing.
 
+
 ### TODO
+##### Assumptions Status=[IP, DONE, REMOVED];
+[ASSUMPTION] spaces exist in between all tokens
+- in the *.ty files
+[ASSUMPTION] all recursive functions in Lexer.hpp
+- assume all recursive functions handle whitespace cleanup [skip_whitespace()] before recursively calling another func
+[DONE] Lexer.hpp::tokenizer()::determine_type=LET
+- [update] REVISED: we actually will grab the entire expression, and pass it into an expr_tokenizer of some sort to handle it
+- ASSUMPTION: the file to be passed in is a syntactically valid file
+[REMOVED] Lexer.hpp::consume()
+- ASSUMPTION: BUFF_SIZE is enough to fit every valid TOKEN
+##### Note:
+- Lexer.hpp: might have issue's trying to free() a nullptr
+- Lexer.hpp: if we're parsing predefined keywords we should be hardcoding the size of the char's that we're looking through 
 ##### Note (prio):
 1. create a separate project to test the parser
 2. copy & paste the parser code
@@ -35,6 +54,7 @@
 - definitely implement:
     - register allocation (welsh-powell graph coloring)
         - https://www.geeksforgeeks.org/welsh-powell-graph-colouring-algorithm/#
+    - Lexer.hpp::tokenizer()
 - consider implementing:
     - reaching definition analysis (wiki)
         - https://en.wikipedia.org/wiki/Reaching_definition
@@ -58,3 +78,5 @@
         int kind; // const var
         int var; // const reg num
     }
+varDecl = “var” indent { “,” ident } “;”
+- is [indent] misspelled to be [ident]???
