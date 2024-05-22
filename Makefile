@@ -37,5 +37,6 @@ $(BINDIR)/%.o: $(SRCDIR)/%.cpp
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	@rm -rf $(BINDIR)
+	@echo @rm -rf $(BINDIR)
+	
 

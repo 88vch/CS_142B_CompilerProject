@@ -9,6 +9,51 @@
 
 namespace tinyExceptions {
     namespace Lexer {
+        class Incomplete_ifStatement_LexException : public std::exception {
+            public:
+                Incomplete_ifStatement_LexException(const std::string &err) : msg(err) { }
+                // Override the what() function to return the error message
+                const char* what() const noexcept override { return msg.c_str(); }
+            private:
+                std::string msg;
+        }; 
+
+        class Incomplete_ASSIGNMENT_LexException : public std::exception {
+            public:
+                Incomplete_ASSIGNMENT_LexException(const std::string &err) : msg(err) { }
+                // Override the what() function to return the error message
+                const char* what() const noexcept override { return msg.c_str(); }
+            private:
+                std::string msg;
+        }; 
+
+        class Incomplete_IDENTIFIER_LexException : public std::exception {
+            public:
+                Incomplete_IDENTIFIER_LexException(const std::string &err) : msg(err) { }
+                // Override the what() function to return the error message
+                const char* what() const noexcept override { return msg.c_str(); }
+            private:
+                std::string msg;
+        }; 
+
+        class Incomplete_statement_LexException : public std::exception {
+            public:
+                Incomplete_statement_LexException(const std::string &err) : msg(err) { }
+                // Override the what() function to return the error message
+                const char* what() const noexcept override { return msg.c_str(); }
+            private:
+                std::string msg;
+        }; 
+
+        class Incomplete_statSequence_LexException : public std::exception {
+            public:
+                Incomplete_statSequence_LexException(const std::string &err) : msg(err) { }
+                // Override the what() function to return the error message
+                const char* what() const noexcept override { return msg.c_str(); }
+            private:
+                std::string msg;
+        }; 
+
         class Incomplete_FACTOR_LexException : public std::exception {
             public:
                 Incomplete_FACTOR_LexException(const std::string &err) : msg(err) { }
@@ -53,7 +98,18 @@ namespace tinyExceptions {
             private:
                 std::string msg;
         };
+        
+        class Incomplete_Token_LexException : public std::exception {
+            public:
+                Incomplete_Token_LexException(const std::string &err) : msg(err) { }
+                // Override the what() function to return the error message
+                const char* what() const noexcept override { return msg.c_str(); }
+            private:
+                std::string msg;
+        }; 
     };
+
+    
 
 
 

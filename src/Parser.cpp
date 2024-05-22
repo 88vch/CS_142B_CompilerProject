@@ -41,178 +41,165 @@ void printIR(const std::vector<IRNode>& ir) {
 }
 
 
+void Parser::parse_FIRSTPASS() {
+    currentToken = getNextToken();
+    while (currentToken.type != END_OF_FILE) {
+        parseStatement();
+    }
+}
 
-// Parser class
-class Parser {
-public:
-    Parser(const std::string& source) : source(source), currentPos(0) {}
+// Get intermediate representation (IR)
+std::vector<IRNode> Parser::getIR() {
+    return ir;
+}
 
-    void parse_FIRSTPASS() {
-        currentToken = getNextToken();
-        while (currentToken.type != END_OF_FILE) {
-            parseStatement();
+// TOKEN Parser::tokenize() {}
+
+// Helper function to get next token
+TOKEN Parser::getNextToken() {
+    // called: should run right after we consume current token
+    // ltrim() the string
+    // determine next TOKEN_TYPE
+    // create & return TOKEN
+}
+
+// Helper function to consume current token and advance to next token
+void Parser::consume(TOKEN_TYPE expectedType) {
+    // Implementation omitted for brevity
+    int cutIdx = -1, i =0;
+    auto iit = this->source.begin();
+    while ((iit + i) != this->source.end() && cutIdx == -1) {
+        if (*iit != ' ') {
+            cutIdx = i;
         }
+        i++;
     }
+}
 
-    // Get intermediate representation (IR)
-    std::vector<IRNode> getIR() {
-        return ir;
+// Statement parsing functions
+void Parser::parseStatement() {
+    if (currentToken.type == LET) {
+        Parser::parseDeclaration();
+    } else if (currentToken.type == IDENTIFIER) {
+        Parser::parseAssignment();
+    } else if (currentToken.type == PRINT) {
+        Parser::parsePrintStatement();
+    } else {
+        std::cerr << "Syntax error: Unexpected token " << currentToken.lexeme << std::endl;
+        currentToken = Parser::getNextToken(); // Skip token
     }
+}
 
-private:
-    std::string source;
-    size_t currentPos;
-    TOKEN currentToken;
-    std::unordered_map<std::string, std::string> symbolTable; // For copy propagation
-    std::vector<IRNode> ir; // Intermediate representation (IR)
+// Declaration parsing function
+void Parser::parseDeclaration() {
+    consume(LET); // Consume 'let' keyword
+    std::string identifier = currentToken.lexeme;
+    consume(IDENTIFIER); // Consume identifier
+    consume('='); // Consume '='
+    std::string expressionResult = parseExpression();
+    symbolTable[identifier] = expressionResult; // Store result in symbol table for copy propagation
+    consume(SEMICOLON); // Consume ';'
+}
 
-    TOKEN tokenize() {
-        
+// Assignment parsing function
+void Parser::parseAssignment() {
+    std::string identifier = currentToken.lexeme;
+    consume(IDENTIFIER); // Consume identifier
+    consume('='); // Consume '='
+    std::string expressionResult = parseExpression();
+    symbolTable[identifier] = expressionResult; // Store result in symbol table for copy propagation
+    consume(SEMICOLON); // Consume ';'
+}
+
+// Print statement parsing function
+void Parser::parsePrintStatement() {
+    consume(PRINT); // Consume 'print' keyword
+    std::string expressionResult = parseExpression();
+    ir.push_back({"", "print", expressionResult, ""}); // Generate IR for print statement
+    consume(SEMICOLON); // Consume ';'
+}
+
+// Expression parsing function
+std::string Parser::parseExpression() {
+    std::string left = parseTerm();
+    while (currentToken.type == PLUS || currentToken.type == MINUS) {
+        TOKEN_TYPE op = currentToken.type;
+        consume(op); // Consume operator
+        std::string right = parseTerm();
+        // Generate IR for addition or subtraction
+        std::string result = generateIRBinaryOperation(left, right, op);
+        // Perform copy propagation
+        left = propagateCopy(result);
     }
+    return left;
+}
 
-    // Helper function to get next token
-    TOKEN getNextToken() {
-        // called: should run right after we consume current token
-        // ltrim() the string
-        // determine next TOKEN_TYPE
-        // create & return TOKEN
+// Term parsing function
+std::string Parser::parseTerm() {
+    std::string left = parseFactor();
+    while (currentToken.type == MULTIPLY || currentToken.type == DIVIDE) {
+        TOKEN_TYPE op = currentToken.type;
+        consume(op); // Consume operator
+        std::string right = parseFactor();
+        // Generate IR for multiplication or division
+        std::string result = generateIRBinaryOperation(left, right, op);
+        // Perform copy propagation
+        left = propagateCopy(result);
     }
+    return left;
+}
 
-    // Helper function to consume current token and advance to next token
-    void consume(TOKEN_TYPE expectedType) {
-        // Implementation omitted for brevity
-        int cutIdx = -1, i =0;
-        auto iit = this->source.begin();
-        while ((iit + i) != this->source.end() && cutIdx == -1) {
-            if (*iit != ' ') {
-                cutIdx = i;
-            }
-            i++;
-        }
-    }
-
-    // Statement parsing functions
-    void parseStatement() {
-        if (currentToken.type == LET) {
-            parseDeclaration();
-        } else if (currentToken.type == IDENTIFIER) {
-            parseAssignment();
-        } else if (currentToken.type == PRINT) {
-            parsePrintStatement();
-        } else {
-            std::cerr << "Syntax error: Unexpected token " << currentToken.lexeme << std::endl;
-            currentToken = getNextToken(); // Skip token
-        }
-    }
-
-    // Declaration parsing function
-    void parseDeclaration() {
-        consume(LET); // Consume 'let' keyword
-        std::string identifier = currentToken.lexeme;
-        consume(IDENTIFIER); // Consume identifier
-        consume('='); // Consume '='
+// Factor parsing function
+std::string Parser::parseFactor() {
+    if (currentToken.type == IDENTIFIER || currentToken.type == NUMBER) {
+        std::string factorResult = currentToken.lexeme;
+        consume(currentToken.type); // Consume identifier or number
+        return factorResult;
+    } else if (currentToken.type == '(') {
+        consume('('); // Consume '('
         std::string expressionResult = parseExpression();
-        symbolTable[identifier] = expressionResult; // Store result in symbol table for copy propagation
-        consume(SEMICOLON); // Consume ';'
+        consume(')'); // Consume ')'
+        return expressionResult;
+    } else {
+        std::cerr << "Syntax error: Unexpected token " << currentToken.lexeme << std::endl;
+        currentToken = getNextToken(); // Skip token
+        return ""; // Return empty string for error recovery
     }
+}
 
-    // Assignment parsing function
-    void parseAssignment() {
-        std::string identifier = currentToken.lexeme;
-        consume(IDENTIFIER); // Consume identifier
-        consume('='); // Consume '='
-        std::string expressionResult = parseExpression();
-        symbolTable[identifier] = expressionResult; // Store result in symbol table for copy propagation
-        consume(SEMICOLON); // Consume ';'
-    }
+// Helper function to generate IR for binary operations
+std::string Parser::generateIRBinaryOperation(const std::string& left, const std::string& right, TOKEN_TYPE op) {
+    std::string result = "t" + std::to_string(ir.size()); // Temporary variable name
+    ir.push_back({result, getTokenString(op), left, right}); // Generate IR for binary operation
+    return result;
+}
 
-    // Print statement parsing function
-    void parsePrintStatement() {
-        consume(PRINT); // Consume 'print' keyword
-        std::string expressionResult = parseExpression();
-        ir.push_back({"", "print", expressionResult, ""}); // Generate IR for print statement
-        consume(SEMICOLON); // Consume ';'
-    }
-
-    // Expression parsing function
-    std::string parseExpression() {
-        std::string left = parseTerm();
-        while (currentToken.type == PLUS || currentToken.type == MINUS) {
-            TOKEN_TYPE op = currentToken.type;
-            consume(op); // Consume operator
-            std::string right = parseTerm();
-            // Generate IR for addition or subtraction
-            std::string result = generateIRBinaryOperation(left, right, op);
-            // Perform copy propagation
-            left = propagateCopy(result);
-        }
-        return left;
-    }
-
-    // Term parsing function
-    std::string parseTerm() {
-        std::string left = parseFactor();
-        while (currentToken.type == MULTIPLY || currentToken.type == DIVIDE) {
-            TOKEN_TYPE op = currentToken.type;
-            consume(op); // Consume operator
-            std::string right = parseFactor();
-            // Generate IR for multiplication or division
-            std::string result = generateIRBinaryOperation(left, right, op);
-            // Perform copy propagation
-            left = propagateCopy(result);
-        }
-        return left;
-    }
-
-    // Factor parsing function
-    std::string parseFactor() {
-        if (currentToken.type == IDENTIFIER || currentToken.type == NUMBER) {
-            std::string factorResult = currentToken.lexeme;
-            consume(currentToken.type); // Consume identifier or number
-            return factorResult;
-        } else if (currentToken.type == '(') {
-            consume('('); // Consume '('
-            std::string expressionResult = parseExpression();
-            consume(')'); // Consume ')'
-            return expressionResult;
-        } else {
-            std::cerr << "Syntax error: Unexpected token " << currentToken.lexeme << std::endl;
-            currentToken = getNextToken(); // Skip token
-            return ""; // Return empty string for error recovery
+// Helper function to perform copy propagation
+std::string Parser::propagateCopy(const std::string& result) {
+    for (auto& entry : symbolTable) {
+        std::string& value = entry.second;
+        if (value == result) {
+            return entry.first; // Replace use with value
         }
     }
+    return result;
+}
 
-    // Helper function to generate IR for binary operations
-    std::string generateIRBinaryOperation(const std::string& left, const std::string& right, TOKEN_TYPE op) {
-        std::string result = "t" + std::to_string(ir.size()); // Temporary variable name
-        ir.push_back({result, getTokenString(op), left, right}); // Generate IR for binary operation
-        return result;
+// Helper function to get string representation of token
+std::string Parser::getTokenString(TOKEN_TYPE type) {
+    switch (type) {
+        case PLUS: return "+";
+        case MINUS: return "-";
+        case MULTIPLY: return "*";
+        case DIVIDE: return "/";
+        case SEMICOLON: return ";";
+        case PRINT: return "PRINT"; // TODO: fix this
+        default: return "";
     }
+}
 
-    // Helper function to perform copy propagation
-    std::string propagateCopy(const std::string& result) {
-        for (auto& entry : symbolTable) {
-            std::string& value = entry.second;
-            if (value == result) {
-                return entry.first; // Replace use with value
-            }
-        }
-        return result;
-    }
 
-    // Helper function to get string representation of token
-    std::string getTokenString(TOKEN_TYPE type) {
-        switch (type) {
-            case PLUS: return "+";
-            case MINUS: return "-";
-            case MULTIPLY: return "*";
-            case DIVIDE: return "/";
-            case SEMICOLON: return ";";
-            case PRINT: return "PRINT"; // TODO: fix this
-            default: return "";
-        }
-    }
-};
+
 
 int main() {
     std::string source = "let a = 3 + 5 * (4 - 2); print a;";

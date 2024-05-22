@@ -5,6 +5,14 @@
 
 // This is a helper file containing:
 // all the functions that will ONLY be used during testing
+const std::string TOKEN_TYPE_toStringLower(TOKEN_TYPE token) {
+    std::string str = TOKEN_TYPE_toString(token);
+    std::transform(str.begin(), str.end(), str.begin(),
+        [](unsigned char c){ return std::tolower(c); });
+
+    return str;
+}
+
 std::string TOKEN_TYPE_toString(TOKEN_TYPE token) {
     std::string ret;
     switch (token) {

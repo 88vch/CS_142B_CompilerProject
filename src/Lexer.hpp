@@ -19,7 +19,12 @@ using namespace tinyExceptions::Lexer;
 
 class Lexer {
 public:
-    Lexer(std::string in) : source(in) {}
+    Lexer(std::string in) 
+        : source(std::move(in))
+    {
+        this->source_len = this->source.length();
+    }
+
 
     std::vector<TOKEN> lex() {
         try {
@@ -47,25 +52,24 @@ public:
 private:
     bool DEBUG = true;
     // we're not going to know the size/len of the file when we get it
-    std::string source;
-    size_t s_index = 0;
+    const std::string source;
+    std::string buff;
+    size_t source_len, s_index = 0;
     // const size_t BUFF_SIZE = 64; // keep const buff size
     // char* buff, overflow;
     std::vector<TOKEN> tokens;
 
+    // does NOT consume char, only peeks()
     inline char* next() const {
-        if (s_index < source.length()) {
-            char *ret = (char *)malloc(sizeof(char));
+        if (this->s_index < this->source_len) {
+            char *ret;
             *ret = source.at(s_index);
             return ret;
-        } else { // EOF
-            // OG: 
-            // return NULL;
-            // Revision: we should use pointers
-            // - replace w (char *) and return nullptr
-            return nullptr;
-            // throw std::out_of_range("EOF");
         }
+        // else: EOF
+        // OG: return NULL;
+        // Revision: we should use pointers
+        // - replace w (char *) and return nullptr
         return nullptr;
     }
 
@@ -78,10 +82,53 @@ private:
         while ((c = next()) != nullptr && std::isspace(*c)) { consume(); free(c); }
     }
 
+    std::string get_deterministic_token(int characters, std::string expected) {
+        char *c;
+        for (int i = 0; i < characters; i++) {
+            if (((c = next()) != nullptr) && (std::isalpha(*(c = next())))) {
+                this->buff.push_back(std::tolower(consume()));
+            } else if ((c = next()) == nullptr) {
+                std::stringstream ss;
+                ss << "ifStatement Expected `" << expected << "`. Got: EOF.";
+                throw Incomplete_Token_LexException(ss.str());
+            }
+        }
+    }
+
+    // return on whitespace, assume [next()] points to first char
+    // NOTE: on return, must check [if (c == nullptr)]
+    void tokenize_ident() {
+        char *c;
+
+        if (((c = next()) != nullptr) && (std::isalpha(*(c = next())))) {
+            do {
+                this->buff.push_back(consume());
+            } while (((c = next()) != nullptr) && (std::isalnum(*(c = next()))));
+
+            if ((c != nullptr) && (*c != ' ')) {
+                std::stringstream ss;
+                ss << "Identifier expected to contain only {letter | digit}";
+                throw Incomplete_IDENTIFIER_LexException(ss.str());
+            }
+
+            this->tokens.push_back(TOKEN{ TOKEN_TYPE::IDENTIFIER, this->buff });
+            this->buff.clear();
+        } else {
+            std::stringstream ss;
+            if (c == nullptr) {
+                ss << "Identifier Expected to start with a letter [a-z;A-Z]. Got: EOF.";
+            } else {
+                ss << "Identifier Expected to start with a letter [a-z;A-Z]. Got: " << *c << ".";
+            }
+            throw Incomplete_IDENTIFIER_LexException(ss.str());
+        }
+
+    }
+
     void tokenize_factor() {
         // factor = [ident] | [number] | ["(" expr ")"]
         char *c;
-        std::string buff;
+        // std::string buff;
 
 
         // get the first [whatever]
@@ -138,34 +185,34 @@ private:
                 throw tinyExceptions::Lexer::Incomplete_FACTOR_LexException(ss.str());
             }
             if (std::isalpha(*c)) { // ident
-                buff.push_back(consume());
+                this->buff.push_back(consume());
                 free(c);
 
                 while ((c = next()) != nullptr && std::isalnum(*c)) {
-                    buff.push_back(consume());
+                    this->buff.push_back(consume());
                     free(c);
                 }
                 // insert token into [tokens]
                 if (DEBUG) {
                     std::cout << "\tnew token: " << TOKEN_TYPE_toString(TOKEN_TYPE::IDENTIFIER) << std::endl;
                 }
-                tokens.push_back(TOKEN{ TOKEN_TYPE::IDENTIFIER, buff });
-                buff.clear();
+                tokens.push_back(TOKEN{ TOKEN_TYPE::IDENTIFIER, this->buff });
+                this->buff.clear();
                 
             } else if (std::isdigit(*c)) { // number
-                buff.push_back(consume());
+                this->buff.push_back(consume());
                 free(c);
 
                 while ((c = next()) != nullptr && std::isdigit(*c)) {
-                    buff.push_back(consume());
+                    this->buff.push_back(consume());
                     free(c);
                 }
                 // insert token into [tokens]
                 if (DEBUG) {
                     std::cout << "\tnew token: " << TOKEN_TYPE_toString(TOKEN_TYPE::NUMBER) << std::endl;
                 }
-                tokens.push_back(TOKEN{ TOKEN_TYPE::NUMBER, buff });
-                buff.clear();
+                tokens.push_back(TOKEN{ TOKEN_TYPE::NUMBER, this->buff });
+                this->buff.clear();
             } else {
                 std::stringstream ss;
                 if (DEBUG) {
@@ -180,7 +227,6 @@ private:
 
     void tokenize_term() {
         char *c;
-        std::string buff;
 
         // [1]: factor1
         skip_whitespace(); // [default]: auto in case there is whitespace
@@ -233,7 +279,6 @@ private:
     // break down the [expression] into  it's proper tokens and insert into [tokens]
     void tokenize_expr() { // checks will be handled later recursively by the factor
         char *c;
-        std::string buff;
         
         
         // [1]: term1
@@ -284,21 +329,240 @@ private:
         // END OF FUNCTION;
     }
 
+    void tokenize_returnStatement() {
+        // if we do get an expression, 
+        // - we're going to handle it in the respective function either way so nothing needs to be done here either 
+        try { tokenize_expr(); } 
+        catch (const std::exception &err) {}
+        // if it threw an exception, 
+        // - then we did not have an [expression] (optional arg)
+        // we're only catching it so our Lexer can continue to tokenize!
+    }
+
+    void tokenize_whileStatement() {
+        tokenize_relation(); // should return on [whitespace] (i guess??)
+        skip_whitespace();
+
+        char *c;
+        this->buff = get_deterministic_token(2, "do");
+
+        if (this->buff.compare(TOKEN_TYPE_toStringLower(TOKEN_TYPE::DO)) != 0) {
+            std::stringstream ss;
+            ss << "ifStatement Expected `DO`. Got: " << this->buff << ".";
+            throw Incomplete_ifStatement_LexException(ss.str());
+        }
+
+        this->tokens.push_back(TOKEN{ TOKEN_TYPE::DO, this->buff });
+        this->buff.clear();
+
+        skip_whitespace();
+        tokenize_statSequence();
+        skip_whitespace();
+
+        this->buff = get_deterministic_token(2, TOKEN_TYPE_toStringLower(TOKEN_TYPE::OD));
+
+        if (this->buff.compare(TOKEN_TYPE_toStringLower(TOKEN_TYPE::DO)) != 0) {
+            std::stringstream ss;
+            ss << "ifStatement Expected `DO`. Got: " << this->buff << ".";
+            throw Incomplete_ifStatement_LexException(ss.str());
+        }
+
+        this->tokens.push_back(TOKEN{ TOKEN_TYPE::OD, this->buff });
+        this->buff.clear();
+    }
+    
+    
+    void tokenize_ifStatement() {
+        tokenize_relation(); // should return on [whitespace] (i guess??)
+        skip_whitespace();
+        
+        char *c;
+        this->buff = get_deterministic_token(4, "then");
+
+        if (this->buff.compare(TOKEN_TYPE_toStringLower(TOKEN_TYPE::THEN)) != 0) {
+            std::stringstream ss;
+            ss << "ifStatement Expected `THEN`. Got: " << this->buff << ".";
+            throw Incomplete_ifStatement_LexException(ss.str());
+        }
+
+        this->tokens.push_back(TOKEN{ TOKEN_TYPE::THEN, this->buff });
+        this->buff.clear();
+
+        skip_whitespace();
+        tokenize_statSequence();
+        skip_whitespace();
+
+        while (((c = next()) != nullptr) && (*(c = next()) != ' ')) {
+            this->buff.push_back(std::tolower(consume()));
+        }
+
+        if (this->buff.compare(TOKEN_TYPE_toStringLower(TOKEN_TYPE::ELSE)) == 0) {
+            this->tokens.push_back(TOKEN{ TOKEN_TYPE::ELSE, this->buff });
+            this->buff.clear();
+
+            skip_whitespace();
+            tokenize_statSequence(); // i guess we can say they end with a space
+
+            this->buff = get_deterministic_token(2, TOKEN_TYPE_toStringLower(TOKEN_TYPE::FI));
+            if (this->buff.compare(TOKEN_TYPE_toStringLower(TOKEN_TYPE::FI)) == 0) {
+                this->tokens.push_back(TOKEN{ TOKEN_TYPE::FI, this->buff });
+                this->buff.clear();
+                // we've successfully tokenized the [ifStatement]
+            } else {
+                std::stringstream ss;
+                ss << "End ifStatement Expected `FI`. Got: " << this->buff << ".";
+                throw Incomplete_ifStatement_LexException(ss.str());
+            }
+        } else if (this->buff.compare(TOKEN_TYPE_toStringLower(TOKEN_TYPE::FI)) == 0) {
+            this->tokens.push_back(TOKEN{ TOKEN_TYPE::FI, this->buff });
+            this->buff.clear();
+            // we've successfully tokenized the [ifStatement]
+        } else {
+            std::stringstream ss;
+            ss << "ifStatement Expected `ELSE` | `FI`. Got: " << this->buff << ".";
+            throw Incomplete_ifStatement_LexException(ss.str());
+        }
+    }
+
+    void tokenize_assignment() { // already got first token "let"
+        tokenize_ident(); // should return on `<-` (assignment)
+
+        char *c;
+        if ((c = next()) == nullptr) {
+            std::stringstream ss;
+            ss << "Assignemnt Expected `<-`. Got: EOF.";
+            throw Incomplete_ASSIGNMENT_LexException(ss.str());
+        } 
+        skip_whitespace();
+        tokenize_expr();
+    }
+
+    void tokenize_statement() {
+        // statement = { assignment | funcCall3 | ifStatement | whileStatement | returnStatement }
+        skip_whitespace(); // sanity check: skip whitespace if we accidentally forgot to skip somewhere before calling [tokenize_statement()]
+        
+
+        /*
+            assignment expects "let"
+            ifStatement expects "if"
+            whileStatement expects "while"
+            returnStatement expects "return"
+
+            NOTE: ignoring [funcCall] for now...REMEMBER [TODO] LATER
+        */
+        char *c;
+        if (std::isalpha(*c)) { 
+            this->buff.push_back(std::tolower(consume()));
+            // while we have letters, push them into buffer
+            while (((c = next()) != nullptr)) {
+                if (std::isalpha(*c)) {
+                    this->buff.push_back(std::tolower(consume()));
+                } else if (*c == ' ') {
+                    skip_whitespace();
+                    // we should have a token in the buffer now
+                    if (buff.compare(TOKEN_TYPE_toStringLower(TOKEN_TYPE::LET)) == 0) {
+                        this->tokens.push_back(TOKEN{ TOKEN_TYPE::LET, buff });
+                        this->buff.clear();
+                        tokenize_assignment();
+                    } else if (buff.compare(TOKEN_TYPE_toStringLower(TOKEN_TYPE::IF)) == 0) {
+                        this->tokens.push_back(TOKEN{ TOKEN_TYPE::IF, buff });
+                        this->buff.clear();
+                        tokenize_ifStatement();
+                    } else if (buff.compare(TOKEN_TYPE_toStringLower(TOKEN_TYPE::WHILE)) == 0) {
+                        this->tokens.push_back(TOKEN{ TOKEN_TYPE::WHILE, buff });
+                        this->buff.clear();
+                        tokenize_whileStatement();
+                    } else if (buff.compare(TOKEN_TYPE_toStringLower(TOKEN_TYPE::RETURN)) == 0) {
+                        this->tokens.push_back(TOKEN{ TOKEN_TYPE::RETURN, buff });
+                        this->buff.clear();
+                        tokenize_returnStatement();
+                    } else {
+                        std::stringstream ss;
+                        ss << "Invalid statement! Expected { assignment | funcCall3 | ifStatement | whileStatement | returnStatement }. Got: " << this->buff << ".";
+                        throw Incomplete_statement_LexException(ss.str());
+                    }
+                    break; // exit when we have finished tokenizing the statement
+                }
+            } 
+
+
+            if (c == nullptr) {
+                std::stringstream ss;
+                ss << "End of statement Expected `;`. Got: " << *c << ".";
+                throw Incomplete_statement_LexException(ss.str());
+            }
+        } else {
+            std::stringstream ss;
+            ss << "Statement Expected to start with [letter]. Got: " << *c << ".";
+            throw Incomplete_statement_LexException(ss.str());
+        }
+        skip_whitespace();
+    }
+
+    // the [next()] character that is returned from this function should be `}`
+    // assume [tokenize_statement()] will always return when the character is ';'
+    // FOR NOW: assume [tokenize_statSequence()] will properly terminate even when we don't see the last `;`
+    // TODO: configure a deterministic way to decide when the statement is done (bc it's a non strictly-necessary terminating `;`)
+    void tokenize_statSequence() {
+        skip_whitespace();
+        tokenize_statement(); // should return on ";" (optional for terminating); we're going to push a ';' on termination regardless (for easy parsing later)
+
+        char *c;
+        if (((c = next()) != nullptr)) {
+            if (*c == ';') {
+                this->buff.push_back(consume());
+                this->tokens.push_back(TOKEN{ TOKEN_TYPE::SEMICOLON, this->buff });
+                this->buff.clear();
+            } else if (std::isalnum(*c)) {
+                // if we get another char that isn't `;`, we can assume that the most recent statement was the last statement in this statSequence (since it may not necessarily return a ;)
+                // let's make this a deterministic situation for our tokens
+                this->buff.push_back(';');
+                this->tokens.push_back(TOKEN{ TOKEN_TYPE::SEMICOLON, this->buff });
+                this->buff.clear();
+                return; // no need to continue tokenizing "statements" if we've already reached the end
+            }
+        }
+
+        while (((c = next()) != nullptr) && (*(c = next()) != '}')) {
+            skip_whitespace();
+            tokenize_statement(); // expected `;` return [refer to TODO]
+            if (((c = next()) != nullptr)) {
+                if (*c == ';') {
+                    this->buff.push_back(consume());
+                    this->tokens.push_back(TOKEN{ TOKEN_TYPE::SEMICOLON, this->buff });
+                    this->buff.clear();
+                } else if (std::isalnum(*c)) {
+                    // if we get another char that isn't `;`, we can assume that the most recent statement was the last statement in this statSequence (since it may not necessarily return a ;)
+                    // let's make this a deterministic situation for our tokens
+                    this->buff.push_back(';');
+                    this->tokens.push_back(TOKEN{ TOKEN_TYPE::SEMICOLON, this->buff });
+                    this->buff.clear();
+                    break;
+                }
+            }
+        }
+
+        if (c == nullptr) {
+            std::stringstream ss;
+            ss << "End of statSequence Expected `}`. Got: EOF.";
+            throw Incomplete_statSequence_LexException(ss.str());
+        }
+    }
+
     void tokenizer() {
         this->s_index = 0; // default behavior: reset to 0
 
         // TOOD: optimize
         // handling parsing with strings for now...
-        std::string buff;
         // [DONE]: switch for[i]-loop to be a while[i]
         // - termination condition (figure out what flag indicates EOF!)
         // [REVISED]: handled by changing to char* and checking when nullptr
         char *c;
         // [Below]: ensuring that the program always starts with "main"
-        skip_whitespace();
+        skip_whitespace(); // if there is any whitespace before the first letter, skip it
         int main_c = 0;
         while (main_c < 4 && (c = next()) != nullptr && !std::isspace(*c)) {
-            buff.push_back(consume());
+            this->buff.push_back(std::tolower(consume()));
             free(c);
             main_c++;
         }
@@ -306,83 +570,85 @@ private:
             return; // we're done tokenizing (i guess???)
         }
         // [else]: continue execution
-        if ((buff.compare("main") != 0) && (buff.compare("MAIN") != 0)) {
+        if (this->buff.compare("main") != 0) {
             std::stringstream ss;
-            if (DEBUG) {
-                ss << "(tokenize_factor(), line=294) ";
-            }
-            ss << "tiny: Expected startKeyword = [main] . Got: " << buff << ".";
+            // if (DEBUG) {
+            //     ss << "(tokenize_factor(), line=294) ";
+            // }
+            ss << "tiny: Expected startKeyword = [main] . Got: " << this->buff << ".";
             throw tinyExceptions::Lexer::Incomplete_MAIN_LexException(ss.str());
         }
         // insert [main] token into [tokens]
-        tokens.push_back(TOKEN{ TOKEN_TYPE::MAIN, buff });    
-        buff.clear();
+        tokens.push_back(TOKEN{ TOKEN_TYPE::MAIN, this->buff });    
+        this->buff.clear();
         skip_whitespace();
 
         // while there are tokens
-        while ((c = next()) != nullptr && (*c != '.')) {
+        while ((c = next()) != nullptr && this->s_index < this->source_len) {
             // do something to c
-            if (std::isspace(*c)) { consume(); free(c); continue; }
-            // isalpha() NOT isalphanum() bc identifiers should start with a letter!
-            if (std::isalpha(*c)) {
-                buff.push_back(consume());
+            if (std::isspace(*c)) { 
+                consume(); 
+                continue;
+            } else if (std::isalpha(*c)) { 
+                // isalpha() NOT isalphanum() bc identifiers should start with a letter!
+                this->buff.push_back(consume());
                 free(c);
 
                 // get the rest of the identifier (which can be letters or numbers)
                 while ((c = next()) != nullptr && std::isalnum(*c)) {
-                    buff.push_back(consume());
+                    this->buff.push_back(consume());
                     free(c);
                 }
                 // if c is not the EOF
                 if (c != nullptr) {
                     // determine type
-                    if (buff.compare("let") == 0 || buff.compare("LET") == 0) {
+                    if (this->buff.compare("let") == 0 || this->buff.compare("LET") == 0) {
                         // insert token into [tokens]
                         if (DEBUG) {
                             std::cout << "\tnew token: " << TOKEN_TYPE_toString(TOKEN_TYPE::LET) << std::endl;
                         }
-                        tokens.push_back(TOKEN{ TOKEN_TYPE::LET, buff });    
-                        buff.clear();
+                        tokens.push_back(TOKEN{ TOKEN_TYPE::LET, this->buff });    
+                        this->buff.clear();
                         // get ident & expr
                         // first skip the whitespace
                         skip_whitespace();
                         // [1] [ident] must start with alpha!
                         if (std::isalpha(*c)) {
-                            buff.push_back(consume());
+                            this->buff.push_back(consume());
                             free(c);
                             // gets the entire identifier
                             while ((c = next()) != nullptr && std::isalnum(*c)) { 
-                                buff.push_back(consume());
+                                this->buff.push_back(consume());
                                 free(c);
                             }
                             // insert token into [tokens]
                             if (DEBUG) {
                                 std::cout << "\tnew token: " << TOKEN_TYPE_toString(TOKEN_TYPE::IDENTIFIER) << std::endl;
                             }
-                            tokens.push_back(TOKEN{ TOKEN_TYPE::IDENTIFIER, buff });    
-                            buff.clear();
+                            tokens.push_back(TOKEN{ TOKEN_TYPE::IDENTIFIER, this->buff });    
+                            this->buff.clear();
                             skip_whitespace();
                             // gets the next token; expected: assignment operator [<-]
                             int i = 0; // counter because we should only need to check the next 2 characters
                             while (i < 2 && (c = next()) != nullptr && !std::isspace(*c)) { 
-                                buff.push_back(consume());
+                                this->buff.push_back(consume());
                                 free(c);
                                 i++;
                             }
                             // if we got the expected token [<-]
-                            if (buff.compare("<-") == 0) {
+                            if (this->buff.compare("<-") == 0) {
                                 // insert token into [tokens]
                                 if (DEBUG) {
                                     std::cout << "\tnew token: " << TOKEN_TYPE_toString(TOKEN_TYPE::ASSIGNMENT) << std::endl;
                                 }
-                                tokens.push_back(TOKEN{ TOKEN_TYPE::ASSIGNMENT, buff });    
-                                buff.clear();
+                                tokens.push_back(TOKEN{ TOKEN_TYPE::ASSIGNMENT, this->buff });    
+                                this->buff.clear();
                             } else {
                                 std::stringstream ss;
                                 if (DEBUG) {
                                     ss << "(tokenize_factor(), line=356) ";
                                 }
-                                ss << "LET keyword expected [ASSIGNMENT] `<-`. Got: " << buff << ".";
+                                ss << "LET keyword expected [ASSIGNMENT] `<-`. Got: " << this->buff << ".";
                                 throw tinyExceptions::Lexer::Incomplete_LET_LexException(ss.str());
                             }
                             // ASSUMPTION: syntactically valid file [no expr checking!]
@@ -424,7 +690,7 @@ private:
                         }
                         continue;
                     } else { // if all else fails, assume it's an [expression]
-                        this->s_index -= buff.length();
+                        this->s_index -= this->buff.length();
                         // [2]: [expr]
                         tokenize_expr();
                         // [assumption]: all keywords have a space in between them (ex. [expresion, ` `, `;`])
@@ -453,24 +719,50 @@ private:
                         }
                     }
                 }
-            }
-            
-            
-            if (c == nullptr) { break; }
-        }
-        
-        // [3]: `.` token; end
-        if (*c == '.') {
-            std::string end(1, *c);
-            // insert token into [tokens]
-            if (DEBUG) {
-                std::cout << "\tnew token: " << TOKEN_TYPE_toString(TOKEN_TYPE::END_OF_FILE) << std::endl;
-            }
-            tokens.push_back(TOKEN{ TOKEN_TYPE::END_OF_FILE, end });
-        }
+            } else if (*c == '{') {
+                this->buff.push_back(consume());
+                this->tokens.push_back(TOKEN{ TOKEN_TYPE::OPEN_CURLY, this->buff });
+                this->buff.clear();
+                skip_whitespace();
 
+                tokenize_statSequence(); // should be looking for '}' as indicator to return
+                if (*(c = next()) == '}') {
+                    // then we know we're done with the [statSequence]
+                    // - expected next char is last [.]
+                    this->buff.push_back(consume());
+                    this->tokens.push_back(TOKEN{ TOKEN_TYPE::CLOSE_CURLY, this->buff });
+                    this->buff.clear();
+                    skip_whitespace();
 
-        this->s_index = 0; // default behavior: reset to 0
+                    if (((c = next()) != nullptr)  && (*(c = next()) == '.')) {
+                        // std::string end(1, *c);
+                        this->buff.push_back(consume());
+                        if (DEBUG) {
+                            std::cout << "\tnew token: " << TOKEN_TYPE_toString(TOKEN_TYPE::END_OF_FILE) << std::endl;
+                        }
+                        this->tokens.push_back(TOKEN{ TOKEN_TYPE::END_OF_FILE, this->buff });
+                        this->buff.clear();
+                    } else {
+                        std::stringstream ss;
+                        if (c == nullptr) { // indicates EOF
+                            ss << "End of main Expected `.`; Got: EOF.";
+                        } else {
+                            ss << "End of main Expected `.`; Got: " << *c << ".";
+                        }
+                        throw Incomplete_MAIN_LexException(ss.str());
+                    }
+                } else {
+                    std::stringstream ss;
+                    if (c == nullptr) { // indicates EOF
+                        ss << "End of statSequence Expected `}`. Got: EOF.";
+                    } else {
+                        ss << "End of statSequence Expected `}`. Got: " << *c << ".";
+                    }
+                    throw Incomplete_statSequence_LexException(ss.str());
+                }
+            } else if (c == nullptr) { break; }
+        }
+        this->s_index = 0; // default behavior: reset to 0; should be done tokenizing now
     }
 };
 

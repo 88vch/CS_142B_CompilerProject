@@ -6,20 +6,21 @@
 
 #include "src/Lexer.hpp"
 
+std::string get_file_contents(std::string file) {
+    std::stringstream file_contents;
+    std::fstream input(file, std::ios::in);
+    file_contents << input.rdbuf();
+    return file_contents.str();
+}
+
 
 int main(int argc, char **argv) {
     if (argc < 2) {
         std::cerr << "Error: no input file." << std::endl;
         exit(EXIT_FAILURE);
     }
-
-    std::string contents, inf = argv[1];
-    {
-        std::stringstream file_contents;
-        std::fstream input(argv[1], std::ios::in);
-        file_contents << input.rdbuf();
-        contents = file_contents.str();
-    }
+    std::string inf = argv[1];
+    std::string contents = get_file_contents(inf);
 
     Lexer lexer = Lexer(contents);
     std::vector<TOKEN> tokens = lexer.lex();

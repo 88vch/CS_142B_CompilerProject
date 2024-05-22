@@ -2,9 +2,10 @@
 ### Current Status: [REFACTORING]
 - [RESUME]: passing in current file tst/temp.ty throws a "LET ERRROR"
 - [TODO]; 
+    - [tokenize_statement()]: configure a deterministic way to decide when the statement is done (bc it's a non strictly-necessary terminating `;`)
     - get a working warmup P2 vzn
     - create a suite of tests to test P2 vzn
-    - turn P2 vzn into DOT
+    - generate DOT from P2
 ##### NOTE: this branch should NEVER be merged with main! This branch was created specifically for testing.
 
 
@@ -37,7 +38,7 @@
 
 ##### Note (symbol table):
 - ds used to store identifiers (var-names)
-    1. define a struct for identifiers (or use the name itself if all you need is the value)
+    1. define a struct/class for identifiers (or use the name itself if all you need is the value)
     2. use unordered_map<,> to create the symbol table
     3. each time a new identifier is encountered, add it into the table. Handle existing cases accordingly (if [identifier] already exists in table prior to insert -> update!).
 - storing & comparing strings is less efficient compared to integers 

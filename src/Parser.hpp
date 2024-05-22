@@ -56,7 +56,10 @@ std::unordered_set<int, int> REGISTERS;
 // Parser class
 class Parser {
 public:
-    Parser(const std::string& source) : source(source), currentPos(0) {}
+    Parser(const std::string& source) 
+        : source(source), currentPos(0) 
+    {
+    }
 
 
     void parse_FIRSTPASS(); 
