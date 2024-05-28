@@ -51,13 +51,13 @@ void performCSE(std::vector<IRNode>& ir);
 void printIR(const std::vector<IRNode>& ir);
 
 // to store values of registers needed [used for graph coloring later]
-std::unordered_set<int, int> REGISTERS;
+// std::unordered_set<int, int> REGISTERS;
 
 // Parser class
 class Parser {
 public:
     Parser(const std::string& source) 
-        : source(source), currentPos(0) 
+        : source(source)//, currentPos(0) 
     {
     }
 
@@ -68,7 +68,7 @@ public:
 
 private:
     std::string source;
-    size_t currentPos;
+    // size_t currentPos;
     TOKEN currentToken;
     std::unordered_map<std::string, std::string> symbolTable; // For copy propagation
     std::vector<IRNode> ir; // Intermediate representation (IR)

@@ -13,6 +13,7 @@ enum TOKEN_TYPE {
     DIVIDE,     // [/]
     SEMICOLON,  // [;]
     PRINT,      // self-defined
+    VAR,        // [VAR]
     LET,        // [LET]
     ASSIGNMENT, // [<-]
     EXPRESSION, // [math]
@@ -27,6 +28,7 @@ enum TOKEN_TYPE {
     WHILE,      // [WHILE-statement]
     DO,         // [WHILE-statement body start]
     OD,         // [WHILE-statement body end]
+    FUNCTION,   // [FUNCTION-statement] (might include VOID later)
     RETURN,     // [RETURN-statement]
     MAIN,       // [start of file]
     END_OF_FILE // [end of file indicated by "."]
@@ -37,5 +39,8 @@ struct TOKEN {
     TOKEN_TYPE type;
     std::string lexeme;
 };
+
+std::string TOKEN_TYPE_toString(TOKEN_TYPE token);
+const std::string TOKEN_TYPE_toStringLower(TOKEN_TYPE token);
 
 #endif

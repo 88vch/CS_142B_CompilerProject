@@ -1,18 +1,18 @@
 #include "Parser.hpp"
 
 
-// trim from start (in place)
-static inline void ltrim(std::string &s) {
-    s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int ch) {
-        return !std::isspace(ch);
-    }));
-}
-// trim from end (in place)
-static inline void rtrim(std::string &s) {
-    s.erase(std::find_if(s.rbegin(), s.rend(), [](int ch) {
-        return !std::isspace(ch);
-    }).base(), s.end());
-}
+// // trim from start (in place)
+// static inline void ltrim(std::string &s) {
+//     s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int ch) {
+//         return !std::isspace(ch);
+//     }));
+// }
+// // trim from end (in place)
+// static inline void rtrim(std::string &s) {
+//     s.erase(std::find_if(s.rbegin(), s.rend(), [](int ch) {
+//         return !std::isspace(ch);
+//     }).base(), s.end());
+// }
 
 
 // Function to perform common subexpression elimination (CSE)
@@ -61,6 +61,7 @@ TOKEN Parser::getNextToken() {
     // ltrim() the string
     // determine next TOKEN_TYPE
     // create & return TOKEN
+    return TOKEN{ TOKEN_TYPE::END_OF_FILE, "" }; // stub (to compile)
 }
 
 // Helper function to consume current token and advance to next token
@@ -74,6 +75,7 @@ void Parser::consume(TOKEN_TYPE expectedType) {
         }
         i++;
     }
+    if (expectedType == TOKEN_TYPE::END_OF_FILE) {}
 }
 
 // Statement parsing functions
@@ -95,7 +97,7 @@ void Parser::parseDeclaration() {
     consume(LET); // Consume 'let' keyword
     std::string identifier = currentToken.lexeme;
     consume(IDENTIFIER); // Consume identifier
-    consume('='); // Consume '='
+    // consume('='); // Consume '='
     std::string expressionResult = parseExpression();
     symbolTable[identifier] = expressionResult; // Store result in symbol table for copy propagation
     consume(SEMICOLON); // Consume ';'
@@ -105,7 +107,7 @@ void Parser::parseDeclaration() {
 void Parser::parseAssignment() {
     std::string identifier = currentToken.lexeme;
     consume(IDENTIFIER); // Consume identifier
-    consume('='); // Consume '='
+    // consume('='); // Consume '='
     std::string expressionResult = parseExpression();
     symbolTable[identifier] = expressionResult; // Store result in symbol table for copy propagation
     consume(SEMICOLON); // Consume ';'
@@ -155,11 +157,11 @@ std::string Parser::parseFactor() {
         std::string factorResult = currentToken.lexeme;
         consume(currentToken.type); // Consume identifier or number
         return factorResult;
-    } else if (currentToken.type == '(') {
-        consume('('); // Consume '('
+    // } else if (currentToken.type == '(') {
+        // consume('('); // Consume '('
         std::string expressionResult = parseExpression();
-        consume(')'); // Consume ')'
-        return expressionResult;
+        // consume(')'); // Consume ')'
+        // return expressionResult;
     } else {
         std::cerr << "Syntax error: Unexpected token " << currentToken.lexeme << std::endl;
         currentToken = getNextToken(); // Skip token
@@ -201,17 +203,17 @@ std::string Parser::getTokenString(TOKEN_TYPE type) {
 
 
 
-int main() {
-    std::string source = "let a = 3 + 5 * (4 - 2); print a;";
-    Parser parser(source);
-    parser.parse_FIRSTPASS();
-    std::vector<IRNode> ir = parser.getIR();
+// int main() {
+//     std::string source = "let a = 3 + 5 * (4 - 2); print a;";
+//     Parser parser(source);
+//     parser.parse_FIRSTPASS();
+//     std::vector<IRNode> ir = parser.getIR();
 
-    // Perform common subexpression elimination (CSE)
-    performCSE(ir);
+//     // Perform common subexpression elimination (CSE)
+//     performCSE(ir);
 
-    // Print IR
-    printIR(ir);
+//     // Print IR
+//     printIR(ir);
 
-    return 0;
-}
+//     return 0;
+// }

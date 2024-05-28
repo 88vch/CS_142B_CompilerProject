@@ -1,6 +1,10 @@
 ## Parser Tests
 ### Current Status: [REFACTORING]
-- [RESUME]: passing in current file tst/temp.ty throws a "LET ERRROR"
+- [RESUME]: 
+    - refactored [Lexer.hpp], 
+    - NEW: [Lexer.cpp] 
+        modified [tokenizer()]
+        created [tokenize_func()] & [tokenize_var()]
 - [TODO]; 
     - [tokenize_statement()]: configure a deterministic way to decide when the statement is done (bc it's a non strictly-necessary terminating `;`)
     - get a working warmup P2 vzn
