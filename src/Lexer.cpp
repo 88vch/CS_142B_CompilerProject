@@ -1,10 +1,11 @@
 #include <iostream>
 #include <vector>
 
+#include "tinyExceptions.hpp"
 #include "Lexer.hpp"
 
 
-using namespace tinyExceptions::Lexer;
+using namespace tinyExceptions_ns;
 
 
 std::vector<TOKEN> Lexer::lex() {
@@ -14,19 +15,19 @@ std::vector<TOKEN> Lexer::lex() {
         return this->tokens;
     } catch (const std::out_of_range &e) {
         std::cerr << "Out of range error: " << e.what() << std::endl;
-    } catch (const Incomplete_FACTOR_LexException &e) {
+    } catch (const Lexer_ns::Incomplete_FACTOR_LexException &e) {
         std::cerr << "Lexer Factor Error: " << e.what() << std::endl;
-    } catch (const Incomplete_TERM_LexException &e) {
+    } catch (const Lexer_ns::Incomplete_TERM_LexException &e) {
         std::cerr << "Lexer Term Error: " << e.what() << std::endl;
-    } catch (const Incomplete_EXPRESSION_LexException &e) {
+    } catch (const Lexer_ns::Incomplete_EXPRESSION_LexException &e) {
         std::cerr << "Lexer Expression Error: " << e.what() << std::endl;
-    } catch (const Incomplete_LET_LexException &e) {
-        std::cerr << "Lexer Let Error: " << e.what() << std::endl;
-    } catch (const Incomplete_MAIN_LexException &e) {
+    } catch (const Lexer_ns::Incomplete_ASSIGNMENT_LexException &e) {
+        std::cerr << "Lexer Assignent Error: " << e.what() << std::endl;
+    } catch (const Lexer_ns::Incomplete_MAIN_LexException &e) {
         std::cerr << "Lexer Main Error: " << e.what() << std::endl;
     } catch (...) {
         // Catch-all block for all other exceptions
-        std::cerr << "An unknown exception occurred." << std::endl;
+        std::cerr << "Caught an unknown exception (which occurred during Lexing)." << std::endl;
     }
     return {};
 }
@@ -52,13 +53,10 @@ void Lexer::tokenize_ident() {
         this->tokens.push_back(TOKEN{ TOKEN_TYPE::IDENTIFIER, this->buff });
         this->buff.clear();
     } else {
-        std::stringstream ss;
-        if (c == nullptr) {
-            ss << "Identifier Expected to start with a letter [a-z;A-Z]. Got: EOF.";
-        } else {
-            ss << "Identifier Expected to start with a letter [a-z;A-Z]. Got: " << *c << ".";
-        }
-        throw Incomplete_IDENTIFIER_LexException(ss.str());
+        std::string err = "Identifier Expected to start with a letter [a-z;A-Z]. Got: ";
+        if (c == nullptr) { err += "EOF."; } 
+        else { err += std::to_string(*c) + "."; }
+        throwException(numExceptions::Incomplete_IDENTIFIER_LexException, err);
     }
     skip_whitespace();
 }
@@ -71,12 +69,12 @@ void Lexer::tokenize_factor() {
 
     // get the first [whatever]
     if ((c = next()) == nullptr) {
-        std::stringstream ss;
+        std::string err = "";
         #ifdef DEBUG
-            ss << "(tokenize_factor(), line=91) ";
+            err += "(tokenize_factor(), line=91) ";
         #endif
-        ss << "FACTOR expected `[ident] | [number] | ['(' expr ')']`. Got: EOF.";
-        throw tinyExceptions::Lexer::Incomplete_FACTOR_LexException(ss.str());
+        err += "FACTOR expected `[ident] | [number] | ['(' expr ')']`. Got: EOF.";
+        throwException(numExceptions::Incomplete_FACTOR_LexException, err);
     }
 
     // case: ["(" expression ")"]
@@ -94,31 +92,31 @@ void Lexer::tokenize_factor() {
                 std::string close(1, *c);
                 tokens.push_back(TOKEN{ TOKEN_TYPE::CLOSE_PAREN, close});
             } else {
-                std::stringstream ss;
+                std::string err = "";
                 #ifdef DEBUG
-                    ss << "(tokenize_factor(), line=117) ";
+                    err += "(tokenize_factor(), line=99) ";
                 #endif
-                ss << "FACTOR expected `)`. Got: " << *c << ".";
-                throw tinyExceptions::Lexer::Incomplete_FACTOR_LexException(ss.str());
+                err += "FACTOR expected `)`. Got: " + std::to_string(*c) + ".";
+                throwException(numExceptions::Incomplete_FACTOR_LexException, err);
             }
         } else {
-            std::stringstream ss;
+            std::string err = "";
             #ifdef DEBUG
-                ss << "(tokenize_factor(), line=124) ";
+                err += "(tokenize_factor(), line=107) ";
             #endif
-            ss << "FACTOR expected `)`. Got: EOF.";
-            throw tinyExceptions::Lexer::Incomplete_FACTOR_LexException(ss.str());
+            err += "FACTOR expected `)`. Got: EOF.";
+            throwException(numExceptions::Incomplete_FACTOR_LexException, err);
         }
 
     } else {
         // check if it's [ident] | [number]
         if ((c = next()) == nullptr) {
-            std::stringstream ss;
+            std::string err = "";
             #ifdef DEBUG
-                ss << "(in tokenize_factor() line=135) ";
+                err += "(tokenize_factor(), line=118) ";
             #endif
-            ss << "FACTOR expected `[ident] | [number]`. Got: EOF.";
-            throw tinyExceptions::Lexer::Incomplete_FACTOR_LexException(ss.str());
+            err += "FACTOR expected `[ident] | [number]`. Got: EOF.";
+            throwException(numExceptions::Incomplete_FACTOR_LexException, err);
         }
         if (std::isalpha(*c)) { // ident
             this->buff.push_back(consume());
@@ -146,12 +144,12 @@ void Lexer::tokenize_factor() {
             tokens.push_back(TOKEN{ TOKEN_TYPE::NUMBER, this->buff });
             this->buff.clear();
         } else {
-            std::stringstream ss;
+            std::string err = "";
             #ifdef DEBUG
-                ss << "(tokenize_factor(), line=166) ";
+                err += "(tokenize_factor(), line=151) ";
             #endif
-            ss << "FACTOR expected `[ident] | [number]`. Got: unexpected factor (" << *c << ").";
-            throw tinyExceptions::Lexer::Incomplete_FACTOR_LexException(ss.str());
+            err += "FACTOR expected `[ident] | [number]`. Got: EOF.";
+            throwException(numExceptions::Incomplete_FACTOR_LexException, err);
         }
     }
     skip_whitespace();
@@ -166,12 +164,12 @@ void Lexer::tokenize_term() {
     
     // [intermediate processing step]
     if ((c = next()) == nullptr) {
-        std::stringstream ss;
+        std::string err = "";
         #ifdef DEBUG
-            ss << "(tokenize_factor(), line=187) ";
+            err += "(tokenize_factor(), line=171) ";
         #endif
-        ss << "TERM expected a `[*, /]` operator. Got: EOF.";
-        throw tinyExceptions::Lexer::Incomplete_TERM_LexException(ss.str());
+        err += "TERM expected a `[*, /]` operator. Got: EOF.";
+        throwException(numExceptions::Incomplete_TERM_LexException, err);
     }
 
     // [2]: op
@@ -216,12 +214,12 @@ void Lexer::tokenize_expr() { // checks will be handled later recursively by the
     
     // [intermediate processing step]
     if ((c = next()) == nullptr) {
-        std::stringstream ss;
+        std::string err = "";
         #ifdef DEBUG
-            ss << "(tokenize_factor(), line=235) ";
+            err += "(tokenize_factor(), line=221) ";
         #endif
-        ss << "EXPRESSION expected a `+/-` operator. Got: EOF.";
-        throw tinyExceptions::Lexer::Incomplete_EXPRESSION_LexException(ss.str());
+        err += "EXPRESSION expected a `+/-` operator. Got: EOF.";
+        throwException(numExceptions::Incomplete_EXPRESSION_LexException, err);
     }
 
     // [2]: op
@@ -271,12 +269,14 @@ void Lexer::tokenize_returnStatement() {
 void Lexer::tokenize_whileStatement() {
     // tokenize_relation(); // should return on [whitespace] (i guess??)
     skip_whitespace();
-    this->buff = get_deterministic_token(2, "do");
-
+    this->buff = get_deterministic_token(2); // [DO]
+    if (this->buff == "") {
+        std::string err = "whileStatement Expected `DO`. Got: EOF.";
+        throwException(numExceptions::Incomplete_whileStatement_LexException, err);
+    }
     if (this->buff.compare(TOKEN_TYPE_toStringLower(TOKEN_TYPE::DO)) != 0) {
-        std::stringstream ss;
-        ss << "ifStatement Expected `DO`. Got: " << this->buff << ".";
-        throw Incomplete_ifStatement_LexException(ss.str());
+        std::string err = "whileStatement Expected `DO`. Got: " + this->buff + ".";
+        throwException(numExceptions::Incomplete_whileStatement_LexException, err);
     }
 
     this->tokens.push_back(TOKEN{ TOKEN_TYPE::DO, this->buff });
@@ -286,12 +286,14 @@ void Lexer::tokenize_whileStatement() {
     tokenize_statSequence();
     skip_whitespace();
 
-    this->buff = get_deterministic_token(2, TOKEN_TYPE_toStringLower(TOKEN_TYPE::OD));
-
-    if (this->buff.compare(TOKEN_TYPE_toStringLower(TOKEN_TYPE::DO)) != 0) {
-        std::stringstream ss;
-        ss << "ifStatement Expected `DO`. Got: " << this->buff << ".";
-        throw Incomplete_ifStatement_LexException(ss.str());
+    this->buff = get_deterministic_token(2); // [OD]
+    if (this->buff == "") {
+        std::string err = "whileStatement Expected `OD`. Got: EOF.";
+        throwException(numExceptions::Incomplete_whileStatement_LexException, err);
+    }
+    if (this->buff.compare(TOKEN_TYPE_toStringLower(TOKEN_TYPE::OD)) != 0) {
+        std::string err = "whileStatement Expected `OD`. Got: " + this->buff + ".";
+        throwException(numExceptions::Incomplete_whileStatement_LexException, err);
     }
 
     this->tokens.push_back(TOKEN{ TOKEN_TYPE::OD, this->buff });
@@ -304,12 +306,14 @@ void Lexer::tokenize_ifStatement() {
     skip_whitespace();
     
     char *c;
-    this->buff = get_deterministic_token(4, "then");
-
+    this->buff = get_deterministic_token(4); // [THEN]
+    if (this->buff == "") {
+        std::string err = "ifStatement Expected `THEN`. Got: EOF.";
+        throwException(numExceptions::Incomplete_ifStatement_LexException, err);
+    }
     if (this->buff.compare(TOKEN_TYPE_toStringLower(TOKEN_TYPE::THEN)) != 0) {
-        std::stringstream ss;
-        ss << "ifStatement Expected `THEN`. Got: " << this->buff << ".";
-        throw Incomplete_ifStatement_LexException(ss.str());
+        std::string err = "ifStatement Expected `THEN`. Got: " + this->buff + ".";
+        throwException(numExceptions::Incomplete_ifStatement_LexException, err);
     }
 
     this->tokens.push_back(TOKEN{ TOKEN_TYPE::THEN, this->buff });
@@ -330,24 +334,26 @@ void Lexer::tokenize_ifStatement() {
         skip_whitespace();
         tokenize_statSequence(); // i guess we can say they end with a space
 
-        this->buff = get_deterministic_token(2, TOKEN_TYPE_toStringLower(TOKEN_TYPE::FI));
+        this->buff = get_deterministic_token(2); // [FI]
+        if (this->buff == "") {
+            std::string err = "ifStatement Expected `FI`. Got: EOF.";
+            throwException(numExceptions::Incomplete_ifStatement_LexException, err);
+        }
         if (this->buff.compare(TOKEN_TYPE_toStringLower(TOKEN_TYPE::FI)) == 0) {
             this->tokens.push_back(TOKEN{ TOKEN_TYPE::FI, this->buff });
             this->buff.clear();
             // we've successfully tokenized the [ifStatement]
         } else {
-            std::stringstream ss;
-            ss << "End ifStatement Expected `FI`. Got: " << this->buff << ".";
-            throw Incomplete_ifStatement_LexException(ss.str());
+            std::string err = "End ifStatement Expected `FI`. Got: " + this->buff + ".";
+            throwException(numExceptions::Incomplete_ifStatement_LexException, err);
         }
     } else if (this->buff.compare(TOKEN_TYPE_toStringLower(TOKEN_TYPE::FI)) == 0) {
         this->tokens.push_back(TOKEN{ TOKEN_TYPE::FI, this->buff });
         this->buff.clear();
         // we've successfully tokenized the [ifStatement]
     } else {
-        std::stringstream ss;
-        ss << "ifStatement Expected `ELSE` | `FI`. Got: " << this->buff << ".";
-        throw Incomplete_ifStatement_LexException(ss.str());
+        std::string err = "ifStatement Expected `ELSE` | `FI`. Got: " + this->buff + ".";
+        throwException(numExceptions::Incomplete_ifStatement_LexException, err);
     }
 }
 
@@ -359,9 +365,8 @@ void Lexer::tokenize_assignment() { // already got first token "let"
 
     char *c;
     if ((c = next()) == nullptr) {
-        std::stringstream ss;
-        ss << "Assignemnt Expected `<-`. Got: EOF.";
-        throw Incomplete_ASSIGNMENT_LexException(ss.str());
+        std::string err = "Assignemnt Expected `<-`. Got: EOF.";
+        throwException(numExceptions::Incomplete_ASSIGNMENT_LexException, err);
     } 
     if (*(c = next()) == '<') {
         this->buff.push_back(consume());
@@ -373,14 +378,12 @@ void Lexer::tokenize_assignment() { // already got first token "let"
             this->tokens.push_back(TOKEN{ TOKEN_TYPE::ASSIGNMENT, this->buff });
             this->buff.clear();
         } else {
-            std::stringstream ss;
-            ss << "Assignemnt Expected `<-`. Got: [" << *c << "].";
-            throw Incomplete_ASSIGNMENT_LexException(ss.str());
+            std::string err = "Assignemnt Expected `<-`. Got: [" + std::to_string(*c) + "].";
+            throwException(numExceptions::Incomplete_ASSIGNMENT_LexException, err);
         }
     } else {
-        std::stringstream ss;
-        ss << "Assignemnt Expected `<-`. Got: [" << *c << "].";
-        throw Incomplete_ASSIGNMENT_LexException(ss.str());
+        std::string err = "Assignemnt Expected `<-`. Got: [" + std::to_string(*c) + "].";
+        throwException(numExceptions::Incomplete_ASSIGNMENT_LexException, err);
     }
     skip_whitespace();
     tokenize_expr();
@@ -429,9 +432,8 @@ void Lexer::tokenize_statement() {
                     this->buff.clear();
                     tokenize_returnStatement();
                 } else {
-                    std::stringstream ss;
-                    ss << "Invalid statement! Expected { assignment | funcCall3 | ifStatement | whileStatement | returnStatement }. Got: " << this->buff << ".";
-                    throw Incomplete_statement_LexException(ss.str());
+                    std::string err = "Invalid statement! Expected { assignment | funcCall3 | ifStatement | whileStatement | returnStatement }. Got: " + this->buff + ".";
+                    throwException(numExceptions::Incomplete_statement_LexException, err);
                 }
                 break; // exit when we have finished tokenizing the statement
             }
@@ -439,18 +441,17 @@ void Lexer::tokenize_statement() {
 
 
         if (c == nullptr) {
-            std::stringstream ss;
-            ss << "End of statement Expected `;`. Got: " << *c << ".";
-            throw Incomplete_statement_LexException(ss.str());
+            std::string err = "End of statement Expected `;`. Got: " + std::to_string(*c) + ".";
+            throwException(numExceptions::Incomplete_statement_LexException, err);
         }
     } else if (*c != '}') {
         // end of statement [ `;` | `}` ]
         // - let statSequence() handle [end of statement]
         // - assume [this->buff] is currently empty
         // - throw error if we don't encounter this
-        std::stringstream ss;
-        ss << "Statement Expected to start with [letter]. Got: " << *c << ".";
-        throw Incomplete_statement_LexException(ss.str());
+        std::string err = "Statement Expected to start with [letter]. Got: " + std::to_string(*c);
+        err += ".";
+        throwException(numExceptions::Incomplete_statement_LexException, err);
     }
     skip_whitespace();
 }
@@ -513,16 +514,44 @@ void Lexer::tokenize_statSequence() {
         }
     }
 
-    if (c == nullptr) {
-        std::stringstream ss;
-        ss << "End of statSequence Expected `}`. Got: EOF.";
-        throw Incomplete_statSequence_LexException(ss.str());
+    if (c == nullptr) {        
+        std::string err = "End of statSequence Expected `}`. Got: EOF.";
+        throwException(numExceptions::Incomplete_statSequence_LexException, err);
     }
     skip_whitespace();
 }
 
 // TODO;
-void Lexer::tokenize_var() {}
+void Lexer::tokenize_varDecl() {
+    #ifdef DEBUG    
+        std::cout << "in tokenize_varDecl(str=[" << this->source.substr(s_index) << "]); buff=[" << this->buff << "]" << std::endl;
+    #endif
+    tokenize_ident();
+
+    char *c = next();
+    if (c != nullptr) {
+        if (*c == ',') {
+            this->buff.push_back(consume());
+            this->tokens.push_back(TOKEN{ TOKEN_TYPE::COMMA, this->buff });
+            this->buff.clear();
+            
+            skip_whitespace();
+            tokenize_varDecl();
+        } else if (*c == ';') { // done w varDecl
+            #ifdef DEBUG    
+                std::cout << "\tgot all varDecl's, exiting tokenize_varDecl()" << std::endl;
+            #endif
+            this->buff.push_back(consume());
+            this->tokens.push_back(TOKEN{ TOKEN_TYPE::SEMICOLON, this->buff });
+            this->buff.clear();
+
+            skip_whitespace();
+        }
+    } else {
+        std::string err = "varDecl Expected [`,` || `;`]; Got: EOF.";
+        throwException(numExceptions::Incomplete_VAR_LexException, err);
+    }
+}
 
 // TODO; 
 void Lexer::tokenize_func() {}
@@ -537,7 +566,7 @@ void Lexer::tokenizer() {
     // [REVISED]: handled by changing to char* and checking when nullptr
     char *c;
     // [Below]: ensuring that the program always starts with "main"
-    skip_whitespace(); // if there is any whitespace before the first letter, skip it
+    skip_whitespace();
     int main_c = 0;
     while (main_c < 4 && (c = next()) != nullptr && !std::isspace(*c)) {
         this->buff.push_back(std::tolower(consume()));
@@ -548,9 +577,8 @@ void Lexer::tokenizer() {
     }
     // [else]: continue execution
     if (this->buff.compare("main") != 0) {
-        std::stringstream ss;
-        ss << "tiny: Expected startKeyword = [main] . Got: " << this->buff << ".";
-        throw tinyExceptions::Lexer::Incomplete_MAIN_LexException(ss.str());
+        std::string err = "tiny: Expected startKeyword = [main] . Got: " + this->buff + ".";
+        throwException(numExceptions::Incomplete_MAIN_LexException, err);
     }
     // insert [main] token into [tokens]
     #ifdef DEBUG
@@ -567,31 +595,40 @@ void Lexer::tokenizer() {
         }
 
         if (this->buff.compare("var") == 0 || this->buff.compare("VAR") == 0) {
+            // insert [var] token into [tokens]
+            #ifdef DEBUG
+                std::cout << "pushing back token of type: " << TOKEN_TYPE_toString(TOKEN_TYPE::VAR) << std::endl;
+            #endif
             this->tokens.push_back(TOKEN{ TOKEN_TYPE::VAR, this->buff });
             this->buff.clear();
-            tokenize_var();
+            skip_whitespace();
+            tokenize_varDecl();
         } else if (this->buff.compare("void") == 0 || this->buff.compare("VOID") == 0 ||
                    this->buff.compare("function") == 0 || this->buff.compare("FUNCTION") == 0) {
             // should we push a [void] (type) token before? (thinking abt it idk; need to learn more abt functions first)
+            // insert [function] token into [tokens]
+            #ifdef DEBUG
+                std::cout << "pushing back token of type: " << TOKEN_TYPE_toString(TOKEN_TYPE::FUNCTION) << std::endl;
+            #endif
             this->tokens.push_back(TOKEN{ TOKEN_TYPE::FUNCTION, this->buff });
             this->buff.clear();
+            skip_whitespace();
             tokenize_func();
         }
-
-
         if (c == nullptr) {
-            std::stringstream ss;
-            if (c == nullptr) { // indicates EOF
-                ss << "Main Expected [`{` || `var decl` || `function`]; Got: EOF.";
-            } else {
-                ss << "Main Expected [`{` || `var decl` || `function`]; Got: " << *c << ".";
-            }
-            throw tinyExceptions::Lexer::Incomplete_MAIN_LexException(ss.str());
+            // indicates EOF
+            std::string err;
+            if (c == nullptr) { err = "Main Expected [`{` || `var decl` || `function`]; Got: EOF."; } 
+            else { err = "Main Expected [`{` || `var decl` || `function`]; Got: " + std::to_string(*c) + "."; }
+            throwException(numExceptions::Incomplete_MAIN_LexException, err);
         }
+        skip_whitespace();
     }
     
-    skip_whitespace();
     c = next();
+    #ifdef DEBUG    
+        std::cout << "\tin main(str=[" << this->source.substr(s_index) << "]) resume: expected done parsing varDecl & funcDecl; buff=[" << this->buff << "]" << std::endl;
+    #endif
     // checking for [statSequence()] and then [END: `.`]
     if (c != nullptr && *c == '{') {
         #ifdef DEBUG
@@ -623,31 +660,25 @@ void Lexer::tokenizer() {
                 this->tokens.push_back(TOKEN{ TOKEN_TYPE::END_OF_FILE, this->buff });
                 this->buff.clear();
             } else {
-                std::stringstream ss;
-                if (c == nullptr) { // indicates EOF
-                    ss << "End of main Expected `.`; Got: EOF.";
-                } else {
-                    ss << "End of main Expected `.`; Got: " << *c << ".";
-                }
-                throw tinyExceptions::Lexer::Incomplete_MAIN_LexException(ss.str());
+                std::string err = "End of main Expected `.`; Got: ";
+                // indicates EOF
+                if (c == nullptr) { err += "EOF."; } 
+                else { err += std::to_string(*c) + "."; }
+                throwException(numExceptions::Incomplete_MAIN_LexException, err);
             }
         } else {
-            std::stringstream ss;
-            if (c == nullptr) { // indicates EOF
-                ss << "End of statSequence Expected `}`. Got: EOF.";
-            } else {
-                ss << "End of statSequence Expected `}`. Got: " << *c << ".";
-            }
-            throw tinyExceptions::Lexer::Incomplete_statSequence_LexException(ss.str());
+            std::string err = "End of statSequence Expected `.`; Got: ";
+            // indicates EOF
+            if (c == nullptr) { err += "EOF."; } 
+            else { err += std::to_string(*c) + "."; }
+            throwException(numExceptions::Incomplete_statSequence_LexException, err);
         }
     } else {
-        std::stringstream ss;
-        if (c == nullptr) { // indicates EOF
-            ss << "End of statSequence Expected `some IDENTIFIER`. Got: EOF.";
-        } else {
-            ss << "End of statSequence Expected `some IDENTIFIER`. Got: " << this->buff << " & " << *c << ".";
-        }
-        throw tinyExceptions::Lexer::Incomplete_statSequence_LexException(ss.str());
+        std::string err = "End of statSequence Expected `some IDENTIFIER`. Got: ";
+        // indicates EOF
+        if (c == nullptr) { err += "EOF."; } 
+        else { err += this->buff + " & " + std::to_string(*c) + "."; }
+        throwException(numExceptions::Incomplete_statSequence_LexException, err);
     }
     this->s_index = 0; // default behavior: reset to 0; should be done tokenizing now
 }

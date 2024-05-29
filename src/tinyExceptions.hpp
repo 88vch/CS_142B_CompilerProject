@@ -5,10 +5,33 @@
 #include <iostream>
 #include <string>
 
+namespace tinyExceptions_ns {
+    enum numExceptions {
+        Incomplete_whileStatement_LexException, 
+        Incomplete_ifStatement_LexException, 
+        Incomplete_ASSIGNMENT_LexException, 
+        Incomplete_IDENTIFIER_LexException, 
+        Incomplete_statement_LexException, 
+        Incomplete_statSequence_LexException, 
+        Incomplete_FACTOR_LexException, 
+        Incomplete_TERM_LexException, 
+        Incomplete_EXPRESSION_LexException, 
+        Incomplete_VAR_LexException, 
+        Incomplete_MAIN_LexException, 
+        Incomplete_Token_LexException
+    };
 
 
-namespace tinyExceptions {
-    namespace Lexer {
+    namespace Lexer_ns {
+        class Incomplete_whileStatement_LexException : public std::exception {
+            public:
+                Incomplete_whileStatement_LexException(const std::string &err) : msg(err) { }
+                // Override the what() function to return the error message
+                const char* what() const noexcept override { return msg.c_str(); }
+            private:
+                std::string msg;
+        }; 
+
         class Incomplete_ifStatement_LexException : public std::exception {
             public:
                 Incomplete_ifStatement_LexException(const std::string &err) : msg(err) { }
@@ -81,9 +104,9 @@ namespace tinyExceptions {
                 std::string msg;
         }; 
 
-        class Incomplete_LET_LexException : public std::exception {
+        class Incomplete_VAR_LexException : public std::exception {
             public:
-                Incomplete_LET_LexException(const std::string &err) : msg(err) { }
+                Incomplete_VAR_LexException(const std::string &err) : msg(err) { }
                 // Override the what() function to return the error message
                 const char* what() const noexcept override { return msg.c_str(); }
             private:
@@ -112,7 +135,46 @@ namespace tinyExceptions {
     
 
 
-
+    void throwException(numExceptions eType, std::string errMsg) {
+        switch (eType) {
+            case numExceptions::Incomplete_whileStatement_LexException:
+                throw tinyExceptions_ns::Lexer_ns::Incomplete_whileStatement_LexException(errMsg);
+                break;
+            case numExceptions::Incomplete_ifStatement_LexException:
+                throw tinyExceptions_ns::Lexer_ns::Incomplete_ifStatement_LexException(errMsg);
+                break;
+            case numExceptions::Incomplete_ASSIGNMENT_LexException:
+                throw tinyExceptions_ns::Lexer_ns::Incomplete_ASSIGNMENT_LexException(errMsg);
+                break;
+            case numExceptions::Incomplete_IDENTIFIER_LexException:
+                throw tinyExceptions_ns::Lexer_ns::Incomplete_IDENTIFIER_LexException(errMsg);
+                break;
+            case numExceptions::Incomplete_statement_LexException:
+                throw tinyExceptions_ns::Lexer_ns::Incomplete_statement_LexException(errMsg);
+                break;
+            case numExceptions::Incomplete_statSequence_LexException:
+                throw tinyExceptions_ns::Lexer_ns::Incomplete_statSequence_LexException(errMsg);
+                break;
+            case numExceptions::Incomplete_FACTOR_LexException:
+                throw tinyExceptions_ns::Lexer_ns::Incomplete_FACTOR_LexException(errMsg);
+                break;
+            case numExceptions::Incomplete_TERM_LexException:
+                throw tinyExceptions_ns::Lexer_ns::Incomplete_TERM_LexException(errMsg);
+                break;
+            case numExceptions::Incomplete_EXPRESSION_LexException:
+                throw tinyExceptions_ns::Lexer_ns::Incomplete_EXPRESSION_LexException(errMsg);
+                break;
+            case numExceptions::Incomplete_VAR_LexException:
+                throw tinyExceptions_ns::Lexer_ns::Incomplete_VAR_LexException(errMsg);
+                break;
+            case numExceptions::Incomplete_MAIN_LexException:
+                throw tinyExceptions_ns::Lexer_ns::Incomplete_MAIN_LexException(errMsg);
+                break;
+            case numExceptions::Incomplete_Token_LexException:
+                throw tinyExceptions_ns::Lexer_ns::Incomplete_Token_LexException(errMsg);
+                break;
+        }
+    };
 };
 
 

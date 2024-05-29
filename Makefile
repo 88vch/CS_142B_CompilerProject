@@ -12,10 +12,15 @@ EXECUTABLE = $(BINDIR)/tiny
 
 .PHONY: all clean
 
-all: tiny
+all: dir tiny
 
 tiny: $(SOURCES)
 	$(CC) $(CFLAGS) $(SOURCES) -o $(EXECUTABLE)
 
+dir:
+	@mkdir -p $(BINDIR)
+	@echo @mkdir $(BINDIR)
+
 clean:
+	@rm -rf $(BINDIR)
 	@echo @rm -rf $(BINDIR)

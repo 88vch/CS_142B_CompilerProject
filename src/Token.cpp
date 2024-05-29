@@ -29,6 +29,9 @@ std::string TOKEN_TYPE_toString(TOKEN_TYPE token) {
         case TOKEN_TYPE::PRINT:
             ret = "PRINT";
             break;
+        case TOKEN_TYPE::VAR:
+            ret = "VAR";
+            break;
         case TOKEN_TYPE::LET:
             ret = "LET";
             break;
@@ -49,6 +52,9 @@ std::string TOKEN_TYPE_toString(TOKEN_TYPE token) {
             break;
         case TOKEN_TYPE::CLOSE_CURLY:
             ret = "CLOSE_CURLY";
+            break;
+        case TOKEN_TYPE::COMMA:
+            ret = "COMMA";
             break;
         case TOKEN_TYPE::IF:
             ret = "IF";

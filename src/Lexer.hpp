@@ -5,10 +5,9 @@
 #include <sstream>
 #include <vector>
 
-#include "tinyExceptions.hpp"
 #include "Token.hpp"
-
 #define DEBUG
+
 
 // namespace OPERATION {
 //     const char PLUS = '+';
@@ -17,7 +16,6 @@
 //     const char DIVIDE = '/';
 // };
 
-using namespace tinyExceptions::Lexer;
 
 class Lexer {
 public:
@@ -64,16 +62,12 @@ private:
         while ((c = next()) != nullptr && std::isspace(*c)) { consume(); }
     }
 
-    std::string get_deterministic_token(int characters, std::string expected) {
+    // simply returns the next [characters] chars or [""] if EOF
+    std::string get_deterministic_token(int characters) {
         char *c;
         for (int i = 0; i < characters; i++) {
-            if (((c = next()) != nullptr) && (std::isalpha(*(c = next())))) {
-                this->buff.push_back(std::tolower(consume()));
-            } else if ((c = next()) == nullptr) {
-                std::stringstream ss;
-                ss << "ifStatement Expected `" << expected << "`. Got: EOF.";
-                throw Incomplete_Token_LexException(ss.str());
-            }
+            if (((c = next()) != nullptr) && (std::isalpha(*(c = next())))) { this->buff.push_back(std::tolower(consume())); } 
+            else if ((c = next()) == nullptr) { return ""; }
         }
         std::string res = this->buff;
         this->buff.clear();
@@ -100,7 +94,7 @@ private:
     // TODO: configure a deterministic way to decide when the statement is done (bc it's a non strictly-necessary terminating `;`)
     void tokenize_statSequence();
     
-    void tokenize_var();
+    void tokenize_varDecl();
     void tokenize_func();
     
     void tokenizer();

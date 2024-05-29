@@ -21,6 +21,7 @@ enum TOKEN_TYPE {
     CLOSE_PAREN,// [for expr's]
     OPEN_CURLY, // [for statSequence & functions]
     CLOSE_CURLY,// [for statSequence & functions]
+    COMMA,      // [for varDecl / formalParam / funcCall]
     IF,         // [IF-statement]
     THEN,       // [IF-statement clause 2]
     ELSE,       // [IF-statement branch 2]

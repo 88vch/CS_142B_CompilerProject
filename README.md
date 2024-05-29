@@ -85,3 +85,18 @@
     }
 varDecl = “var” indent { “,” ident } “;”
 - is [indent] misspelled to be [ident]???
+
+
+### Exception Errors (for ease of viewing)
+Incomplete_whileStatement_LexException
+Incomplete_ifStatement_LexException
+Incomplete_ASSIGNMENT_LexException
+Incomplete_IDENTIFIER_LexException
+Incomplete_statement_LexException
+Incomplete_statSequence_LexException
+Incomplete_FACTOR_LexException
+Incomplete_TERM_LexException
+Incomplete_EXPRESSION_LexException
+Incomplete_LET_LexException
+Incomplete_MAIN_LexException
+Incomplete_Token_LexException
