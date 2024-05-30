@@ -1,7 +1,6 @@
 ## Parser Tests
 ### Current Status: [REFACTORING]
 - [TODO]; 
-    - get a working Lexer
     - PARSE (should be a lot easier bc we now have tokens)
     - create a suite of tests to test P2 vzn
     - generate DOT from P2

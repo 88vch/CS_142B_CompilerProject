@@ -45,11 +45,9 @@ private:
         if (this->s_index < this->source_len) {
             const char *ret = &(source.at(s_index));
             return const_cast<char *>(ret); 
-        }
-        // else: EOF
-        // OG: return NULL;
-        // Revision: we should use pointers
-        // - replace w (char *) and return nullptr
+        } // else: EOF
+        // [OG]: return NULL;
+        // [Revision]: we should use pointers; replace w (char *) and return nullptr
         return nullptr;
     }
 
@@ -59,7 +57,7 @@ private:
 
     void skip_whitespace() {
         char *c;
-        while ((c = next()) != nullptr && (std::isspace(*c) || *c == '\n')) { consume(); }
+        while (((c = next()) != nullptr) && std::isspace(*c)) { consume(); }
     }
 
     // take a look, but don't advance the counter
