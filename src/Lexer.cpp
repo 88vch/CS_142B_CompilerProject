@@ -62,7 +62,10 @@ void Lexer::tokenize_ident() {
 }
 
 void Lexer::tokenize_factor() {
-    // factor = [ident] | [number] | ["(" expr ")"]
+    // factor = [ident] | [number] | ["(" expr ")"] | funcCall
+    #ifdef DEBUG    
+        std::cout << "in tokenize_factor(str=[" << this->source.substr(s_index) << "]); buff=[" << this->buff << "]" << std::endl;
+    #endif
     char *c;
     // std::string buff;
 
@@ -80,42 +83,35 @@ void Lexer::tokenize_factor() {
     // case: ["(" expression ")"]
     if (*c == '(') {
         // [1]: open paren
-        std::string open(1, *c);
-        tokens.push_back(TOKEN{ TOKEN_TYPE::OPEN_PAREN, open});
+        this->buff.push_back(consume());
+        tokens.push_back(TOKEN{ TOKEN_TYPE::OPEN_PAREN, this->buff });
+        this->buff.clear();
         
         // [2]: expr
         tokenize_expr();
+        #ifdef DEBUG
+            std::cout << "\treturned from tokenize_expr() in tokenize_factor(str=[" << this->source.substr(s_index) << "]); buff=[" << this->buff << "]" << std::endl;
+        #endif
 
         // [3]: close paren
         if ((c = next()) != nullptr) {
             if (*c == ')') {
-                std::string close(1, *c);
-                tokens.push_back(TOKEN{ TOKEN_TYPE::CLOSE_PAREN, close});
+                this->buff.push_back(consume());
+                tokens.push_back(TOKEN{ TOKEN_TYPE::CLOSE_PAREN, this->buff });
+                this->buff.clear();
             } else {
-                std::string err = "";
-                #ifdef DEBUG
-                    err += "(tokenize_factor(), line=99) ";
-                #endif
-                err += "FACTOR expected `)`. Got: " + std::to_string(*c) + ".";
+                std::string err = "FACTOR expected `)`. Got: " + std::to_string(*c) + ".";
                 throwException(numExceptions::Incomplete_FACTOR_LexException, err);
             }
         } else {
-            std::string err = "";
-            #ifdef DEBUG
-                err += "(tokenize_factor(), line=107) ";
-            #endif
-            err += "FACTOR expected `)`. Got: EOF.";
+            std::string err = "FACTOR expected `)`. Got: EOF.";
             throwException(numExceptions::Incomplete_FACTOR_LexException, err);
         }
 
     } else {
         // check if it's [ident] | [number]
         if ((c = next()) == nullptr) {
-            std::string err = "";
-            #ifdef DEBUG
-                err += "(tokenize_factor(), line=118) ";
-            #endif
-            err += "FACTOR expected `[ident] | [number]`. Got: EOF.";
+            std::string err = "FACTOR expected `[ident] | [number]`. Got: EOF.";
             throwException(numExceptions::Incomplete_FACTOR_LexException, err);
         }
         if (std::isalpha(*c)) { // ident
@@ -137,6 +133,10 @@ void Lexer::tokenize_factor() {
             while ((c = next()) != nullptr && std::isdigit(*c)) {
                 this->buff.push_back(consume());
             }
+            if ((c != nullptr) && (std::isalpha(*c))) {
+                std::string err = "FACTOR expected `[number]`. Got: " + this->buff + std::to_string(*c);
+                throwException(numExceptions::Incomplete_FACTOR_LexException, err);
+            }
             // insert token into [tokens]
             #ifdef DEBUG
                 std::cout << "\tpushing back token of type: " << TOKEN_TYPE_toString(TOKEN_TYPE::NUMBER) << std::endl;
@@ -145,9 +145,6 @@ void Lexer::tokenize_factor() {
             this->buff.clear();
         } else {
             std::string err = "";
-            #ifdef DEBUG
-                err += "(tokenize_factor(), line=151) ";
-            #endif
             err += "FACTOR expected `[ident] | [number]`. Got: EOF.";
             throwException(numExceptions::Incomplete_FACTOR_LexException, err);
         }
@@ -156,20 +153,23 @@ void Lexer::tokenize_factor() {
 }
 
 void Lexer::tokenize_term() {
+    #ifdef DEBUG    
+        std::cout << "in tokenize_term(str=[" << this->source.substr(s_index) << "]); buff=[" << this->buff << "]" << std::endl;
+    #endif
     char *c;
 
     // [1]: factor1
     skip_whitespace(); // [default]: auto in case there is whitespace
-    tokenize_factor(); // [assumption]: this function handles cleanup
+    tokenize_factor();
+    #ifdef DEBUG
+        std::cout << "\treturned from tokenize_factor() in tokenize_term(str=[" << this->source.substr(s_index) << "]); buff=[" << this->buff << "]" << std::endl;
+    #endif
     
     // [intermediate processing step]
     if ((c = next()) == nullptr) {
-        std::string err = "";
-        #ifdef DEBUG
-            err += "(tokenize_factor(), line=171) ";
-        #endif
-        err += "TERM expected a `[*, /]` operator. Got: EOF.";
-        throwException(numExceptions::Incomplete_TERM_LexException, err);
+        // std::string err = "TERM expected a `[*, /]` operator. Got: EOF.";
+        // throwException(numExceptions::Incomplete_TERM_LexException, err);
+        return; // not the [term]'s job to handle this exception, so simply propagate it back
     }
 
     // [2]: op
@@ -177,10 +177,14 @@ void Lexer::tokenize_term() {
     bool has_next_factor;
     if (*c == '*') {
         has_next_factor = true;
+        // insert token into [tokens]
+        this->buff.push_back(consume());
         tmp = TOKEN_TYPE::MULTIPLY;
     }
     else if (*c == '/') {
         has_next_factor = true;
+        // insert token into [tokens]
+        this->buff.push_back(consume());
         tmp = TOKEN_TYPE::DIVIDE;
     }
     else { has_next_factor = false; }
@@ -197,6 +201,9 @@ void Lexer::tokenize_term() {
         // [3b] factor2
         skip_whitespace();
         tokenize_factor();
+        #ifdef DEBUG
+            std::cout << "\treturned from tokenize_factor() in tokenize_term(str=[" << this->source.substr(s_index) << "]); buff=[" << this->buff << "]" << std::endl;
+        #endif
     }
 
     skip_whitespace();
@@ -205,21 +212,23 @@ void Lexer::tokenize_term() {
 
 // break down the [expression] into  it's proper tokens and insert into [tokens]
 void Lexer::tokenize_expr() { // checks will be handled later recursively by the factor
+    #ifdef DEBUG    
+        std::cout << "in tokenize_expr(str=[" << this->source.substr(s_index) << "]); buff=[" << this->buff << "]" << std::endl;
+    #endif
     char *c;
-    
     
     // [1]: term1
     skip_whitespace(); // [default]: auto in case there is whitespace
     tokenize_term(); // [assumption]: this function handles cleanup
-    
+    #ifdef DEBUG
+        std::cout << "\treturned from tokenize_term() in tokenize_expr(str=[" << this->source.substr(s_index) << "]); buff=[" << this->buff << "]" << std::endl;
+    #endif
+
     // [intermediate processing step]
     if ((c = next()) == nullptr) {
-        std::string err = "";
-        #ifdef DEBUG
-            err += "(tokenize_factor(), line=218) ";
-        #endif
-        err += "EXPRESSION expected a `+/-` operator. Got: EOF.";
-        throwException(numExceptions::Incomplete_EXPRESSION_LexException, err);
+        // std::string err = "EXPRESSION expected a `+/-` operator. Got: EOF.";
+        // throwException(numExceptions::Incomplete_EXPRESSION_LexException, err);
+        return; // not the [expr]'s job to handle this exception, so simply propagate it back
     }
 
     // [2]: op
@@ -249,7 +258,10 @@ void Lexer::tokenize_expr() { // checks will be handled later recursively by the
 
         // [3b] term2
         skip_whitespace();
-        tokenize_term();
+        tokenize_expr();
+        #ifdef DEBUG
+            std::cout << "\treturned from recursive tokenize_expr() in tokenize_expr(str=[" << this->source.substr(s_index) << "]); buff=[" << this->buff << "]" << std::endl;
+        #endif
     }
 
     skip_whitespace();
@@ -267,6 +279,7 @@ void Lexer::tokenize_returnStatement() {
     // if it threw an exception, 
     // - then we did not have an [expression] (optional arg)
     // we're only catching it so our Lexer can continue to tokenize!
+    skip_whitespace();
 }
 
 void Lexer::tokenize_relation() {
@@ -303,7 +316,7 @@ void Lexer::tokenize_whileStatement() {
     #ifdef DEBUG    
         std::cout << "in tokenize_whileStatement(str=[" << this->source.substr(s_index) << "]); buff=[" << this->buff << "]" << std::endl;
     #endif
-    // tokenize_relation(); // should return on [whitespace] (i guess??)
+    tokenize_relation(); // should return on [whitespace] (i guess??)
     skip_whitespace();
     this->buff = get_deterministic_token(2); // [DO]
     if (this->buff == "") {
@@ -534,24 +547,6 @@ void Lexer::tokenize_statSequence() {
     #endif
     char *c;
 
-    // // added this check because we're recursively calling this function now, so we must check at the start whether or not we're done tokenize_statSequence()
-    // if (((c = next()) != nullptr) && ((*c == '}') || (std::isalpha(*c)))) {
-    //     if ((!std::isalpha(*c)) && (this->mostRecentTokenType != TOKEN_TYPE::SEMICOLON)) { // iff the last token was not a `;` then we should deterministically add it
-    //         this->buff.push_back(';'); // let's make this a deterministic situation for our tokens (i.e. add the `;` if it doesn't exist)
-    //         #ifdef DEBUG
-    //             std::cout << "\tpushing back token of type: " << TOKEN_TYPE_toString(TOKEN_TYPE::SEMICOLON) << std::endl;
-    //         #endif
-    //         this->tokens.push_back(TOKEN{ TOKEN_TYPE::SEMICOLON, this->buff });
-    //         this->mostRecentTokenType = TOKEN_TYPE::SEMICOLON;
-    //         this->buff.clear();
-    //         return; // means that we're done with the current statSequence()
-    //     } else if (std::isalpha(*c)) {
-    //         this->buff = peek_deterministic_token(2);
-    //         if ((this->buff.compare("fi") == 0) || (this->buff.compare("od") == 0)) {
-    //             return;  // means that we're done with the current statSequence()
-    //         }
-    //     }
-    // }
     skip_whitespace();
     tokenize_statement(); // should return on ";" (optional for terminating); we're going to push a ';' on termination regardless (for easy parsing later)
     #ifdef DEBUG
@@ -582,8 +577,19 @@ void Lexer::tokenize_statSequence() {
                 #endif
                 if (this->buff.compare("el") == 0) {
                     this->buff = peek_deterministic_token(4);
-                    if (this->buff.compare("else") == 0) { this->buff.clear(); return; }
+                    if (this->buff.compare("else") == 0) { 
+                        if (this->mostRecentTokenType != TOKEN_TYPE::SEMICOLON) {
+                            this->buff = ";";
+                            this->tokens.push_back(TOKEN{ TOKEN_TYPE::SEMICOLON, this->buff });
+                        }
+                        this->buff.clear(); // clearing in case we assume buff has consumed this token
+                        return; 
+                    }
                 } else {
+                    if (this->mostRecentTokenType != TOKEN_TYPE::SEMICOLON) {
+                        this->buff = ";";
+                        this->tokens.push_back(TOKEN{ TOKEN_TYPE::SEMICOLON, this->buff });
+                    }
                     this->buff.clear(); // clearing in case we assume buff has consumed this token
                     return; 
                 }
@@ -622,8 +628,19 @@ void Lexer::tokenize_statSequence() {
                 #endif
                 if (this->buff.compare("el") == 0) {
                     this->buff = peek_deterministic_token(4);
-                    if (this->buff.compare("else") == 0) { this->buff.clear(); return; }
+                    if (this->buff.compare("else") == 0) {
+                        if (this->mostRecentTokenType != TOKEN_TYPE::SEMICOLON) { 
+                            this->buff = ";";
+                            this->tokens.push_back(TOKEN{ TOKEN_TYPE::SEMICOLON, this->buff });
+                        }
+                        this->buff.clear(); // clearing in case we assume buff has consumed this token
+                        return; 
+                    }
                 } else {
+                    if (this->mostRecentTokenType != TOKEN_TYPE::SEMICOLON) {
+                        this->buff = ";";
+                        this->tokens.push_back(TOKEN{ TOKEN_TYPE::SEMICOLON, this->buff });
+                    }
                     this->buff.clear(); // clearing in case we assume buff has consumed this token
                     return; 
                 }

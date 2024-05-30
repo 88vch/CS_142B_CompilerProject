@@ -3,21 +3,33 @@ main
 var a1, a2, asdfjkl; 
 {
 
+let a2 <- 3204;
+let a1 <- 8;
 
-let a2 <- 3;
-let a1 <- 3;
-
-
-if 3 == a2 
-then 
-    if a1 < 1 then 
-        let a2 <- 6;
-    else
-        let a1 <- 3 
+while 12345 == a2 do
+    if 3 == a2 then 
+        if a1 < 1 then 
+            let a2 <- 6;
+            if a1 < 1 then 
+                let a2 <- 666666;
+            else
+                let a1 <- 333333
+            fi;
+            let a2 <- 99999
+        else
+            let a1 <- 3 
+        fi;
+        return ;
+        let a2 <- 8
+    else 
+        let a2 <- 5;
+        if a1 > 3 then 
+            let a2 <- 111111;
+        else
+            let a1 <- a2 + 2 * (a2 - 3000) + 50000  / 80
+        fi 
     fi 
-else 
-    let a2 <- 6;
-fi 
+od
 
 }
 .
