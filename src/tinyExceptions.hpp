@@ -7,6 +7,7 @@
 
 namespace tinyExceptions_ns {
     enum numExceptions {
+        Incomplete_relation_LexException,
         Incomplete_whileStatement_LexException, 
         Incomplete_ifStatement_LexException, 
         Incomplete_ASSIGNMENT_LexException, 
@@ -23,6 +24,15 @@ namespace tinyExceptions_ns {
 
 
     namespace Lexer_ns {
+        class Incomplete_relation_LexException : public std::exception {
+            public:
+                Incomplete_relation_LexException(const std::string &err) : msg(err) { }
+                // Override the what() function to return the error message
+                const char* what() const noexcept override { return msg.c_str(); }
+            private:
+                std::string msg;
+        }; 
+
         class Incomplete_whileStatement_LexException : public std::exception {
             public:
                 Incomplete_whileStatement_LexException(const std::string &err) : msg(err) { }
@@ -137,6 +147,9 @@ namespace tinyExceptions_ns {
 
     void throwException(numExceptions eType, std::string errMsg) {
         switch (eType) {
+            case numExceptions::Incomplete_relation_LexException:
+                throw tinyExceptions_ns::Lexer_ns::Incomplete_relation_LexException(errMsg);
+                break;
             case numExceptions::Incomplete_whileStatement_LexException:
                 throw tinyExceptions_ns::Lexer_ns::Incomplete_whileStatement_LexException(errMsg);
                 break;

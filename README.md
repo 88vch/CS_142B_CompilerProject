@@ -10,6 +10,8 @@
     - get a working warmup P2 vzn
     - create a suite of tests to test P2 vzn
     - generate DOT from P2
+- [NOTE]: 
+    - [05/29/2024]: ignoreing func for now (trying to get every other part of this project)
 ##### NOTE: this branch should NEVER be merged with main! This branch was created specifically for testing.
 
 

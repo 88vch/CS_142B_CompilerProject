@@ -12,7 +12,6 @@ std::vector<TOKEN> Lexer::lex() {
     try {
         tokenizer();
         std::cout << "Done Tokenizing." << std::endl;
-        return this->tokens;
     } catch (const std::out_of_range &e) {
         std::cerr << "Out of range error: " << e.what() << std::endl;
     } catch (const Lexer_ns::Incomplete_FACTOR_LexException &e) {
@@ -27,9 +26,9 @@ std::vector<TOKEN> Lexer::lex() {
         std::cerr << "Lexer Main Error: " << e.what() << std::endl;
     } catch (...) {
         // Catch-all block for all other exceptions
-        std::cerr << "Caught an unknown exception (which occurred during Lexing)." << std::endl;
+        std::cerr << "Caught an unknown exception (which occurred during Lexing)(Lexing stopped at error)." << std::endl;
     }
-    return {};
+    return this->tokens;
 }
 
 
@@ -51,6 +50,7 @@ void Lexer::tokenize_ident() {
             std::cout << "\tpushing back token of type: " << TOKEN_TYPE_toString(TOKEN_TYPE::IDENTIFIER) << std::endl;
         #endif
         this->tokens.push_back(TOKEN{ TOKEN_TYPE::IDENTIFIER, this->buff });
+        this->mostRecentTokenType = TOKEN_TYPE::IDENTIFIER;
         this->buff.clear();
     } else {
         std::string err = "Identifier Expected to start with a letter [a-z;A-Z]. Got: ";
@@ -216,7 +216,7 @@ void Lexer::tokenize_expr() { // checks will be handled later recursively by the
     if ((c = next()) == nullptr) {
         std::string err = "";
         #ifdef DEBUG
-            err += "(tokenize_factor(), line=221) ";
+            err += "(tokenize_factor(), line=218) ";
         #endif
         err += "EXPRESSION expected a `+/-` operator. Got: EOF.";
         throwException(numExceptions::Incomplete_EXPRESSION_LexException, err);
@@ -257,6 +257,9 @@ void Lexer::tokenize_expr() { // checks will be handled later recursively by the
 }
 
 void Lexer::tokenize_returnStatement() {
+    #ifdef DEBUG    
+        std::cout << "in tokenize_returnStatement(str=[" << this->source.substr(s_index) << "]); buff=[" << this->buff << "]" << std::endl;
+    #endif
     // if we do get an expression, 
     // - we're going to handle it in the respective function either way so nothing needs to be done here either 
     try { tokenize_expr(); } 
@@ -266,7 +269,34 @@ void Lexer::tokenize_returnStatement() {
     // we're only catching it so our Lexer can continue to tokenize!
 }
 
+void Lexer::tokenize_relation() {
+    #ifdef DEBUG    
+        std::cout << "in tokenize_relationStatement(str=[" << this->source.substr(s_index) << "]); buff=[" << this->buff << "]" << std::endl;
+    #endif
+    tokenize_expr();
+    skip_whitespace();
+
+
+    char *c;
+    while (((c = next()) != nullptr) && (*c != ' ')) { this->buff.push_back(consume()); }
+    this->tokens.push_back(TOKEN{ TOKEN_TYPE::REL_OP, this->buff });
+    this->mostRecentTokenType = TOKEN_TYPE::REL_OP;
+    this->buff.clear();
+
+
+    if (c == nullptr) {
+        std::string err = "relationStatement Expected another `EXPRESSION`. Got: EOF.";
+        throwException(numExceptions::Incomplete_relation_LexException, err);
+    }
+    skip_whitespace();
+    tokenize_expr();
+    skip_whitespace();
+}
+
 void Lexer::tokenize_whileStatement() {
+    #ifdef DEBUG    
+        std::cout << "in tokenize_whileStatement(str=[" << this->source.substr(s_index) << "]); buff=[" << this->buff << "]" << std::endl;
+    #endif
     // tokenize_relation(); // should return on [whitespace] (i guess??)
     skip_whitespace();
     this->buff = get_deterministic_token(2); // [DO]
@@ -280,6 +310,7 @@ void Lexer::tokenize_whileStatement() {
     }
 
     this->tokens.push_back(TOKEN{ TOKEN_TYPE::DO, this->buff });
+    this->mostRecentTokenType = TOKEN_TYPE::DO;
     this->buff.clear();
 
     skip_whitespace();
@@ -297,12 +328,16 @@ void Lexer::tokenize_whileStatement() {
     }
 
     this->tokens.push_back(TOKEN{ TOKEN_TYPE::OD, this->buff });
+    this->mostRecentTokenType = TOKEN_TYPE::OD;
     this->buff.clear();
 }
 
 
 void Lexer::tokenize_ifStatement() {
-    // tokenize_relation(); // should return on [whitespace] (i guess??)
+    #ifdef DEBUG    
+        std::cout << "in tokenize_ifStatement(str=[" << this->source.substr(s_index) << "]); buff=[" << this->buff << "]" << std::endl;
+    #endif
+    tokenize_relation(); // should return on [whitespace] (i guess??)
     skip_whitespace();
     
     char *c;
@@ -317,6 +352,7 @@ void Lexer::tokenize_ifStatement() {
     }
 
     this->tokens.push_back(TOKEN{ TOKEN_TYPE::THEN, this->buff });
+    this->mostRecentTokenType = TOKEN_TYPE::THEN;
     this->buff.clear();
 
     skip_whitespace();
@@ -329,6 +365,7 @@ void Lexer::tokenize_ifStatement() {
 
     if (this->buff.compare(TOKEN_TYPE_toStringLower(TOKEN_TYPE::ELSE)) == 0) {
         this->tokens.push_back(TOKEN{ TOKEN_TYPE::ELSE, this->buff });
+        this->mostRecentTokenType = TOKEN_TYPE::ELSE;
         this->buff.clear();
 
         skip_whitespace();
@@ -341,6 +378,7 @@ void Lexer::tokenize_ifStatement() {
         }
         if (this->buff.compare(TOKEN_TYPE_toStringLower(TOKEN_TYPE::FI)) == 0) {
             this->tokens.push_back(TOKEN{ TOKEN_TYPE::FI, this->buff });
+            this->mostRecentTokenType = TOKEN_TYPE::FI;
             this->buff.clear();
             // we've successfully tokenized the [ifStatement]
         } else {
@@ -349,6 +387,7 @@ void Lexer::tokenize_ifStatement() {
         }
     } else if (this->buff.compare(TOKEN_TYPE_toStringLower(TOKEN_TYPE::FI)) == 0) {
         this->tokens.push_back(TOKEN{ TOKEN_TYPE::FI, this->buff });
+        this->mostRecentTokenType = TOKEN_TYPE::FI;
         this->buff.clear();
         // we've successfully tokenized the [ifStatement]
     } else {
@@ -376,6 +415,7 @@ void Lexer::tokenize_assignment() { // already got first token "let"
             #endif
             this->buff.push_back(consume());
             this->tokens.push_back(TOKEN{ TOKEN_TYPE::ASSIGNMENT, this->buff });
+            this->mostRecentTokenType = TOKEN_TYPE::ASSIGNMENT;
             this->buff.clear();
         } else {
             std::string err = "Assignemnt Expected `<-`. Got: [" + std::to_string(*c) + "].";
@@ -409,41 +449,44 @@ void Lexer::tokenize_statement() {
     if (std::isalpha(*c)) { 
         this->buff.push_back(std::tolower(consume()));
         // while we have letters, push them into buffer
-        while (((c = next()) != nullptr)) {
-            if (std::isalpha(*c)) {
-                this->buff.push_back(std::tolower(consume()));
-            } else if (*c == ' ') {
-                skip_whitespace();
-                // we should have a token in the buffer now
-                if (buff.compare(TOKEN_TYPE_toStringLower(TOKEN_TYPE::LET)) == 0) {
-                    this->tokens.push_back(TOKEN{ TOKEN_TYPE::LET, buff });
-                    this->buff.clear();
-                    tokenize_assignment();
-                } else if (buff.compare(TOKEN_TYPE_toStringLower(TOKEN_TYPE::IF)) == 0) {
-                    this->tokens.push_back(TOKEN{ TOKEN_TYPE::IF, buff });
-                    this->buff.clear();
-                    tokenize_ifStatement();
-                } else if (buff.compare(TOKEN_TYPE_toStringLower(TOKEN_TYPE::WHILE)) == 0) {
-                    this->tokens.push_back(TOKEN{ TOKEN_TYPE::WHILE, buff });
-                    this->buff.clear();
-                    tokenize_whileStatement();
-                } else if (buff.compare(TOKEN_TYPE_toStringLower(TOKEN_TYPE::RETURN)) == 0) {
-                    this->tokens.push_back(TOKEN{ TOKEN_TYPE::RETURN, buff });
-                    this->buff.clear();
-                    tokenize_returnStatement();
-                } else {
-                    std::string err = "Invalid statement! Expected { assignment | funcCall3 | ifStatement | whileStatement | returnStatement }. Got: " + this->buff + ".";
-                    throwException(numExceptions::Incomplete_statement_LexException, err);
-                }
-                break; // exit when we have finished tokenizing the statement
-            }
+        while ((((c = next()) != nullptr)) && (*c != ' ')) {
+            if (std::isalpha(*c)) { this->buff.push_back(std::tolower(consume())); } 
         } 
 
-
+        
+        if (*c == ' ') {
+            skip_whitespace();
+            // we should have a token in the buffer now
+            if (buff.compare(TOKEN_TYPE_toStringLower(TOKEN_TYPE::LET)) == 0) {
+                this->tokens.push_back(TOKEN{ TOKEN_TYPE::LET, this->buff });
+                this->mostRecentTokenType = TOKEN_TYPE::LET;
+                this->buff.clear();
+                tokenize_assignment();
+            } else if (buff.compare(TOKEN_TYPE_toStringLower(TOKEN_TYPE::IF)) == 0) {
+                this->tokens.push_back(TOKEN{ TOKEN_TYPE::IF, this->buff });
+                this->mostRecentTokenType = TOKEN_TYPE::IF;
+                this->buff.clear();
+                tokenize_ifStatement();
+            } else if (buff.compare(TOKEN_TYPE_toStringLower(TOKEN_TYPE::WHILE)) == 0) {
+                this->tokens.push_back(TOKEN{ TOKEN_TYPE::WHILE, this->buff });
+                this->mostRecentTokenType = TOKEN_TYPE::WHILE;
+                this->buff.clear();
+                tokenize_whileStatement();
+            } else if (buff.compare(TOKEN_TYPE_toStringLower(TOKEN_TYPE::RETURN)) == 0) {
+                this->tokens.push_back(TOKEN{ TOKEN_TYPE::RETURN, this->buff });
+                this->mostRecentTokenType = TOKEN_TYPE::RETURN;
+                this->buff.clear();
+                tokenize_returnStatement();
+            } else {
+                std::string err = "Invalid statement! Expected { assignment | funcCall3 | ifStatement | whileStatement | returnStatement }. Got: " + this->buff + ".";
+                throwException(numExceptions::Incomplete_statement_LexException, err);
+            }
+        }
         if (c == nullptr) {
             std::string err = "End of statement Expected `;`. Got: " + std::to_string(*c) + ".";
             throwException(numExceptions::Incomplete_statement_LexException, err);
         }
+        skip_whitespace();
     } else if (*c != '}') {
         // end of statement [ `;` | `}` ]
         // - let statSequence() handle [end of statement]
@@ -470,51 +513,34 @@ void Lexer::tokenize_statSequence() {
     char *c;
     if (((c = next()) != nullptr)) {
         if (*c == ';') {
-            #ifdef DEBUG    
-                std::cout << "in tokenize_statSequence(str=[" << this->source.substr(s_index) << "]); buff=[" << this->buff << "]" << std::endl;
+            #ifdef DEBUG
+                std::cout << "after tokenize_statement() in tokenize_statSequence(str=[" << this->source.substr(s_index) << "]); buff=[" << this->buff << "]" << std::endl;
                 std::cout << "\tpushing back token of type: " << TOKEN_TYPE_toString(TOKEN_TYPE::SEMICOLON) << std::endl;
             #endif
             this->buff.push_back(consume());
             this->tokens.push_back(TOKEN{ TOKEN_TYPE::SEMICOLON, this->buff });
+            this->mostRecentTokenType = TOKEN_TYPE::SEMICOLON;
             this->buff.clear();
-        } else if ((std::isalnum(*c)) || (*c == '}')) {
-            #ifdef DEBUG    
-                std::cout << "in tokenize_statSequence(str=[" << this->source.substr(s_index) << "]); buff=[" << this->buff << "]" << std::endl;
+            return tokenize_statSequence();
+        } else if ((*c == '}') || (std::isalnum(*c))) {
+            #ifdef DEBUG
+                std::cout << "about to exit: in tokenize_statSequence(str=[" << this->source.substr(s_index) << "]); buff=[" << this->buff << "]" << std::endl;
             #endif
             // if (*c == '}'): indicates end of [main] [computation] (we let [tokenize()] handle this)
                 // if we get another char that isn't `;`, we can assume that the most recent statement was the last statement in this statSequence (since it may not necessarily return a ;)
-            // let's make this a deterministic situation for our tokens (i.e. add the `;` if it doesn't exist)
-            this->buff.push_back(';');
-            #ifdef DEBUG    
-                std::cout << "\tpushing back token of type: " << TOKEN_TYPE_toString(TOKEN_TYPE::SEMICOLON) << std::endl;
-            #endif
-            this->tokens.push_back(TOKEN{ TOKEN_TYPE::SEMICOLON, this->buff });
-            this->buff.clear();
+            if ((*c == '}') && this->mostRecentTokenType != TOKEN_TYPE::SEMICOLON) { // iff the last token was not a `;` then we should deterministically add it
+                this->buff.push_back(';'); // let's make this a deterministic situation for our tokens (i.e. add the `;` if it doesn't exist)
+                #ifdef DEBUG
+                    std::cout << "\tpushing back token of type: " << TOKEN_TYPE_toString(TOKEN_TYPE::SEMICOLON) << std::endl;
+                #endif
+                this->tokens.push_back(TOKEN{ TOKEN_TYPE::SEMICOLON, this->buff });
+                this->mostRecentTokenType = TOKEN_TYPE::SEMICOLON;
+                this->buff.clear();
+            }
             skip_whitespace();
             return; // no need to continue tokenizing "statements" if we've already reached the end
         }
-    }
-
-    while (((c = next()) != nullptr) && (*(c = next()) != '}')) {
-        skip_whitespace();
-        tokenize_statement(); // expected `;` return [refer to TODO]
-        if (((c = next()) != nullptr)) {
-            if (*c == ';') {
-                this->buff.push_back(consume());
-                this->tokens.push_back(TOKEN{ TOKEN_TYPE::SEMICOLON, this->buff });
-                this->buff.clear();
-            } else if (std::isalnum(*c)) {
-                // if we get another char that isn't `;`, we can assume that the most recent statement was the last statement in this statSequence (since it may not necessarily return a ;)
-                // let's make this a deterministic situation for our tokens
-                this->buff.push_back(';');
-                this->tokens.push_back(TOKEN{ TOKEN_TYPE::SEMICOLON, this->buff });
-                this->buff.clear();
-                break;
-            }
-        }
-    }
-
-    if (c == nullptr) {        
+    } else { // [c = next() == nullptr]
         std::string err = "End of statSequence Expected `}`. Got: EOF.";
         throwException(numExceptions::Incomplete_statSequence_LexException, err);
     }
@@ -533,6 +559,7 @@ void Lexer::tokenize_varDecl() {
         if (*c == ',') {
             this->buff.push_back(consume());
             this->tokens.push_back(TOKEN{ TOKEN_TYPE::COMMA, this->buff });
+            this->mostRecentTokenType = TOKEN_TYPE::COMMA;
             this->buff.clear();
             
             skip_whitespace();
@@ -543,6 +570,7 @@ void Lexer::tokenize_varDecl() {
             #endif
             this->buff.push_back(consume());
             this->tokens.push_back(TOKEN{ TOKEN_TYPE::SEMICOLON, this->buff });
+            this->mostRecentTokenType = TOKEN_TYPE::SEMICOLON;
             this->buff.clear();
 
             skip_whitespace();
@@ -600,6 +628,7 @@ void Lexer::tokenizer() {
                 std::cout << "pushing back token of type: " << TOKEN_TYPE_toString(TOKEN_TYPE::VAR) << std::endl;
             #endif
             this->tokens.push_back(TOKEN{ TOKEN_TYPE::VAR, this->buff });
+            this->mostRecentTokenType = TOKEN_TYPE::VAR;
             this->buff.clear();
             skip_whitespace();
             tokenize_varDecl();
@@ -611,6 +640,7 @@ void Lexer::tokenizer() {
                 std::cout << "pushing back token of type: " << TOKEN_TYPE_toString(TOKEN_TYPE::FUNCTION) << std::endl;
             #endif
             this->tokens.push_back(TOKEN{ TOKEN_TYPE::FUNCTION, this->buff });
+            this->mostRecentTokenType = TOKEN_TYPE::FUNCTION;
             this->buff.clear();
             skip_whitespace();
             tokenize_func();
@@ -636,6 +666,7 @@ void Lexer::tokenizer() {
         #endif
         this->buff.push_back(consume());
         this->tokens.push_back(TOKEN{ TOKEN_TYPE::OPEN_CURLY, this->buff });
+        this->mostRecentTokenType = TOKEN_TYPE::OPEN_CURLY;
         this->buff.clear();
         skip_whitespace();
 
@@ -648,6 +679,7 @@ void Lexer::tokenizer() {
             // - expected next char is last [.]
             this->buff.push_back(consume());
             this->tokens.push_back(TOKEN{ TOKEN_TYPE::CLOSE_CURLY, this->buff });
+            this->mostRecentTokenType = TOKEN_TYPE::CLOSE_CURLY;
             this->buff.clear();
             skip_whitespace();
 
@@ -658,6 +690,7 @@ void Lexer::tokenizer() {
                 #endif
                 this->buff.push_back(consume());
                 this->tokens.push_back(TOKEN{ TOKEN_TYPE::END_OF_FILE, this->buff });
+                this->mostRecentTokenType = TOKEN_TYPE::END_OF_FILE;
                 this->buff.clear();
             } else {
                 std::string err = "End of main Expected `.`; Got: ";

@@ -34,6 +34,7 @@ public:
     const std::string source;
     std::string buff;
     std::vector<TOKEN> tokens;
+    TOKEN_TYPE mostRecentTokenType;
 private:
     // we're not going to know the size/len of the file when we get it
     // const size_t BUFF_SIZE = 64; // keep const buff size
@@ -43,8 +44,7 @@ private:
     inline char* next() const {
         if (this->s_index < this->source_len) {
             const char *ret = &(source.at(s_index));
-            char *tmp = const_cast<char *>(ret);
-            return tmp;
+            return const_cast<char *>(ret); 
         }
         // else: EOF
         // OG: return NULL;
@@ -59,7 +59,7 @@ private:
 
     void skip_whitespace() {
         char *c;
-        while ((c = next()) != nullptr && std::isspace(*c)) { consume(); }
+        while ((c = next()) != nullptr && (std::isspace(*c) || *c == '\n')) { consume(); }
     }
 
     // simply returns the next [characters] chars or [""] if EOF
@@ -83,6 +83,7 @@ private:
     // break down the [expression] into  it's proper tokens and insert into [tokens]
     void tokenize_expr();
     void tokenize_returnStatement();
+    void tokenize_relation();
     void tokenize_whileStatement();
     void tokenize_ifStatement();
     void tokenize_assignment();

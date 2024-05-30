@@ -6,7 +6,7 @@
 
 #include "src/Lexer.hpp"
 
-std::string get_file_contents(std::string f) {
+std::string get_file_contents(const std::string &f) {
     // Open a file for reading
     std::ifstream file(f);
 
@@ -28,31 +28,46 @@ std::string get_file_contents(std::string f) {
     return buff;
 }
 
-// file: [tst/temp.ty]
-int main(int argc, char **argv) {
-    if (argc < 2) {
-        std::cerr << "Error: no input file." << std::endl;
-        exit(EXIT_FAILURE);
+bool write_file_contents(const std::string &f, const std::string& content) {
+    // Open the file for writing
+    std::ofstream file(f);
+
+    // Check if the file was opened successfully
+    if (!file.is_open()) {
+        std::cerr << "Failed to open the file." << std::endl;
+        return false; // Return false to indicate failure
     }
-    std::string inf = argv[1];
-    std::cout << "Got file: [" << inf << "]" << std::endl;
-    std::string contents = get_file_contents(inf);
+
+    // Write content to the file
+    file << content;
+
+    // Close the file
+    file.close();
+    return true; // Return true to indicate success
+}
+
+// input file: [tst/temp.ty]
+// input file: [tst/Lexer_results.txt]
+int main() {
+    const std::string in_f = "tst/temp.ty";
+    const std::string out_f = "tst/Lexer_results.txt";
+
+    std::string contents = get_file_contents(in_f);
 
     Lexer lexer = Lexer(contents);
     std::vector<TOKEN> tokens = lexer.lex();
 
-    std::cout << "Syntax;" << std::endl << "[TOKEN_TYPE]: \t[STRING]" << std::endl;
+    std::string out_str = "Syntax;\n[TOKEN_TYPE]: \t[STRING]\n";
     for (auto iit = tokens.begin(); iit != tokens.end(); iit++) {
-        if (TOKEN_TYPE_toString(iit->type).length() <= 3) { std::cout << "[" << TOKEN_TYPE_toString(iit->type) << "]: \t\t[" << iit->lexeme << "]" << std::endl; }
-        else { std::cout << "[" << TOKEN_TYPE_toString(iit->type) << "]: \t[" << iit->lexeme << "]" << std::endl; }
+        std::string tmp;
+        if (TOKEN_TYPE_toString(iit->type).length() <= 3) { tmp = "[" + TOKEN_TYPE_toString(iit->type) + "]: \t\t[" + iit->lexeme + "]\n"; }
+        else { tmp = "[" + TOKEN_TYPE_toString(iit->type) + "]: \t[" + iit->lexeme + "]\n"; }
+        out_str += tmp;
     }
 
-
-    // {
-    //     std::stringstream outfile_contents;
-    //     std::fstream
-    // }
-
+    bool res = write_file_contents(out_f, out_str);
+    if (res) { std::cout << "Results have successfully been written to: " << out_f << std::endl; }
+    else { std::cout << "Error occured when trying to write results!" << std::endl; }
 
     return 0;
 }

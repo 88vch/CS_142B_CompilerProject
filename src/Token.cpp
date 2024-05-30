@@ -41,6 +41,9 @@ std::string TOKEN_TYPE_toString(TOKEN_TYPE token) {
         case TOKEN_TYPE::EXPRESSION:
             ret = "EXPRESSION";
             break;
+        case TOKEN_TYPE::REL_OP:
+            ret = "REL_OP";
+            break;
         case TOKEN_TYPE::OPEN_PAREN:
             ret = "OPEN_PAREN";
             break;

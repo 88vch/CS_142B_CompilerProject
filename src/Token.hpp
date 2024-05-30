@@ -17,6 +17,7 @@ enum TOKEN_TYPE {
     LET,        // [LET]
     ASSIGNMENT, // [<-]
     EXPRESSION, // [math]
+    REL_OP,     // [relational operator (for comparison in statements)(if, while, etc...)]
     OPEN_PAREN, // [for expr's]
     CLOSE_PAREN,// [for expr's]
     OPEN_CURLY, // [for statSequence & functions]

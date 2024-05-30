@@ -1,0 +1,4 @@
+outlines the test that's happening in [temp.ty];
+
+main var a1, a2, asdfjkl; { let a2 <- 3; if 3 == a2 then let a2 <- 6; let a1 <- 3 fi}.
+- assuming [varDecl] works, testing [statSequence: statement]
