@@ -5,13 +5,19 @@ var a1, a2, asdfjkl;
 
 
 let a2 <- 3;
+let a1 <- 3;
 
 
 if 3 == a2 
 then 
-let a2 <- 6;
-let a1 <- 3 
-fi
+    if a1 < 1 then 
+        let a2 <- 6;
+    else
+        let a1 <- 3 
+    fi 
+else 
+    let a2 <- 6;
+fi 
 
 }
 .

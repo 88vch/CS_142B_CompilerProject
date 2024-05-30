@@ -62,6 +62,18 @@ private:
         while ((c = next()) != nullptr && (std::isspace(*c) || *c == '\n')) { consume(); }
     }
 
+    // take a look, but don't advance the counter
+    std::string peek_deterministic_token(int characters) {
+        std::string str = "";
+        size_t curr = s_index;
+        for (int i = 0; i < characters; i++) {
+            str += source.at(curr);
+            curr++;
+            if (curr >= source_len) { return ""; }
+        }
+        return str;
+    }
+
     // simply returns the next [characters] chars or [""] if EOF
     std::string get_deterministic_token(int characters) {
         char *c;

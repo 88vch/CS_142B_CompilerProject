@@ -1,17 +1,18 @@
 ## Parser Tests
 ### Current Status: [REFACTORING]
-- [RESUME]: 
-    - refactored [Lexer.hpp], 
-    - NEW: [Lexer.cpp] 
-        modified [tokenizer()]
-        created [tokenize_func()] & [tokenize_var()]
 - [TODO]; 
-    - [tokenize_statement()]: configure a deterministic way to decide when the statement is done (bc it's a non strictly-necessary terminating `;`)
-    - get a working warmup P2 vzn
+    - get a working Lexer
+    - PARSE (should be a lot easier bc we now have tokens)
     - create a suite of tests to test P2 vzn
     - generate DOT from P2
 - [NOTE]: 
-    - [05/29/2024]: ignoreing func for now (trying to get every other part of this project)
+    - [05/29/2024]: err: '\n' does not get treated as a separator between characters (but it should be!)
+    - [05/29/2024]: ignoreing [functions] for now (trying to get every other part of this project)
+- [MODIFICATIONS]: 
+    - refactored [Lexer.hpp], [Token.hpp], [tinyExceptions.hpp] 
+    - NEW: [Lexer.cpp] 
+        modified [tokenizer()]
+        created [tokenize_func()] & [tokenize_var()]
 ##### NOTE: this branch should NEVER be merged with main! This branch was created specifically for testing.
 
 

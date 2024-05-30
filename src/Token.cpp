@@ -69,7 +69,7 @@ std::string TOKEN_TYPE_toString(TOKEN_TYPE token) {
             ret = "ELSE";
             break;
         case TOKEN_TYPE::FI:
-            ret = "IF";
+            ret = "FI";
             break;
         case TOKEN_TYPE::WHILE:
             ret = "WHILE";

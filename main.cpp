@@ -60,7 +60,8 @@ int main() {
     std::string out_str = "Syntax;\n[TOKEN_TYPE]: \t[STRING]\n";
     for (auto iit = tokens.begin(); iit != tokens.end(); iit++) {
         std::string tmp;
-        if (TOKEN_TYPE_toString(iit->type).length() <= 3) { tmp = "[" + TOKEN_TYPE_toString(iit->type) + "]: \t\t[" + iit->lexeme + "]\n"; }
+        if (TOKEN_TYPE_toString(iit->type).length() <= 3) { tmp = "[" + TOKEN_TYPE_toString(iit->type) + "]: \t\t\t[" + iit->lexeme + "]\n"; }
+        else if (TOKEN_TYPE_toString(iit->type).length() <= 6) { tmp = "[" + TOKEN_TYPE_toString(iit->type) + "]: \t\t[" + iit->lexeme + "]\n"; }
         else { tmp = "[" + TOKEN_TYPE_toString(iit->type) + "]: \t[" + iit->lexeme + "]\n"; }
         out_str += tmp;
     }
