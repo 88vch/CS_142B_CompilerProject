@@ -22,6 +22,7 @@ Result: encapsulates all information we care about in the subtree of this ds
 - if theres any chance you could generate better code by waiting, then don't generate yet
 */
 
+
 struct res_n {
     Result *r;
     res_n *next;
