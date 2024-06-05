@@ -29,98 +29,90 @@ Rules to Draw a Parse Tree:
 
 Given [std::vector<Token>] return the corresponding parse tree
 */
-// parse tree symbols: [terminal || non-terminal]
-struct n_terminal {
-    /* 
-    the only terminals we have are: [
-        number, 
-        letter, 
-        op, relOp, 
-        semicolon, period,
-        keywords ex: [if | while | return | let | var | main | call | return | etc... ]
-    ]
-    */
-};
 
-struct n_non_terminal {
-    // could we js union all the nodes in the node class we created?
-
-};
-
-struct symbol_pt {
-    bool n_type; // [0] = terminal, [1] = non-terminal
-    union {
-        n_terminal *token_t;
-        n_non_terminal *token_nt;
-    } *data;
-};
-
-// Perform common subexpression elimination (CSE)
-void performCSE(std::vector<node_pt>& ir);
-// Print IR
-void printIR(const std::vector<node_pt>& ir);
+// // Perform common subexpression elimination (CSE)
+// void performCSE(std::vector<node_pt>& ir);
+// // Print IR
+// void printIR(const std::vector<node_pt>& ir);
 
 // to store values of registers needed [used for graph coloring later]
 // std::unordered_set<int, int> REGISTERS;
 
-// Parser class
+
 class Parser {
 public:
     Parser(const std::vector<TOKEN> &tokens) 
         : tokens(tokens)//, currentPos(0) 
     {
-        const_counter = -1;
-        instruction_counter = 1;
+        // const_counter = -1;
+        // instruction_counter = 1;
+
+        this->tokens_len = tokens.size();
     }
 
-
-    void parse_FIRSTPASS(); 
     // Get intermediate representation (IR)
-    std::vector<IRNode> getIR();
+    // std::vector<IRNode> getIR();
 
+    node::computation* parse(); // returns n_head of parse tree
+    size_t tokens_len, s_index = 0;
+    const std::vector<TOKEN> tokens;
 private:
-    int const_counter, instruction_counter;
-    std::vector<TOKEN> tokens;
+    // int const_counter, instruction_counter;
+    
     // size_t currentPos;
-    TOKEN currentToken;
-    std::unordered_map<std::string, std::string> symbolTable; // For copy propagation
-    std::vector<IRNode> ir; // Intermediate representation (IR)
+    // TOKEN currentToken;
+    // std::unordered_map<std::string, std::string> symbolTable; // For copy propagation
+    // std::vector<IRNode> ir; // Intermediate representation (IR)
 
-    // Helper function to get next token
-    TOKEN getNextToken();
+    // Helper function: does NOT consume char, only peeks() for next token
+    inline TOKEN* next() const {
+        if (this->s_index < this->tokens_len) {
+            const TOKEN *ret = &(this->tokens.at(s_index));
+            return const_cast<TOKEN *>(ret); 
+        } // else: EOF
+        // [OG]: return NULL;
+        // [Revision]: we should use pointers; replace w (char *) and return nullptr
+        return nullptr;
+    }
 
-    // Helper function to consume current token and advance to next token
-    void consume(TOKEN_TYPE expectedType);
+    // Helper function: to consume current token and advance to next token
+    inline TOKEN consume() noexcept {
+        return this->tokens.at(s_index++);
+    }
 
-    // Statement parsing functions
-    void parseStatement();
+    node::var* parse_var();
+    node::varDecl* parse_varDecl();
+    node::funcDecl* parse_funcDecl();
 
-    // Declaration parsing function
-    void parseDeclaration();
+    // // Statement parsing functions
+    // void parseStatement();
 
-    // Assignment parsing function
-    void parseAssignment();
+    // // Declaration parsing function
+    // void parseDeclaration();
 
-    // Print statement parsing function
-    void parsePrintStatement();
+    // // Assignment parsing function
+    // void parseAssignment();
 
-    // Expression parsing function
-    std::string parseExpression();
+    // // Print statement parsing function
+    // void parsePrintStatement();
 
-    // Term parsing function
-    std::string parseTerm();
+    // // Expression parsing function
+    // std::string parseExpression();
 
-    // Factor parsing function
-    std::string parseFactor();
+    // // Term parsing function
+    // std::string parseTerm();
 
-    // Helper function to generate IR for binary operations
-    std::string generateIRBinaryOperation(const std::string& left, const std::string& right, TOKEN_TYPE op);
+    // // Factor parsing function
+    // std::string parseFactor();
 
-    // Helper function to perform copy propagation
-    std::string propagateCopy(const std::string& result);
+    // // Helper function to generate IR for binary operations
+    // std::string generateIRBinaryOperation(const std::string& left, const std::string& right, TOKEN_TYPE op);
 
-    // Helper function to get string representation of token
-    std::string getTokenString(TOKEN_TYPE type);
+    // // Helper function to perform copy propagation
+    // std::string propagateCopy(const std::string& result);
+
+    // // Helper function to get string representation of token
+    // std::string getTokenString(TOKEN_TYPE type);
 };
 
 

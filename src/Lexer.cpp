@@ -622,6 +622,8 @@ void Lexer::tokenize_statSequence() {
             #endif
             // if (*c == '}'): indicates end of [main] [computation] (we let [tokenize()] handle this)
                 // if we get another char that isn't `;`, we can assume that the most recent statement was the last statement in this statSequence (since it may not necessarily return a ;)
+            
+            /* Removed: DETERMINISTIC statSeq END: adding `;` */
             if (this->mostRecentTokenType != TOKEN_TYPE::SEMICOLON) { // iff the last token was not a `;` then we should deterministically add it
                 this->buff.push_back(';'); // let's make this a deterministic situation for our tokens (i.e. add the `;` if it doesn't exist)
                 #ifdef DEBUG

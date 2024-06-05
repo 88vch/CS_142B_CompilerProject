@@ -116,6 +116,7 @@ enum TOKEN_TYPE {
     DO,         // [WHILE-statement body start]
     OD,         // [WHILE-statement body end]
     FUNCTION,   // [FUNCTION-statement] (might include VOID later)
+    CALL,       // [FUNCTION-CALL]
     RETURN,     // [RETURN-statement]
     MAIN,       // [start of file]
     END_OF_FILE // [end of file indicated by "."]
