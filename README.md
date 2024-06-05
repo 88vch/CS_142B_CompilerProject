@@ -1,10 +1,25 @@
 ## Parser Tests
 ### Current Status: [REFACTORING]
 - [TODO]; 
+    ###### figure out what SSA-based-IR means & how to do it
+    - [lexer.*]: updating tree, instead of storing tokens, we should be pushing struct [Result] up the parse tree
+        - whenever we see a [const || reg], were no longer generating code
+            rather, we're simply packaging up the result into a struct [Result]
+
+
+    - tokens to hashmap
+        - 2 tables [maps] to keep track of [terminal && non-terminal] symbols
+            key: value ==> symbol: hashmap_key (get hashmap_val; decode to get sym)
+
+
     - PARSE (should be a lot easier bc we now have tokens)
+        - map for tokens we've seen with the [num_past_times_seen] (to store the IR)
+        - go from tokens to SSA-instructions
+        - go from SSA-instructions to Result-blocks (super-imposed BBs)
     - create a suite of tests to test P2 vzn
     - generate DOT from P2
 - [NOTE]: 
+    - "The language tiny discourages but does not prohibit the use of uninitialized variables. When you detect such a case, your compiler should emit a warning, but should continue compiling while assigning an initial value of zero."
     - [05/29/2024]: err: '\n' does not get treated as a separator between characters (but it should be!)
     - [05/29/2024]: ignoreing [functions] for now (trying to get every other part of this project)
 - [MODIFICATIONS]: 

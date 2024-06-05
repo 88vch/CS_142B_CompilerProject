@@ -9,13 +9,6 @@
 #define DEBUG
 
 
-// namespace OPERATION {
-//     const char PLUS = '+';
-//     const char MINUS = '-';
-//     const char MULTIPLY = '*';
-//     const char DIVIDE = '/';
-// };
-
 
 class Lexer {
 public:
@@ -86,11 +79,17 @@ private:
 
     // return on whitespace, assume [next()] points to first char
     // NOTE: on return, must check [if (c == nullptr)]
+    #ifdef TOKENS
     void tokenize_ident();
     void tokenize_factor();
     void tokenize_term();
+    #endif
+    Result tokenize_factor();
+    Result tokenize_factor();
+    Result tokenize_term();
 
     // break down the [expression] into  it's proper tokens and insert into [tokens]
+    #ifdef TOKENS
     void tokenize_expr();
     void tokenize_returnStatement();
     void tokenize_relation();
@@ -98,17 +97,33 @@ private:
     void tokenize_ifStatement();
     void tokenize_assignment();
     void tokenize_statement();
+    #endif
+    Result tokenize_expr();
+    Result tokenize_returnStatement();
+    Result tokenize_relation();
+    Result tokenize_whileStatement();
+    Result tokenize_ifStatement();
+    Result tokenize_assignment();
+    Result tokenize_statement();
 
     // the [next()] character that is returned from this function should be `}`
     // assume [tokenize_statement()] will always return when the character is ';'
     // FOR NOW: assume [tokenize_statSequence()] will properly terminate even when we don't see the last `;`
     // TODO: configure a deterministic way to decide when the statement is done (bc it's a non strictly-necessary terminating `;`)
+    #ifdef TOKENS
     void tokenize_statSequence();
     
     void tokenize_varDecl();
     void tokenize_func();
     
     void tokenizer();
+    #endif
+    Result tokenize_statSequence();
+    
+    Result tokenize_varDecl();
+    Result tokenize_func();
+    
+    Result tokenizer();
 };
 
 #endif

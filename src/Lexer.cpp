@@ -61,7 +61,10 @@ void Lexer::tokenize_ident() {
     skip_whitespace();
 }
 
-void Lexer::tokenize_factor() {
+// [NEW];
+Result Lexer::tokenize_factor() {
+// void Lexer::tokenize_factor() {
+    Result x;
     // factor = [ident] | [number] | ["(" expr ")"] | funcCall
     #ifdef DEBUG    
         std::cout << "in tokenize_factor(str=[" << this->source.substr(s_index) << "]); buff=[" << this->buff << "]" << std::endl;
@@ -88,7 +91,10 @@ void Lexer::tokenize_factor() {
         this->buff.clear();
         
         // [2]: expr
-        tokenize_expr();
+        #ifdef TOKENS
+            tokenize_expr();
+        #endif
+        x = tokenize_expr();
         #ifdef DEBUG
             std::cout << "\treturned from tokenize_expr() in tokenize_factor(str=[" << this->source.substr(s_index) << "]); buff=[" << this->buff << "]" << std::endl;
         #endif
@@ -107,7 +113,6 @@ void Lexer::tokenize_factor() {
             std::string err = "FACTOR expected `)`. Got: EOF.";
             throwException(numExceptions::Incomplete_FACTOR_LexException, err);
         }
-
     } else {
         // check if it's [ident] | [number]
         if ((c = next()) == nullptr) {
@@ -124,9 +129,12 @@ void Lexer::tokenize_factor() {
             #ifdef DEBUG
                 std::cout << "\tpushing back token of type: " << TOKEN_TYPE_toString(TOKEN_TYPE::IDENTIFIER) << std::endl;
             #endif
-            tokens.push_back(TOKEN{ TOKEN_TYPE::IDENTIFIER, this->buff });
+            // tokens.push_back(TOKEN{ TOKEN_TYPE::IDENTIFIER, this->buff });
+            /* Result: if it's a identifier we can treat it as a variable */
+            x.kind = r_type::VARIABLE;
+            // x.data.address = Lookup(Tokenizer_id); [Question: why does prof do this? what is lookup()? what is tokenizer_id?]
+            x.data.address = 0; // temp assign to 0 atm [THIS SHOULD NOT HAPPEN LMFAO]
             this->buff.clear();
-            
         } else if (std::isdigit(*c)) { // number
             this->buff.push_back(consume());
 
@@ -141,7 +149,10 @@ void Lexer::tokenize_factor() {
             #ifdef DEBUG
                 std::cout << "\tpushing back token of type: " << TOKEN_TYPE_toString(TOKEN_TYPE::NUMBER) << std::endl;
             #endif
-            tokens.push_back(TOKEN{ TOKEN_TYPE::NUMBER, this->buff });
+            // tokens.push_back(TOKEN{ TOKEN_TYPE::NUMBER, this->buff });
+            /* Result: if it's a number we can treat it as a const */
+            x.kind = r_type::CONSTANT;
+            x.data.value = std::stoi(this->buff);
             this->buff.clear();
         } else {
             std::string err = "";
@@ -150,9 +161,12 @@ void Lexer::tokenize_factor() {
         }
     }
     skip_whitespace();
+    return x;
 }
 
-void Lexer::tokenize_term() {
+Result Lexer::tokenize_term() {
+// void Lexer::tokenize_term() {
+    Result x;
     #ifdef DEBUG    
         std::cout << "in tokenize_term(str=[" << this->source.substr(s_index) << "]); buff=[" << this->buff << "]" << std::endl;
     #endif
@@ -160,37 +174,30 @@ void Lexer::tokenize_term() {
 
     // [1]: factor1
     skip_whitespace(); // [default]: auto in case there is whitespace
-    tokenize_factor();
+    x = tokenize_factor();
     #ifdef DEBUG
         std::cout << "\treturned from tokenize_factor() in tokenize_term(str=[" << this->source.substr(s_index) << "]); buff=[" << this->buff << "]" << std::endl;
     #endif
-    
-    // [intermediate processing step]
-    if ((c = next()) == nullptr) {
-        // std::string err = "TERM expected a `[*, /]` operator. Got: EOF.";
-        // throwException(numExceptions::Incomplete_TERM_LexException, err);
-        return; // not the [term]'s job to handle this exception, so simply propagate it back
-    }
 
-    // [2]: op
-    TOKEN_TYPE tmp;
-    bool has_next_factor;
-    if (*c == '*') {
-        has_next_factor = true;
-        // insert token into [tokens]
-        this->buff.push_back(consume());
-        tmp = TOKEN_TYPE::MULTIPLY;
-    }
-    else if (*c == '/') {
-        has_next_factor = true;
-        // insert token into [tokens]
-        this->buff.push_back(consume());
-        tmp = TOKEN_TYPE::DIVIDE;
-    }
-    else { has_next_factor = false; }
+    while (((c = next()) != nullptr) && ((*c == '*') || (*c == '/'))) {
+        Result y;
+        // [2]: op
+        TOKEN_TYPE tmp;
+        bool has_next_factor;
+        if (*c == '*') {
+            has_next_factor = true;
+            // insert token into [tokens]
+            this->buff.push_back(consume());
+            tmp = TOKEN_TYPE::MULTIPLY;
+        }
+        else if (*c == '/') {
+            has_next_factor = true;
+            // insert token into [tokens]
+            this->buff.push_back(consume());
+            tmp = TOKEN_TYPE::DIVIDE;
+        }
 
-    // [3*] optional next term
-    if (has_next_factor) {
+        // [3*] assuming has (optional next term)
         #ifdef DEBUG
             std::cout << "\tpushing back token of type: " << TOKEN_TYPE_toString(tmp) << std::endl;
         #endif
@@ -200,18 +207,25 @@ void Lexer::tokenize_term() {
 
         // [3b] factor2
         skip_whitespace();
-        tokenize_factor();
+        y = tokenize_factor();
         #ifdef DEBUG
             std::cout << "\treturned from tokenize_factor() in tokenize_term(str=[" << this->source.substr(s_index) << "]); buff=[" << this->buff << "]" << std::endl;
         #endif
-    }
 
+        x = Compute(op, x, y); // tbd
+
+
+    }
     skip_whitespace();
+    return x;
     // END OF FUNCTION;
 }
 
 // break down the [expression] into  it's proper tokens and insert into [tokens]
-void Lexer::tokenize_expr() { // checks will be handled later recursively by the factor
+// [NEW];
+Result Lexer::tokenize_expr() {
+// void Lexer::tokenize_expr() { // checks will be handled later recursively by the factor
+    Result x;
     #ifdef DEBUG    
         std::cout << "in tokenize_expr(str=[" << this->source.substr(s_index) << "]); buff=[" << this->buff << "]" << std::endl;
     #endif
@@ -219,7 +233,7 @@ void Lexer::tokenize_expr() { // checks will be handled later recursively by the
     
     // [1]: term1
     skip_whitespace(); // [default]: auto in case there is whitespace
-    tokenize_term(); // [assumption]: this function handles cleanup
+    x = tokenize_term(); // [assumption]: this function handles cleanup
     #ifdef DEBUG
         std::cout << "\treturned from tokenize_term() in tokenize_expr(str=[" << this->source.substr(s_index) << "]); buff=[" << this->buff << "]" << std::endl;
     #endif
@@ -231,25 +245,24 @@ void Lexer::tokenize_expr() { // checks will be handled later recursively by the
         return; // not the [expr]'s job to handle this exception, so simply propagate it back
     }
 
-    // [2]: op
-    TOKEN_TYPE tmp;
-    bool has_next_term;
-    if (*c == '+') {
-        has_next_term = true;
-        // insert token into [tokens]
-        this->buff.push_back(consume());
-        tmp = TOKEN_TYPE::PLUS;
-    }
-    else if (*c == '-') {
-        has_next_term = true;
-        // insert token into [tokens]
-        this->buff.push_back(consume());
-        tmp = TOKEN_TYPE::MINUS;
-    }
-    else { has_next_term = false; }
-    
-    // [3*] optional next term
-    if (has_next_term) {
+    while (((c = next()) != nullptr) && ((*c == '+') || (*c == '-'))) {
+        Result y;
+        // [2]: op
+        TOKEN_TYPE tmp;
+        if (*c == '+') {
+            has_next_term = true;
+            // insert token into [tokens]
+            this->buff.push_back(consume());
+            tmp = TOKEN_TYPE::PLUS;
+        }
+        else if (*c == '-') {
+            has_next_term = true;
+            // insert token into [tokens]
+            this->buff.push_back(consume());
+            tmp = TOKEN_TYPE::MINUS;
+        }
+        
+        // [3*] assuming has (optional next term)
         #ifdef DEBUG
             std::cout << "\tpushing back token of type: " << TOKEN_TYPE_toString(tmp) << std::endl;
         #endif
@@ -258,13 +271,17 @@ void Lexer::tokenize_expr() { // checks will be handled later recursively by the
 
         // [3b] term2
         skip_whitespace();
-        tokenize_expr();
+        y = tokenize_expr();
         #ifdef DEBUG
             std::cout << "\treturned from recursive tokenize_expr() in tokenize_expr(str=[" << this->source.substr(s_index) << "]); buff=[" << this->buff << "]" << std::endl;
         #endif
+
+        x = Compute(op, x, y);
+
     }
 
     skip_whitespace();
+    return x;
     // END OF FUNCTION;
 }
 

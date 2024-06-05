@@ -12,19 +12,8 @@
 #include <sstream>
 #include <stack>
 
-// Token type enum
-enum TOKEN_TYPE {
-    IDENTIFIER, // var/func names
-    NUMBER,
-    PLUS,
-    MINUS,
-    MULTIPLY,
-    DIVIDE,
-    SEMICOLON,
-    PRINT,
-    LET,
-    END_OF_FILE
-};
+#include "Token.hpp"
+#include "DLinkedList.hpp"
 
 // Token struct
 struct TOKEN {
@@ -40,10 +29,6 @@ struct IRNode {
     std::string operand2;
 };
 
-// trim from start (in place)
-static inline void ltrim(std::string &s);
-// trim from end (in place)
-static inline void rtrim(std::string &s);
 
 // Perform common subexpression elimination (CSE)
 void performCSE(std::vector<IRNode>& ir);
@@ -56,9 +41,11 @@ void printIR(const std::vector<IRNode>& ir);
 // Parser class
 class Parser {
 public:
-    Parser(const std::string& source) 
-        : source(source)//, currentPos(0) 
+    Parser(const std::vector<TOKEN> &tokens) 
+        : tokens(tokens)//, currentPos(0) 
     {
+        const_counter = -1;
+        instruction_counter = 1;
     }
 
 
@@ -67,7 +54,8 @@ public:
     std::vector<IRNode> getIR();
 
 private:
-    std::string source;
+    int const_counter, instruction_counter;
+    std::vector<TOKEN> tokens;
     // size_t currentPos;
     TOKEN currentToken;
     std::unordered_map<std::string, std::string> symbolTable; // For copy propagation
