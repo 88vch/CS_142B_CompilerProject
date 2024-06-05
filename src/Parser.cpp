@@ -35,7 +35,7 @@ node::computation* Parser::parse() {
     if (curr == nullptr) { exit(EXIT_FAILURE); }
 
     // ASSUMPTION: if (curr->type == TOKEN_TYPE::MAIN) {
-    terminal_n *main_t = terminal_n{ curr->lexme; };
+    terminal_n *main_t = terminal_n{ curr->lexeme; };
     c->terminal_sym_main = *main_t;
     consume();
 
