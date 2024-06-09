@@ -84,10 +84,11 @@ private:
     void tokenize_factor();
     void tokenize_term();
     #endif
+    #ifdef RESULT
     Result tokenize_factor();
     Result tokenize_factor();
     Result tokenize_term();
-
+    #endif
     // break down the [expression] into  it's proper tokens and insert into [tokens]
     #ifdef TOKENS
     void tokenize_expr();
@@ -98,6 +99,7 @@ private:
     void tokenize_assignment();
     void tokenize_statement();
     #endif
+    #ifdef RESULT
     Result tokenize_expr();
     Result tokenize_returnStatement();
     Result tokenize_relation();
@@ -105,7 +107,7 @@ private:
     Result tokenize_ifStatement();
     Result tokenize_assignment();
     Result tokenize_statement();
-
+    #endif
     // the [next()] character that is returned from this function should be `}`
     // assume [tokenize_statement()] will always return when the character is ';'
     // FOR NOW: assume [tokenize_statSequence()] will properly terminate even when we don't see the last `;`
@@ -118,12 +120,14 @@ private:
     
     void tokenizer();
     #endif
+    #ifdef RESULT
     Result tokenize_statSequence();
     
     Result tokenize_varDecl();
     Result tokenize_func();
     
     Result tokenizer();
+    #endif
 };
 
 #endif
