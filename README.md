@@ -1,6 +1,11 @@
 ## Parser Tests
 ### Current Status: [REFACTORING]
 - [TODO]; 
+    -  modification for commit on new branch; working on here for the rest of the week. try to work incrementally so you don't get confused
+
+
+
+
     - get a working Lexer
     - PARSE (should be a lot easier bc we now have tokens)
     - create a suite of tests to test P2 vzn
