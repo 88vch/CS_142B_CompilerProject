@@ -1,19 +1,6 @@
 #include "Parser.hpp"
 
 
-// // trim from start (in place)
-// static inline void ltrim(std::string &s) {
-//     s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int ch) {
-//         return !std::isspace(ch);
-//     }));
-// }
-// // trim from end (in place)
-// static inline void rtrim(std::string &s) {
-//     s.erase(std::find_if(s.rbegin(), s.rend(), [](int ch) {
-//         return !std::isspace(ch);
-//     }).base(), s.end());
-// }
-
 
 // Function to perform common subexpression elimination (CSE)
 void performCSE(std::vector<IRNode>& ir) {
@@ -40,62 +27,174 @@ void printIR(const std::vector<IRNode>& ir) {
     }
 }
 
-
-void Parser::parse_FIRSTPASS() {
-    currentToken = getNextToken();
-    while (currentToken.type != END_OF_FILE) {
-        parseStatement();
-    }
-}
-
 // Get intermediate representation (IR)
 std::vector<IRNode> Parser::getIR() {
     return ir;
 }
 
-// TOKEN Parser::tokenize() {}
 
-// Helper function to get next token
-TOKEN Parser::getNextToken() {
-    // called: should run right after we consume current token
-    // ltrim() the string
-    // determine next TOKEN_TYPE
-    // create & return TOKEN
-    return TOKEN{ TOKEN_TYPE::END_OF_FILE, "" }; // stub (to compile)
-}
+// assume input file has no errors
+void Parser::parse_FIRSTPASS() {
+    node::computation *s;
+    this->curr = next(); // expected start: [main]
 
-// Helper function to consume current token and advance to next token
-void Parser::consume(TOKEN_TYPE expectedType) {
-    // Implementation omitted for brevity
-    int cutIdx = -1, i =0;
-    auto iit = this->source.begin();
-    while ((iit + i) != this->source.end() && cutIdx == -1) {
-        if (*iit != ' ') {
-            cutIdx = i;
-        }
-        i++;
+    if (this->curr->type == TOKEN_TYPE::MAIN) {
+        s->terminal_sym_main = this->curr;
+        consume();
+        this->curr = next();
+    } else {
+        fprintf(stderr, "expected computation to start with [MAIN]!\n");
+        exit(EXIT_FAILURE);
     }
-    if (expectedType == TOKEN_TYPE::END_OF_FILE) {}
+
+    if (this->curr->type == TOKEN_TYPE::VAR) {
+        s->varDecl = parse_varDecl(); // ends with `;` = end of varDecl (consume it in the func)
+        this->curr = next();
+    }
+    if (this->curr->type == TOKEN_TYPE::FUNCTION || 
+        this->curr->type == TOKEN_TYPE::VOID) {
+        s->funcDecl = parse_funcDecl(); // ends with `;` = end of funcDecl (consume it in the func)
+        this->curr = next();
+    }
+    
+    // if we cared about the parse tree, we'd keep the `{` and `}` like tokens, but we don't
+    // more so trying to go as fast as we can: direct Abstract Syntax Tree (AST)
+    if (this->curr->type == TOKEN_TYPE::OPEN_CURLY) {        
+        consume(); // `{`
+        s->statSeq = parse_statSeq();
+        consume(); // `}`
+    }
+    this->curr = next();
+    if (this->curr->type == TOKEN_TYPE::END_OF_FILE) {
+        s->terminal_sym_eof = this->curr;
+    }
+    
+    this->root = s; // head-node of AST
 }
+
+node::statSeq* Parser::parse_statSeq() {
+    node::statSeq *s;
+    s->head = parse_statement(); // ends with `;` = end of varDecl (consume it in the func)
+    // this->curr = next();
+
+    // // statSeq terminating tokens: [fi, od, else, }]
+    // if (this->curr->type == TOKEN_TYPE::FI || this->curr->type == TOKEN_TYPE::OD ||
+    //     this->curr->type == TOKEN_TYPE::ELSE || this->curr->type == TOKEN_TYPE::CLOSE_CURLY) {
+    //     return s;
+    // }
+    return s;
+}
+
+node::statement* Parser::parse_statement() {
+    node::statement *s;
+
+    // statement starting tokens: [let, call, if, while, return]
+    // assume after every statement has a semicolon
+    switch (this->curr->type) {
+        case TOKEN_TYPE::LET:
+            s->data = parse_assignment();
+            break;
+        case TOKEN_TYPE::CALL:
+            s->data = parse_funcCall();
+            break;
+        case TOKEN_TYPE::IF:
+            s->data = parse_ifStatement();
+            break;
+        case TOKEN_TYPE::WHILE:
+            s->data = parse_whileStatement();
+            break;
+        case TOKEN_TYPE::RETURN:
+            s->data = parse_return();
+            consume();
+            this->curr = next();
+            break;
+        default:
+            break;
+    };
+    s->terminal_sym_semi = next(); // assume `;` comes after all statements
+    consume();
+    this->curr = next();
+    if (this->curr->type == TOKEN_TYPE::LET || this->curr->type == TOKEN_TYPE::CALL ||
+        this->curr->type == TOKEN_TYPE::IF || this->curr->type == TOKEN_TYPE::WHILE || 
+        this->curr->type == TOKEN_TYPE::RETURN) {
+            // if we see any of these tokens then it means the next thing is another statement
+            s->next = parse_statement();
+    }
+}
+
+node::funcDecl* Parser::parse_funcDecl() {}
+
+node::varDecl* Parser::parse_varDecl() { // this->curr->type == TOKEN_TYPE::VAR
+    node::varDecl *s;
+    s->terminal_sym_var = this->curr;
+    consume(); // `VAR`
+    this->curr = next();
+    s->head = parse_vars();
+    consume(); // `;` = end of varDecl
+
+    return s;
+}
+
+node::var* Parser::parse_vars() { // this->curr->type == TOKEN_TYPE::IDENTIFIER
+    node::var *s;
+
+    s->ident_var = parse_ident();
+    this->curr = next();
+
+    // existence of a `,` indicates a next variable exists
+    if (this->curr->type == TOKEN_TYPE::COMMA) {
+        consume();
+        if (this->curr->type == TOKEN_TYPE::IDENTIFIER) {
+            s->next = parse_vars();
+        }
+    }
+    return s;
+}
+
+// whether or not this will actually work is another story
+node::ident* Parser::parse_ident() { // this->curr->type == TOKEN_TYPE::IDENTIFIER
+    return new node::ident(this->curr);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // Statement parsing functions
 void Parser::parseStatement() {
-    if (currentToken.type == LET) {
+    if (curr.type == LET) {
         Parser::parseDeclaration();
-    } else if (currentToken.type == IDENTIFIER) {
+    } else if (curr.type == IDENTIFIER) {
         Parser::parseAssignment();
-    } else if (currentToken.type == PRINT) {
+    } else if (curr.type == PRINT) {
         Parser::parsePrintStatement();
     } else {
-        std::cerr << "Syntax error: Unexpected token " << currentToken.lexeme << std::endl;
-        currentToken = Parser::getNextToken(); // Skip token
+        std::cerr << "Syntax error: Unexpected token " << curr.lexeme << std::endl;
+        curr = Parser::getNextToken(); // Skip token
     }
 }
 
 // Declaration parsing function
 void Parser::parseDeclaration() {
     consume(LET); // Consume 'let' keyword
-    std::string identifier = currentToken.lexeme;
+    std::string identifier = curr.lexeme;
     consume(IDENTIFIER); // Consume identifier
     // consume('='); // Consume '='
     std::string expressionResult = parseExpression();
@@ -105,7 +204,7 @@ void Parser::parseDeclaration() {
 
 // Assignment parsing function
 void Parser::parseAssignment() {
-    std::string identifier = currentToken.lexeme;
+    std::string identifier = curr.lexeme;
     consume(IDENTIFIER); // Consume identifier
     // consume('='); // Consume '='
     std::string expressionResult = parseExpression();
@@ -124,8 +223,8 @@ void Parser::parsePrintStatement() {
 // Expression parsing function
 std::string Parser::parseExpression() {
     std::string left = parseTerm();
-    while (currentToken.type == PLUS || currentToken.type == MINUS) {
-        TOKEN_TYPE op = currentToken.type;
+    while (curr.type == PLUS || curr.type == MINUS) {
+        TOKEN_TYPE op = curr.type;
         consume(op); // Consume operator
         std::string right = parseTerm();
         // Generate IR for addition or subtraction
@@ -139,8 +238,8 @@ std::string Parser::parseExpression() {
 // Term parsing function
 std::string Parser::parseTerm() {
     std::string left = parseFactor();
-    while (currentToken.type == MULTIPLY || currentToken.type == DIVIDE) {
-        TOKEN_TYPE op = currentToken.type;
+    while (curr.type == MULTIPLY || curr.type == DIVIDE) {
+        TOKEN_TYPE op = curr.type;
         consume(op); // Consume operator
         std::string right = parseFactor();
         // Generate IR for multiplication or division
@@ -153,18 +252,18 @@ std::string Parser::parseTerm() {
 
 // Factor parsing function
 std::string Parser::parseFactor() {
-    if (currentToken.type == IDENTIFIER || currentToken.type == NUMBER) {
-        std::string factorResult = currentToken.lexeme;
-        consume(currentToken.type); // Consume identifier or number
+    if (curr.type == IDENTIFIER || curr.type == NUMBER) {
+        std::string factorResult = curr.lexeme;
+        consume(curr.type); // Consume identifier or number
         return factorResult;
-    // } else if (currentToken.type == '(') {
+    // } else if (curr.type == '(') {
         // consume('('); // Consume '('
         std::string expressionResult = parseExpression();
         // consume(')'); // Consume ')'
         // return expressionResult;
     } else {
-        std::cerr << "Syntax error: Unexpected token " << currentToken.lexeme << std::endl;
-        currentToken = getNextToken(); // Skip token
+        std::cerr << "Syntax error: Unexpected token " << curr.lexeme << std::endl;
+        curr = getNextToken(); // Skip token
         return ""; // Return empty string for error recovery
     }
 }

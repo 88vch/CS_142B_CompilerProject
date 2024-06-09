@@ -2,7 +2,7 @@
 #define PARSER_HPP
 
 
-#include "Compiler.hpp"
+// #include "Compiler.hpp"
 #include <iostream>
 #include <string>
 #include <unordered_map>
@@ -12,25 +12,8 @@
 #include <sstream>
 #include <stack>
 
-// Token type enum
-enum TOKEN_TYPE {
-    IDENTIFIER, // var/func names
-    NUMBER,
-    PLUS,
-    MINUS,
-    MULTIPLY,
-    DIVIDE,
-    SEMICOLON,
-    PRINT,
-    LET,
-    END_OF_FILE
-};
-
-// Token struct
-struct TOKEN {
-    TOKEN_TYPE type;
-    std::string lexeme;
-};
+#include "Token.hpp"
+#include "Node.hpp"
 
 // IR Node struct
 struct IRNode {
@@ -39,11 +22,6 @@ struct IRNode {
     std::string operand1;
     std::string operand2;
 };
-
-// trim from start (in place)
-static inline void ltrim(std::string &s);
-// trim from end (in place)
-static inline void rtrim(std::string &s);
 
 // Perform common subexpression elimination (CSE)
 void performCSE(std::vector<IRNode>& ir);
@@ -56,56 +34,75 @@ void printIR(const std::vector<IRNode>& ir);
 // Parser class
 class Parser {
 public:
-    Parser(const std::string& source) 
-        : source(source)//, currentPos(0) 
+    Parser(const std::vector<TOKEN>& in) 
+        : source(std::move(in))//, currentPos(0) 
     {
+        this->source_len = this->source.size();
     }
 
 
     void parse_FIRSTPASS(); 
+
+    // OLD STUFF
     // Get intermediate representation (IR)
     std::vector<IRNode> getIR();
 
 private:
-    std::string source;
+    size_t source_len, s_index = 0;
+    const std::vector<TOKEN> source;
+    TOKEN *curr; // current token we're working with
+    node::computation *root;
+    
+    
+    // OLD STUFF
     // size_t currentPos;
-    TOKEN currentToken;
     std::unordered_map<std::string, std::string> symbolTable; // For copy propagation
     std::vector<IRNode> ir; // Intermediate representation (IR)
 
-    // Helper function to get next token
-    TOKEN getNextToken();
 
-    // Helper function to consume current token and advance to next token
-    void consume(TOKEN_TYPE expectedType);
+    // helper function modeled on: Lexer.hpp next() & consume()
+    // does NOT consume char, only peeks()
+    inline TOKEN* next() const {
+        if (this->s_index < this->source_len) {
+            const TOKEN *ret = &(source.at(s_index));
+            return const_cast<TOKEN *>(ret); 
+        }
+        // else: EOF
+        // OG: return NULL;
+        // Revision: we should use pointers
+        // - replace w (char *) and return nullptr
+        return nullptr;
+    }
+    inline TOKEN consume() noexcept { return source.at(s_index++); }
 
+    node::statSeq* parse_statSeq();
+    node::statement* parse_statement();
+    node::funcDecl* parse_funcDecl();
+    node::varDecl* parse_varDecl();
+    node::var* parse_vars();
+    node::ident* parse_ident();
+
+
+
+    // OLD STUFF
     // Statement parsing functions
     void parseStatement();
-
     // Declaration parsing function
     void parseDeclaration();
-
     // Assignment parsing function
     void parseAssignment();
-
     // Print statement parsing function
     void parsePrintStatement();
-
     // Expression parsing function
     std::string parseExpression();
-
     // Term parsing function
     std::string parseTerm();
-
     // Factor parsing function
     std::string parseFactor();
-
     // Helper function to generate IR for binary operations
     std::string generateIRBinaryOperation(const std::string& left, const std::string& right, TOKEN_TYPE op);
-
     // Helper function to perform copy propagation
     std::string propagateCopy(const std::string& result);
-
     // Helper function to get string representation of token
     std::string getTokenString(TOKEN_TYPE type);
 };

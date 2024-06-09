@@ -30,6 +30,8 @@ public:
 
 
     std::vector<TOKEN> lex();
+
+    
     size_t source_len, s_index = 0;
     const std::string source;
     std::string buff;
