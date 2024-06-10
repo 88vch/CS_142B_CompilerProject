@@ -31,20 +31,23 @@ the only terminals we have are: [
 //         n_non_terminal *token_nt;
 //     } *data;
 // };
-const std::unordered_set<int> statement_start_KEYWORDS {
-    TOKEN_TYPE::LET,
-    TOKEN_TYPE::CALL,
-    TOKEN_TYPE::IF,
-    TOKEN_TYPE::WHILE,
-    TOKEN_TYPE::RETURN
-};
 
-enum OP_TYPE {
-    PLUS=TOKEN_TYPE::PLUS,
-    MINUS=TOKEN_TYPE::MINUS,
-    MULTIPLY=TOKEN_TYPE::MULTIPLY,
-    DIVIDE=TOKEN_TYPE::DIVIDE
-};
+
+
+// const std::unordered_set<int> statement_start_KEYWORDS {
+//     TOKEN_TYPE::LET,
+//     TOKEN_TYPE::CALL,
+//     TOKEN_TYPE::IF,
+//     TOKEN_TYPE::WHILE,
+//     TOKEN_TYPE::RETURN
+// };
+
+// enum OP_TYPE {
+//     PLUS=TOKEN_TYPE::PLUS,
+//     MINUS=TOKEN_TYPE::MINUS,
+//     MULTIPLY=TOKEN_TYPE::MULTIPLY,
+//     DIVIDE=TOKEN_TYPE::DIVIDE
+// };
 
 // enum ROP_TYPE {
 //     PLUS=TOKEN_TYPE::PLUS,
@@ -78,28 +81,48 @@ namespace node {
     
 
     struct term {
-        union factor {
+        union {
         TOKEN *ident;
         num *num;
         expr *expr;
         funcCall *funcCall;
-        } *factorA;
+        } *factor_A;
         TOKEN *op; // [*, /]
-        term *next; // iff [op] != nullptr, then should a [next] exist! (with it's [factorA] being the [factorA] of the prior [term])
-        // term *prev; [not sure if needed; js in case]
+
+        // NEW
+        union {
+        TOKEN *ident;
+        num *num;
+        expr *expr;
+        funcCall *funcCall;
+        } *factor_B;
+        // OLD
+        // term *next; // iff [op] != nullptr, then should a [next] exist! (with it's [factorA] being the [factorA] of the prior [term])
+        // // term *prev; [not sure if needed; js in case]
+
+        term() {
+            factor_A = nullptr;
+            op = nullptr;
+            factor_B = nullptr;
+        }
     };
 
     struct expr {
         union {
             expr *e; // iff [op] != nullptr, then should a [next] exist! (with it's [termA] being the [termB] of the prior [expr])
             term *t;
-        } *A; // in fact, this will be the last [term] (in a series of consecutive expr's)
+        } *term_A; // in fact, this will be the last [term] (in a series of consecutive expr's)
         TOKEN *op; // [+, -]
         union {
             expr *e; // iff [op] != nullptr, then should a [next] exist! (with it's [termA] being the [termB] of the prior [expr])
             term *t;
-        } *B;
-        // expr *prev; [not sure if needed; js in case]
+        } *term_B;
+
+        expr() {
+            term_A = nullptr;
+            op = nullptr;
+            term_B = nullptr;
+        }
     };
 
     struct relation {

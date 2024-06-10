@@ -161,20 +161,20 @@ node::returnStat* Parser::parse_return() { // this->curr->type == TOKEN_TYPE::RE
 node::expr* Parser::parse_expr() { // this->curr = first token in expr
     node::expr *s;
 
-    s->A->t = parse_term();
+    s->term_A->t = parse_term();
     this->curr = next();
 
     // if an [OP] exists, then [termB] also exists! put it as [termA] of new [expr]!
     if (this->curr->type < 0) { // TOKEN_TYPE::[OP] < 0 (i.e. PLUS, MINUS, MULTIPLY, DIVIDE)
         node::expr *ss;
-        ss->A->t = s->A->t;
-        s->A->t = nullptr;
+        ss->term_A->t = s->term_A->t;
+        s->term_A->t = nullptr;
         ss->op = this->curr;
         consume();
 
-        s->A->e = ss;
+        s->term_A->e = ss;
         this->curr = next();
-        ss->B->e = parse_expr();
+        ss->term_B->e = parse_expr();
     } else {
         s->op = nullptr;
     }
