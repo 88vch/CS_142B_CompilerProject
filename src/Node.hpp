@@ -90,9 +90,15 @@ namespace node {
     };
 
     struct expr {
-        term *termA;
+        union {
+            expr *e; // iff [op] != nullptr, then should a [next] exist! (with it's [termA] being the [termB] of the prior [expr])
+            term *t;
+        } *A; // in fact, this will be the last [term] (in a series of consecutive expr's)
         TOKEN *op; // [+, -]
-        expr *next; // iff [op] != nullptr, then should a [next] exist! (with it's [termA] being the [termB] of the prior [expr])
+        union {
+            expr *e; // iff [op] != nullptr, then should a [next] exist! (with it's [termA] being the [termB] of the prior [expr])
+            term *t;
+        } *B;
         // expr *prev; [not sure if needed; js in case]
     };
 
