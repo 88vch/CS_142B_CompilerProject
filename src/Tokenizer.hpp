@@ -39,9 +39,9 @@ public:
     std::vector<TOKEN> tokens;
     TOKEN_TYPE mostRecentTokenType;
 private:
-    // we're not going to know the size/len of the file when we get it
-    // const size_t BUFF_SIZE = 64; // keep const buff size
-    // char* buff, overflow;
+    int getNext();
+    void number();
+    void identORkeyword();
 
     // does NOT consume char, only peeks()
     inline char* next() const {
@@ -50,70 +50,68 @@ private:
             return const_cast<char *>(ret); 
         }
         // else: EOF
-        // OG: return NULL;
-        // Revision: we should use pointers
-        // - replace w (char *) and return nullptr
         return nullptr;
     }
-
-    inline char consume() noexcept {
-        return source.at(s_index++);
-    }
+    inline char consume() noexcept { return source.at(s_index++); }
 
     void skip_whitespace() {
         char *c;
         while ((c = next()) != nullptr && (std::isspace(*c) || *c == '\n')) { consume(); }
     }
 
+
+
+
+    // OLD STUFF [Lexer.hpp]
     // take a look, but don't advance the counter
-    std::string peek_deterministic_token(int characters) {
-        std::string str = "";
-        size_t curr = s_index;
-        for (int i = 0; i < characters; i++) {
-            str += source.at(curr);
-            curr++;
-            if (curr >= source_len) { return ""; }
-        }
-        return str;
-    }
+    // std::string peek_deterministic_token(int characters) {
+    //     std::string str = "";
+    //     size_t curr = s_index;
+    //     for (int i = 0; i < characters; i++) {
+    //         str += source.at(curr);
+    //         curr++;
+    //         if (curr >= source_len) { return ""; }
+    //     }
+    //     return str;
+    // }
 
-    // simply returns the next [characters] chars or [""] if EOF
-    std::string get_deterministic_token(int characters) {
-        char *c;
-        for (int i = 0; i < characters; i++) {
-            if (((c = next()) != nullptr) && (std::isalpha(*(c = next())))) { this->buff.push_back(std::tolower(consume())); } 
-            else if ((c = next()) == nullptr) { return ""; }
-        }
-        std::string res = this->buff;
-        this->buff.clear();
-        return res;
-    }
+    // // simply returns the next [characters] chars or [""] if EOF
+    // std::string get_deterministic_token(int characters) {
+    //     char *c;
+    //     for (int i = 0; i < characters; i++) {
+    //         if (((c = next()) != nullptr) && (std::isalpha(*(c = next())))) { this->buff.push_back(std::tolower(consume())); } 
+    //         else if ((c = next()) == nullptr) { return ""; }
+    //     }
+    //     std::string res = this->buff;
+    //     this->buff.clear();
+    //     return res;
+    // }
 
-    // return on whitespace, assume [next()] points to first char
-    // NOTE: on return, must check [if (c == nullptr)]
-    void tokenize_ident();
-    void tokenize_factor();
-    void tokenize_term();
+    // // return on whitespace, assume [next()] points to first char
+    // // NOTE: on return, must check [if (c == nullptr)]
+    // void tokenize_ident();
+    // void tokenize_factor();
+    // void tokenize_term();
 
-    // break down the [expression] into  it's proper tokens and insert into [tokens]
-    void tokenize_expr();
-    void tokenize_returnStatement();
-    void tokenize_relation();
-    void tokenize_whileStatement();
-    void tokenize_ifStatement();
-    void tokenize_assignment();
-    void tokenize_statement();
+    // // break down the [expression] into  it's proper tokens and insert into [tokens]
+    // void tokenize_expr();
+    // void tokenize_returnStatement();
+    // void tokenize_relation();
+    // void tokenize_whileStatement();
+    // void tokenize_ifStatement();
+    // void tokenize_assignment();
+    // void tokenize_statement();
 
-    // the [next()] character that is returned from this function should be `}`
-    // assume [tokenize_statement()] will always return when the character is ';'
-    // FOR NOW: assume [tokenize_statSequence()] will properly terminate even when we don't see the last `;`
-    // TODO: configure a deterministic way to decide when the statement is done (bc it's a non strictly-necessary terminating `;`)
-    void tokenize_statSequence();
+    // // the [next()] character that is returned from this function should be `}`
+    // // assume [tokenize_statement()] will always return when the character is ';'
+    // // FOR NOW: assume [tokenize_statSequence()] will properly terminate even when we don't see the last `;`
+    // // TODO: configure a deterministic way to decide when the statement is done (bc it's a non strictly-necessary terminating `;`)
+    // void tokenize_statSequence();
     
-    void tokenize_varDecl();
-    void tokenize_func();
+    // void tokenize_varDecl();
+    // void tokenize_func();
     
-    void tokenizer();
+    // void tokenizer();
 };
 
 

@@ -4,55 +4,59 @@
 #include <fstream>
 #include <sstream>
 
+#include "src/FileReader.hpp"
 #include "src/Lexer.hpp"
 
-std::string get_file_contents(const std::string &f) {
-    // Open a file for reading
-    std::ifstream file(f);
+// std::string get_file_contents(const std::string &f) {
+//     // Open a file for reading
+//     std::ifstream file(f);
 
-    // Check if the file was opened successfully
-    if (!file.is_open()) {
-        std::cerr << "Failed to open the file." << std::endl;
-        return ""; // Return empty str to indicate failure
-    }
+//     // Check if the file was opened successfully
+//     if (!file.is_open()) {
+//         std::cerr << "Failed to open the file." << std::endl;
+//         return ""; // Return empty str to indicate failure
+//     }
 
-    // Read data from the file using std::istream
-    std::string line, buff = "";
-    while (std::getline(file, line)) {
-        // std::cout << line << std::endl; // Print each line read from the file
-        buff.append(line);
-    }
+//     // Read data from the file using std::istream
+//     std::string line, buff = "";
+//     while (std::getline(file, line)) {
+//         // std::cout << line << std::endl; // Print each line read from the file
+//         buff.append(line);
+//     }
 
-    // Close the file
-    file.close();
-    return buff;
-}
+//     // Close the file
+//     file.close();
+//     return buff;
+// }
 
-bool write_file_contents(const std::string &f, const std::string& content) {
-    // Open the file for writing
-    std::ofstream file(f);
+// bool write_file_contents(const std::string &f, const std::string& content) {
+//     // Open the file for writing
+//     std::ofstream file(f);
 
-    // Check if the file was opened successfully
-    if (!file.is_open()) {
-        std::cerr << "Failed to open the file." << std::endl;
-        return false; // Return false to indicate failure
-    }
+//     // Check if the file was opened successfully
+//     if (!file.is_open()) {
+//         std::cerr << "Failed to open the file." << std::endl;
+//         return false; // Return false to indicate failure
+//     }
 
-    // Write content to the file
-    file << content;
+//     // Write content to the file
+//     file << content;
 
-    // Close the file
-    file.close();
-    return true; // Return true to indicate success
-}
+//     // Close the file
+//     file.close();
+//     return true; // Return true to indicate success
+// }
 
 // input file: [tst/temp.ty]
 // input file: [tst/Lexer_results.txt]
 int main() {
-    const std::string in_f = "tst/temp.ty";
+    const char *in_f = "tst/temp.ty";
     const std::string out_f = "tst/Lexer_results.txt";
 
-    std::string contents = get_file_contents(in_f);
+    FileReader fr = FileReader(in_f);
+    std::string contents = fr.get_inFile_contents();
+
+    // Tokenizer will be here
 
     Lexer lexer = Lexer(contents);
     std::vector<TOKEN> tokens = lexer.lex();
@@ -66,7 +70,7 @@ int main() {
         out_str += tmp;
     }
 
-    bool res = write_file_contents(out_f, out_str);
+    bool res = fr.write_file_contents(out_f, out_str);
     if (res) { std::cout << "Results have successfully been written to: " << out_f << std::endl; }
     else { std::cout << "Error occured when trying to write results!" << std::endl; }
 
