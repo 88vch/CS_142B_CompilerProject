@@ -42,7 +42,7 @@ const std::unordered_set<int> statement_start_KEYWORDS {
 enum OP_TYPE {
     PLUS=TOKEN_TYPE::PLUS,
     MINUS=TOKEN_TYPE::MINUS,
-    TIMES=TOKEN_TYPE::TIMES,
+    MULTIPLY=TOKEN_TYPE::MULTIPLY,
     DIVIDE=TOKEN_TYPE::DIVIDE
 };
 
@@ -54,76 +54,87 @@ enum OP_TYPE {
 // };
 
 namespace node {
-    struct op {
-        OP_TYPE t_type;
-        std::string data; // [op] should only be one char; but js to keep in line w def's [relOp]
-    };
+    // struct op {
+    //     OP_TYPE t_type;
+    //     std::string data; // [op] should only be one char; but js to keep in line w def's [relOp]
+    // };
 
-    struct relOp { 
-        // ROP_TYPE t_type; [not sure what to do since we've only declared one relOp [TOKEN_TYPE]]
-        std::string data;
-    };
+    // struct relOp { 
+    //     // ROP_TYPE t_type; [not sure what to do since we've only declared one relOp [TOKEN_TYPE]]
+    //     std::string data;
+    // };
 
     struct ident { 
         TOKEN *val;
-        
-        // Constructor
         ident(TOKEN *curr)
-            : val(curr)
-        {
-        }
+            : val(curr) {}
     };
-    struct num { int *val; };
+    struct num { 
+        TOKEN *val;
+        num(TOKEN *curr)
+            : val(curr) {}
+    };
 
-    union factor {
-        ident *ident;
+    
+
+    struct term {
+        union factor {
+        TOKEN *ident;
         num *num;
         expr *expr;
         funcCall *funcCall;
-    };
-
-    struct term {
-        factor *factorA;
-        op *op; // [*, /]
+        } *factorA;
+        TOKEN *op; // [*, /]
         term *next; // iff [op] != nullptr, then should a [next] exist! (with it's [factorA] being the [factorA] of the prior [term])
         // term *prev; [not sure if needed; js in case]
     };
 
     struct expr {
         term *termA;
-        op *op; // [+, -]
+        TOKEN *op; // [+, -]
         expr *next; // iff [op] != nullptr, then should a [next] exist! (with it's [termA] being the [termB] of the prior [expr])
         // expr *prev; [not sure if needed; js in case]
     };
 
     struct relation {
         expr *exprA;
-        relOp *relOp;
+        TOKEN *relOp;
         expr *exprB;
     };
 
     struct assignment {
-        ident *ident;
+        TOKEN *terminal_sym_let;
+        TOKEN *ident;
+        TOKEN *terminal_sym_assignment;
         expr *expr;
     };
 
     struct funcCall {
-        ident *ident;
+        TOKEN *terminal_sym_call;
+        TOKEN *ident;
         expr *head; // this will be a linked list (bc multiple statements can exist in a single statSeq)
     };
 
     struct ifStat {
+        TOKEN *terminal_sym_if;
         relation *relation;
+        TOKEN *terminal_sym_then;
         statSeq *then_statSeq;
+        TOKEN *terminal_sym_else;
         statSeq *else_statSeq;
+        TOKEN *terminal_sym_fi;
     };
 
     struct whileStat {
+        TOKEN *terminal_sym_while;
         relation *relation;
+        TOKEN *terminal_sym_do;
         statSeq *statSeq;
+        TOKEN *terminal_sym_od;
     };
 
-    struct ret {
+    struct returnStat {
+        TOKEN *terminal_sym_return;
         expr *expr; // optional!
     };
 
@@ -133,11 +144,10 @@ namespace node {
             funcCall *funcCall_S;
             ifStat *ifStat_S;
             whileStat *whileStat_S;
-            ret *ret_S;
+            returnStat *ret_S;
         } *data;
         TOKEN *terminal_sym_semi;
         statement *next;
-        // statement *prev;
     };
 
     struct statSeq { 
@@ -147,14 +157,14 @@ namespace node {
     };
 
     struct var { // Q: no need to add "var" bc we know it by it's struct type right?
-        ident *ident_var;
+        TOKEN *ident;
         // TOKEN *terminal_sym_comma; [if parse tree]
         var *next;
         
         // Constructor
         var()
         {
-            ident_var = nullptr;
+            ident = nullptr;
             next = nullptr;
         }
     };
@@ -180,7 +190,7 @@ namespace node {
     };
 
     struct formalParams {
-        ident *ident;
+        TOKEN *ident;
         formalParams *next;
         // formalParams *prev; [not sure if needed; js in case]
     };

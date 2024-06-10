@@ -75,13 +75,6 @@ void Parser::parse_FIRSTPASS() {
 node::statSeq* Parser::parse_statSeq() {
     node::statSeq *s;
     s->head = parse_statement(); // ends with `;` = end of varDecl (consume it in the func)
-    // this->curr = next();
-
-    // // statSeq terminating tokens: [fi, od, else, }]
-    // if (this->curr->type == TOKEN_TYPE::FI || this->curr->type == TOKEN_TYPE::OD ||
-    //     this->curr->type == TOKEN_TYPE::ELSE || this->curr->type == TOKEN_TYPE::CLOSE_CURLY) {
-    //     return s;
-    // }
     return s;
 }
 
@@ -92,19 +85,19 @@ node::statement* Parser::parse_statement() {
     // assume after every statement has a semicolon
     switch (this->curr->type) {
         case TOKEN_TYPE::LET:
-            s->data = parse_assignment();
+            s->data->assignment_S = parse_assignment();
             break;
         case TOKEN_TYPE::CALL:
-            s->data = parse_funcCall();
+            s->data->funcCall_S = parse_funcCall();
             break;
         case TOKEN_TYPE::IF:
-            s->data = parse_ifStatement();
+            s->data->ifStat_S = parse_ifStatement();
             break;
         case TOKEN_TYPE::WHILE:
-            s->data = parse_whileStatement();
+            s->data->whileStat_S = parse_whileStatement();
             break;
         case TOKEN_TYPE::RETURN:
-            s->data = parse_return();
+            s->data->ret_S = parse_return();
             consume();
             this->curr = next();
             break;
@@ -120,7 +113,62 @@ node::statement* Parser::parse_statement() {
             // if we see any of these tokens then it means the next thing is another statement
             s->next = parse_statement();
     }
+    return s;
 }
+
+node::assignment* Parser::parse_assignment() { // this->curr->type == TOKEN_TYPE::LET
+    node::assignment *s;
+
+    // LET
+    s->terminal_sym_let = this->curr;
+    consume();
+    this->curr = next();
+
+    // IDENT
+    s->ident = this->curr;
+    consume();
+    this->curr = next();
+
+    // ASSIGNMENT
+    s->terminal_sym_assignment = this->curr;
+    consume();
+    this->curr = next();
+
+    // EXPRESSION
+    s->expr = parse_expr();
+}
+
+node::funcCall* Parser::parse_funcCall() { // this->curr->type == TOKEN_TYPE::CALL
+
+}
+
+
+node::ifStat* Parser::parse_ifStatement() { // this->curr->type == TOKEN_TYPE::IF
+
+}
+
+
+node::whileStat* Parser::parse_whileStatement() { // this->curr->type == TOKEN_TYPE::WHILE
+
+}
+
+
+node::returnStat* Parser::parse_return() { // this->curr->type == TOKEN_TYPE::RETURN
+
+}
+
+node::expr* Parser::parse_expr() { // this->curr = first token in expr
+    node::expr *s;
+
+    s->termA = parse_term();
+    this->curr = next();
+
+    // if an [OP] exists, then [termB] also exists! put it as [termA] of new [expr]!
+    if (this->curr->type < 0) { // TOKEN_TYPE::[OP] < 0 (i.e. PLUS, MINUS, MULTIPLY, DIVIDE)
+        node::expr *termB;
+    }
+}
+
 
 node::funcDecl* Parser::parse_funcDecl() {}
 
@@ -138,7 +186,8 @@ node::varDecl* Parser::parse_varDecl() { // this->curr->type == TOKEN_TYPE::VAR
 node::var* Parser::parse_vars() { // this->curr->type == TOKEN_TYPE::IDENTIFIER
     node::var *s;
 
-    s->ident_var = parse_ident();
+    s->ident = this->curr;
+    consume();
     this->curr = next();
 
     // existence of a `,` indicates a next variable exists
@@ -151,11 +200,15 @@ node::var* Parser::parse_vars() { // this->curr->type == TOKEN_TYPE::IDENTIFIER
     return s;
 }
 
-// whether or not this will actually work is another story
+/*
+whether or not this will actually work is another story
+expected action: consume and return [node::ident]
 node::ident* Parser::parse_ident() { // this->curr->type == TOKEN_TYPE::IDENTIFIER
-    return new node::ident(this->curr);
+    node::ident *s = new node::ident(this->curr);
+    consume();
+    return s;
 }
-
+*/
 
 
 

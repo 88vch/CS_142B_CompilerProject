@@ -12,10 +12,10 @@
 enum TOKEN_TYPE {
     IDENTIFIER, // [var/func names]
     NUMBER,     // [DIGIT | {DIGIT}]
-    PLUS,       // [+]
-    MINUS,      // [-]
-    MULTIPLY,   // [*]
-    DIVIDE,     // [/]
+    PLUS=-1,    // [+]
+    MINUS=-2,   // [-]
+    MULTIPLY=-3,// [*]
+    DIVIDE=-4,  // [/]
     SEMICOLON,  // [;]
     PRINT,      // self-defined
     VAR,        // [KEYWORD: VAR]

@@ -77,10 +77,21 @@ private:
 
     node::statSeq* parse_statSeq();
     node::statement* parse_statement();
+    node::assignment* parse_assignment();
+    node::funcCall* parse_funcCall();
+    node::ifStat* parse_ifStatement();
+    node::whileStat* parse_whileStatement();
+    node::returnStat* parse_return();
+
+    node::expr* parse_expr();
+    node::term* parse_term();
+
     node::funcDecl* parse_funcDecl();
+    
     node::varDecl* parse_varDecl();
     node::var* parse_vars();
-    node::ident* parse_ident();
+    
+    // node::ident* parse_ident();
 
 
 
