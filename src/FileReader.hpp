@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <cstdio>
 
+#define DEBUG
 
 class FileReader {
 public:
@@ -12,6 +13,9 @@ public:
         : file_name(std::move(in_file))
     {
         this->file_contents = "";
+        #ifdef DEBUG
+            std::cout << "[FileReader]: Read input. Got filename: " << this->file_name << std::endl;
+        #endif
     }
 
     void read_file() {
@@ -21,7 +25,7 @@ public:
 
         // Check if the file was opened successfully
         if (pFile == NULL) {
-            perror ("Error opening file");
+            std::cerr << "Error opening file" << std::endl;
             return;
         }
 
@@ -29,9 +33,9 @@ public:
         char c = std::fgetc(pFile);
         while (c != EOF) {
             this->file_contents.push_back(static_cast<char>(c));
-            c = std::fgetc(pFile);
+            c = std::fgetc(pFile); // Read the next character
         }
-
+        
         // Close the file
         std::fclose (pFile);
     }

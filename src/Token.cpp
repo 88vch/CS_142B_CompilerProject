@@ -5,12 +5,12 @@
 std::string TOKEN_TYPE_toString(TOKEN_TYPE token) {
     std::string ret;
     switch (token) {
-        case TOKEN_TYPE::IDENTIFIER:
-            ret = "IDENTIFIER";
-            break;
-        case TOKEN_TYPE::NUMBER:
-            ret = "NUMBER";
-            break;
+        // case TOKEN_TYPE::IDENTIFIER:
+        //     ret = "IDENTIFIER";
+        //     break;
+        // case TOKEN_TYPE::NUMBER:
+        //     ret = "NUMBER";
+        //     break;
         case TOKEN_TYPE::PLUS:
             ret = "PLUS";
             break;
@@ -38,11 +38,23 @@ std::string TOKEN_TYPE_toString(TOKEN_TYPE token) {
         case TOKEN_TYPE::ASSIGNMENT:
             ret = "ASSIGNMENT";
             break;
-        case TOKEN_TYPE::EXPRESSION:
-            ret = "EXPRESSION";
+        // case TOKEN_TYPE::EXPRESSION:
+        //     ret = "EXPRESSION";
+        //     break;
+        case TOKEN_TYPE::REL_OP_GT:
+            ret = "REL_OP_GT";
             break;
-        case TOKEN_TYPE::REL_OP:
-            ret = "REL_OP";
+        case TOKEN_TYPE::REL_OP_LT:
+            ret = "REL_OP_LT";
+            break;
+        case TOKEN_TYPE::REL_OP_EQ:
+            ret = "REL_OP_EQ";
+            break;
+        case TOKEN_TYPE::REL_OP_GEQ:
+            ret = "REL_OP_GEQ";
+            break;
+        case TOKEN_TYPE::REL_OP_LEQ:
+            ret = "REL_OP_LEQ";
             break;
         case TOKEN_TYPE::OPEN_PAREN:
             ret = "OPEN_PAREN";

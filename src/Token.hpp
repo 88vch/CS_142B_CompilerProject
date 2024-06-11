@@ -10,19 +10,19 @@
 
 // Token type enum: do we need a [VALUE] type (number, string, idk)
 enum TOKEN_TYPE {
-    IDENTIFIER, // [var/func names]
-    NUMBER,     // [DIGIT | {DIGIT}]
-    PLUS=-1,    // [+]
-    MINUS=-2,   // [-]
-    MULTIPLY=-3,// [*]
-    DIVIDE=-4,  // [/]
+    // IDENTIFIER, // [var/func names]
+    // NUMBER,     // [DIGIT | {DIGIT}]
     SEMICOLON,  // [;]
     PRINT,      // self-defined
     VAR,        // [KEYWORD: VAR]
     LET,        // [KEYWORD: LET]
     ASSIGNMENT, // [KEYWORD: <-]
-    EXPRESSION, // [math]
-    REL_OP,     // [relational operator (for comparison in statements)(if, while, etc...)]
+    // EXPRESSION, // [math]
+    REL_OP_GT,     // [relational operator (for comparison in statements)(if, while, etc...)]
+    REL_OP_LT,     // [relational operator (for comparison in statements)(if, while, etc...)]
+    REL_OP_EQ,     // [relational operator (for comparison in statements)(if, while, etc...)]
+    REL_OP_GEQ,     // [relational operator (for comparison in statements)(if, while, etc...)]
+    REL_OP_LEQ,     // [relational operator (for comparison in statements)(if, while, etc...)]
     OPEN_PAREN, // [KEYWORD: for expr's]
     CLOSE_PAREN,// [KEYWORD: for expr's]
     OPEN_CURLY, // [KEYWORD: for statSequence & functions]
@@ -40,7 +40,11 @@ enum TOKEN_TYPE {
     VOID,       // [KEYWORD: VOID-function-statement] (indeed included VOID later :)
     RETURN,     // [KEYWORD: RETURN-statement]
     MAIN,       // [KEYWORD: MAIN]
-    END_OF_FILE // [end of file indicated by "."]
+    END_OF_FILE, // [end of file indicated by "."]
+    PLUS=-1,    // [+]
+    MINUS=-2,   // [-]
+    MULTIPLY=-3,// [*]
+    DIVIDE=-4  // [/]
 };
 
 // Token struct
@@ -48,6 +52,7 @@ struct TOKEN {
     TOKEN_TYPE type;
     std::string lexeme;
 };
+
 
 std::string TOKEN_TYPE_toString(TOKEN_TYPE token);
 const std::string TOKEN_TYPE_toStringLower(TOKEN_TYPE token);

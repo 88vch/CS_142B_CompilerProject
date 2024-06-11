@@ -5,7 +5,8 @@
 #include <sstream>
 
 #include "src/FileReader.hpp"
-#include "src/Lexer.hpp"
+#include "src/Tokenizer.hpp"
+// #include "src/Lexer.hpp"
 
 // std::string get_file_contents(const std::string &f) {
 //     // Open a file for reading
@@ -54,19 +55,45 @@ int main() {
     const std::string out_f = "tst/Lexer_results.txt";
 
     FileReader fr = FileReader(in_f);
+    fr.read_file();
     std::string contents = fr.get_inFile_contents();
+    #ifdef DEBUG
+        std::cout << "done reading file contents. got:\n" << contents << std::endl;
+    #endif
 
     // Tokenizer will be here
+    Tokenizer tokenizer = Tokenizer(contents);
+    std::vector<int> tokens = tokenizer.tokenize();
 
-    Lexer lexer = Lexer(contents);
-    std::vector<TOKEN> tokens = lexer.lex();
+    // Lexer lexer = Lexer(contents);
+    // std::vector<TOKEN> tokens = lexer.lex();
 
-    std::string out_str = "Syntax;\n[TOKEN_TYPE]: \t[STRING]\n";
-    for (auto iit = tokens.begin(); iit != tokens.end(); iit++) {
+    std::string out_str = "Syntax;\n[TOKEN_TYPE::DIGIT]: \t[STRING]\n";
+    // // for (auto iit = tokens.begin(); iit != tokens.end(); iit++) {
+    // //     std::string tmp;
+    // //     if (TOKEN_TYPE_toString(iit->type).length() <= 3) { tmp = "[" + TOKEN_TYPE_toString(iit->type) + "]: \t\t\t[" + iit->lexeme + "]\n"; }
+    // //     else if (TOKEN_TYPE_toString(iit->type).length() <= 6) { tmp = "[" + TOKEN_TYPE_toString(iit->type) + "]: \t\t[" + iit->lexeme + "]\n"; }
+    // //     else { tmp = "[" + TOKEN_TYPE_toString(iit->type) + "]: \t[" + iit->lexeme + "]\n"; }
+    // //     out_str += tmp;
+    // // }
+    for (int token : tokens) {
         std::string tmp;
-        if (TOKEN_TYPE_toString(iit->type).length() <= 3) { tmp = "[" + TOKEN_TYPE_toString(iit->type) + "]: \t\t\t[" + iit->lexeme + "]\n"; }
-        else if (TOKEN_TYPE_toString(iit->type).length() <= 6) { tmp = "[" + TOKEN_TYPE_toString(iit->type) + "]: \t\t[" + iit->lexeme + "]\n"; }
-        else { tmp = "[" + TOKEN_TYPE_toString(iit->type) + "]: \t[" + iit->lexeme + "]\n"; }
+        // Access each integer token here using the variable 'token'
+        // For example:
+        std::string val;
+        for (const auto& pair : tokenizer.get_sym_table()) {
+            if (pair.second == token) {
+                val = pair.first;
+                break;
+            }
+        }
+        if (token < tokenizer.keyword_identifier_separator) {
+            // keyword
+            tmp = "[KEYWORD::" + std::to_string(token) + "]: \t[" + val + "]";
+        } else {
+            // identifier
+            tmp = "[IDENTIFIER::" + std::to_string(token) + "]: \t[" + val + "]";
+        }
         out_str += tmp;
     }
 
