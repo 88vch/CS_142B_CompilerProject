@@ -87,19 +87,24 @@ int main() {
         std::string tmp;
         // Access each integer token here using the variable 'token'
         // For example:
-        std::string val;
+        std::string val = "";
         for (const auto& pair : tokenizer.get_sym_table()) {
             if (pair.second == token) {
                 val = pair.first;
                 break;
             }
         }
-        if (token < tokenizer.keyword_identifier_separator) {
-            // keyword
-            tmp = "[KEYWORD::" + std::to_string(token) + "]: \t[" + val + "]\n";
+        if (val == "") {
+            // digit
+            tmp = "[DIGIT::NULL]: \t\t\t[" + std::to_string(token) + "]\n";
         } else {
-            // identifier
-            tmp = "[IDENTIFIER::" + std::to_string(token) + "]: \t[" + val + "]\n";
+            if (token < tokenizer.keyword_identifier_separator) {
+                // keyword
+                tmp = "[KEYWORD::" + std::to_string(token) + "]: \t\t\t[" + val + "]\n";
+            } else {
+                // identifier
+                tmp = "[IDENTIFIER::" + std::to_string(token) + "]: \t\t[" + val + "]\n";
+            }
         }
         out_str += tmp;
     }

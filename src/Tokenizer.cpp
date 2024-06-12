@@ -16,7 +16,7 @@ std::vector<int> Tokenizer::tokenize() {
         std::cout << "\tGetNext() returned [" << retVal << "]";
     #endif
     while (retVal != this->get_eof_val()) {
-        #ifdef DEBUG_RESULTS
+        #ifdef DEBUG
             std::cout << "pushing back val of [" << retVal << "]" << std::endl;
         #endif
         this->tokens.push_back(retVal);
@@ -25,6 +25,7 @@ std::vector<int> Tokenizer::tokenize() {
             std::cout << "\tGetNext() returned [" << retVal << "]" << std::endl;
         #endif
     }
+    this->tokens.push_back(retVal); // push back the EOF `.` val
     #ifdef DEBUG_RESULTS
         std::cout << "\tdone tokenize(); [this->sym_table] looks like: " << std::endl;
         for (const auto& pair : this->sym_table) {
@@ -271,10 +272,16 @@ int Tokenizer::GetNext() {
 
 // loads number into [this->token] 
 void Tokenizer::number() {
-    this->token = int(this->sym);
+    this->token = this->sym - '0';
+    #ifdef DEBUG
+        std::cout << "\tin number(this->sym=[" << this->sym << "], this->token=[" << this->token << "])" << std::endl;
+    #endif
     next();
     while((this->sym <= '9') && (this->sym >= '0')) {
-        this->token = 10 * int(this->sym);
+        this->token = (10 * this->token) + (this->sym - '0');
+        #ifdef DEBUG
+            std::cout << "\tnext symbol[" << this->sym << "] was also a number! curr token = [" << this->token << "]" << std::endl;
+        #endif
         next();
     }
     #ifdef DEBUG
