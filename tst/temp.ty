@@ -12,6 +12,9 @@ while 12345 == a2 do
             let a2 <- 6;
             if a1 < 1 then 
                 let a2 <- 666666;
+                while a2 == 666666 do
+                    let a2 <- 999999999
+                od
             else
                 let a1 <- 333333
             fi;

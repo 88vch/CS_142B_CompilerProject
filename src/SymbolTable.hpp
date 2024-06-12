@@ -7,17 +7,19 @@
 #include <unordered_map>
 
 #include <string>
-// #include "Token.hpp" 
 
-// TODO: cleanly move symbol table here & make sure tokenizer still works!
 class SymbolTable {
 public:
     SymbolTable() 
     {
     }
 
+    static void update_table(std::string s);
+    static std::vector<int> identifiers;
+    static std::vector<int> numbers;
     static std::unordered_map<std::string, int> symbol_table;
-    void print_table();
+    static std::unordered_map<std::string, int> operator_table;
+    static void print_table();
 };
 
 // extern std::unordered_map<std::string, int> SymbolTable::symbol_table;

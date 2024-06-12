@@ -25,69 +25,93 @@ enum statement_data {
     WHILESTAT_S,
     RETURNSTAT_S
 };
-enum term_data {
-    IDENT_T,
-    NUM_T,
-    EXPR_T,
-    FUNCCALL_T
+enum factor_data {
+    IDENT_F,
+    NUM_F,
+    EXPR_F,
+    FUNCCALL_F
 };
 
 namespace node {
-    struct ident { 
-        int val;
-        ident(int curr)
-            : val(curr) {}
-    };
-    struct num { 
-        int val;
-        num(int curr)
-            : val(curr) {}
+    enum n_type {
+        FACTOR,
+        TERM,
+        EXPRESSION,
+        RELATION,
+        ASSIGNMENT,
+        FUNCTION_CALL,
+        IF_STATEMENT,
+        WHILE_STATEMENT,
+        RETURN_STATEMENT,
+        STATEMENT,
+        STAT_SEQUENCE,
+        VARIABLE_DECLARATION,
+        FUNCTION_DECLARATION,
+        FORMAL_PARAMETERS,
+        FUNCTION_BODY,
+        MAIN
     };
 
-    
+    struct factor;
+    struct term;
+    struct expr;
+    struct relation;
+    struct assignment;
+    struct funcCall;
+    struct ifStat;
+    struct whileStat;
+    struct returnStat;
+    struct statement;
+    struct statSeq;
+    struct var;
+    struct varDecl;
+    struct funcDecl;
+    struct formalParams;
+    struct funcBody;
+    struct main;
+
+
+    struct factor {
+        factor_data data_type;
+        union {
+            int ident;
+            int num;
+            struct factor_expr {
+                
+                expr *e;
+                
+            } *expr;
+            funcCall *funcCall;
+        } *data;
+    };
 
     struct term {
-        union {
-        int ident;
-        num *num;
-        expr *expr;
-        funcCall *funcCall;
-        } *factor_A;
+        factor *A;
         int op; // [*, /]
-
-        // NEW
         union {
-        int ident;
-        num *num;
-        expr *expr;
-        funcCall *funcCall;
-        } *factor_B;
-        // OLD
-        // term *next; // iff [op] != nullptr, then should a [next] exist! (with it's [factorA] being the [factorA] of the prior [term])
-        // // term *prev; [not sure if needed; js in case]
-
+            factor *f;
+            term *t;
+        } *B;
+        
         term() {
-            factor_A = nullptr;
-            op = nullptr;
-            factor_B = nullptr;
+            A = nullptr;
+            op = -1;
+            B = nullptr;
         }
     };
 
     struct expr {
-        union {
-            expr *e; // iff [op] != nullptr, then should a [next] exist! (with it's [termA] being the [termB] of the prior [expr])
-            term *t;
-        } *term_A; // in fact, this will be the last [term] (in a series of consecutive expr's)
+        term *A; // in fact, this will be the last [term] (in a series of consecutive expr's)
         int op; // [+, -]
         union {
             expr *e; // iff [op] != nullptr, then should a [next] exist! (with it's [termA] being the [termB] of the prior [expr])
             term *t;
-        } *term_B;
+        } *B;
 
         expr() {
-            term_A = nullptr;
-            op = nullptr;
-            term_B = nullptr;
+            A = nullptr;
+            op = -1;
+            B = nullptr;
         }
     };
 
@@ -95,42 +119,60 @@ namespace node {
         expr *exprA;
         int relOp;
         expr *exprB;
+
+        relation() {
+            exprA = nullptr;
+            relOp = -1;
+            exprB = nullptr;
+        }
     };
 
     struct assignment {
-        int terminal_sym_let;
         int ident;
-        int terminal_sym_assignment;
         expr *expr;
+
+        assignment() {
+            ident = -1;
+            expr = nullptr;
+        }
     };
 
     struct funcCall {
-        int terminal_sym_call;
         int ident;
         expr *head; // this will be a linked list (bc multiple statements can exist in a single statSeq)
+
+        funcCall() {
+            ident = -1;
+            head = nullptr;
+        }
     };
 
     struct ifStat {
-        int terminal_sym_if;
         relation *relation;
-        int terminal_sym_then;
         statSeq *then_statSeq;
-        int terminal_sym_else;
         statSeq *else_statSeq;
-        int terminal_sym_fi;
+        
+        ifStat() {
+            relation = nullptr;
+            then_statSeq = nullptr;
+            else_statSeq = nullptr;
+        }
     };
 
     struct whileStat {
-        int terminal_sym_while;
         relation *relation;
-        int terminal_sym_do;
-        statSeq *statSeq;
-        int terminal_sym_od;
+        statSeq *do_statSeq;
+        
+        whileStat() {
+            relation = nullptr;
+            do_statSeq = nullptr;
+        }
     };
 
     struct returnStat {
-        int terminal_sym_return;
         expr *expr; // optional!
+
+        returnStat() { expr = nullptr; }
     };
 
     struct statement {
@@ -142,8 +184,12 @@ namespace node {
             whileStat *whileStat_S;
             returnStat *ret_S;
         } *data;
-        int terminal_sym_semi;
         statement *next;
+
+        statement() {
+            data = nullptr;
+            next = nullptr;
+        }
     };
 
     struct statSeq { 
@@ -154,65 +200,62 @@ namespace node {
 
     struct var { // Q: no need to add "var" bc we know it by it's struct type right?
         int ident;
-        // int terminal_sym_comma; [if parse tree]
         var *next;
-        
-        // Constructor
-        var()
-        {
-            ident = nullptr;
+
+        var() {
+            ident = -1;
             next = nullptr;
         }
     };
 
     struct varDecl { // Q: no need to add "var" bc we know it by it's struct type right?
-        int terminal_sym_var;
         var *head;
-
-        // Constructor
-        varDecl()
-        {
-            terminal_sym_var = nullptr;
-            head = nullptr;
-        }
+        
+        varDecl() { head = nullptr; }
     };
 
     struct funcDecl { // Q: no need to add "function" bc we know it by it's struct type right?
-        int terminal_sym_retType;
-        int terminal_sym_func;
-        int terminal_sym_name; // include [name] in here
+        // include [name] in here
+        // int retType; // (?)
         formalParams *head; // this will be a linked list (bc multiple [funcParam] can exist in a single [funcDecl])
         funcBody *funcBody;
+
+        funcDecl() {
+            head = nullptr;
+            funcBody = nullptr;
+        }
     };
 
     struct formalParams {
         int ident;
         formalParams *next;
         // formalParams *prev; [not sure if needed; js in case]
+
+        formalParams() {
+            ident = -1;
+            next = nullptr;
+        }
     };
 
     struct funcBody {
         varDecl *varDecl;
         statSeq *statSeq;
+
+        funcBody() {
+            varDecl = nullptr;
+            statSeq = nullptr;
+        }
     };
 
-    struct computation { // Q: no need to add "main" bc we know it by it's struct type right?
-        int terminal_sym_main;
+    struct main { // Q: no need to add "main" bc we know it by it's struct type right?
         varDecl *varDecl;
         funcDecl *funcDecl;
-        // int terminal_sym_startSS; [if parse tree] `{`
         statSeq *statSeq;
-        // int terminal_sym_endSS; [if parse tree] `}`
-        int terminal_sym_eof; 
 
-        // Constructor
-        computation()
-        {
-            terminal_sym_main = nullptr;
+        main() {
             varDecl = nullptr;
             funcDecl = nullptr;
             statSeq = nullptr;
-            terminal_sym_eof = nullptr;
         }
     };
 }

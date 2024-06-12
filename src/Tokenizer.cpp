@@ -27,9 +27,18 @@ std::vector<int> Tokenizer::tokenize() {
     }
     this->tokens.push_back(retVal); // push back the EOF `.` val
     #ifdef DEBUG_RESULTS
-        std::cout << "\tdone tokenize(); \n[SymbolTable::symbol_table] looks like: " << std::endl;
-        for (const auto& pair : SymbolTable::symbol_table) {
-            std::cout << "Key: " << pair.first << ", Value: " << pair.second << std::endl;
+        std::cout << "\tdone tokenize(); " << std::endl;
+        SymbolTable::print_table();
+        std::cout << "[Identifiers];" << std::endl;
+        for (const int &it: SymbolTable::identifiers) {
+            std::string val;
+            for (const auto &iit: SymbolTable::symbol_table) {
+                if (iit.second == it) {
+                    val = iit.first;
+                    break;
+                }
+            }
+            std::cout << "id=[" << it << "]: [" << val << "]" << std::endl;
         }
     #endif
     return this->tokens;
@@ -287,6 +296,7 @@ void Tokenizer::number() {
     #ifdef DEBUG
         std::cout << "\t\tdone number(token=" << this->token << ")" << std::endl;
     #endif
+    SymbolTable::numbers.push_back(this->token);
 }
 
 
@@ -317,14 +327,14 @@ void Tokenizer::identkeyword() {
                 std::cout << "\t\t\tin identkeyword(buff=[" << buff << "], adding NEW ENTRY to [SymbolTable::symbol_table] with val=[" << SymbolTable::symbol_table.size() << "])";
             #endif
             this->token = SymbolTable::symbol_table.size();
-            SymbolTable::symbol_table.emplace(buff, SymbolTable::symbol_table.size());
+            // SymbolTable::symbol_table.emplace(buff, SymbolTable::symbol_table.size());
+            SymbolTable::update_table(buff);
         }
     // } else if (this->sym == EOF) {
     //     std::string buff = "";
     //     buff.push_back(this->sym);
     //     this->token = SymbolTable::symbol_table.find(buff)->second;
     } else {
-        /* TODO: figure out why random [IDENTIFIER] coming after certain symbols: [terminal symbols!!!!] */
         #ifdef DEBUG
             std::cout << "\t\tin identkeyword() checking if [this->sym]=[" << this->sym << "] is a terminal sym or not!" << std::endl;
         #endif
@@ -349,10 +359,11 @@ void Tokenizer::identkeyword() {
             this->token = it->second;
         } else {
             #ifdef DEBUG
-                std::cout << "\t\tnew symbol added to table with int buff=[" << SymbolTable::symbol_table.size() << "]" << std::endl;
+                std::cout << "\t\tnew ident added to table with int buff=[" << SymbolTable::symbol_table.size() << "]" << std::endl;
             #endif
             this->token = SymbolTable::symbol_table.size();
-            SymbolTable::symbol_table.emplace(buff, this->token);
+            // SymbolTable::symbol_table.emplace(buff, this->token);
+            SymbolTable::update_table(buff);
         }
     }
     #ifdef DEBUG

@@ -7,9 +7,11 @@
 #include "src/SymbolTable.hpp"
 #include "src/FileReader.hpp"
 #include "src/Tokenizer.hpp"
-#include "src/Parser.hpp"
-#include "src/Node.hpp"
+// #include "src/Parser.hpp"
+// #include "src/Node.hpp"
 // #include "src/Lexer.hpp"
+
+class SymbolTable; // forward declaration (?)
 
 // input file: [tst/temp.ty]
 // input file: [tst/Lexer_results.txt]
@@ -31,9 +33,9 @@ int main() {
     // OLD: Lexer, NEW: Parser
     // Lexer lexer = Lexer(contents);
     // std::vector<TOKEN> tokens = lexer.lex();
-    Parser parser = Parser(tokens);
-    parser.parse();
-    node::computation *root = parser.head();
+    // Parser parser = Parser(tokens);
+    // parser.parse();
+    // node::computation *root = parser.head();
     // std::vector<TOKEN> tokens = parser.parse(); [should return a parse tree!]
 
     std::string out_str = "Syntax;\n[TOKEN_TYPE::DIGIT]: \t[STRING]\n";
