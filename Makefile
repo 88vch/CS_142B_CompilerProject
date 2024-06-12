@@ -58,4 +58,5 @@ dir:
 
 clean:
 	@rm -rf $(BINDIR)
+	@rm -f src/*.o
 	@rm -rf tst/Lexer_results.txt
