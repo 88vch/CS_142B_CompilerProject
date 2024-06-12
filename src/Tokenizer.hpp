@@ -6,9 +6,11 @@
 #include <sstream>
 #include <vector>
 #include <unordered_map>
+#include <unordered_set>
 
 #include "Token.hpp"
 #define DEBUG
+#define DEBUG_RESULTS
 
 
 // takes chars, turns to keywords & ident & digits
@@ -20,69 +22,31 @@ public:
         this->tokens = {};
         this->s_index = 0;
         // this->curr = this->source.at(this->s_index++);
-        this->source = in.c_str();
+        // this->source = in.c_str();
+        this->source = std::move(in);
         // this->source_len = this->source.length();
-        this->source_len = in.length();
+        this->source_len = this->source.length();
         #ifdef DEBUG
             std::cout << "[Tokenizer]: Read input. Got: \n" << this->source << std::endl;
         #endif
-        next();
-
-        // this->sym_table = {
-        //     {"+", TOKEN_TYPE::PLUS},
-        //     {"-", TOKEN_TYPE::MINUS},
-        //     {"*", TOKEN_TYPE::MULTIPLY},
-        //     {"/", TOKEN_TYPE::DIVIDE},
-        //     {";", TOKEN_TYPE::SEMICOLON},
-        //     {"var", TOKEN_TYPE::VAR}, 
-        //     {"let", TOKEN_TYPE::LET}, 
-        //     {"<-", TOKEN_TYPE::ASSIGNMENT}, 
-        //     {">", TOKEN_TYPE::REL_OP_GT}, 
-        //     {"<", TOKEN_TYPE::REL_OP_LT},  
-        //     {"==", TOKEN_TYPE::REL_OP_EQ}, 
-        //     {">=", TOKEN_TYPE::REL_OP_GEQ}, 
-        //     {"<=", TOKEN_TYPE::REL_OP_LEQ}, 
-        //     {"(", TOKEN_TYPE::OPEN_PAREN}, 
-        //     {")", TOKEN_TYPE::CLOSE_PAREN},
-        //     {"{", TOKEN_TYPE::OPEN_CURLY}, 
-        //     {"}", TOKEN_TYPE::CLOSE_CURLY},  
-        //     {",", TOKEN_TYPE::COMMA}, 
-        //     {"if", TOKEN_TYPE::IF}, 
-        //     {"then", TOKEN_TYPE::THEN}, 
-        //     {"else", TOKEN_TYPE::ELSE}, 
-        //     {"fi", TOKEN_TYPE::FI},
-        //     {"while", TOKEN_TYPE::WHILE}, 
-        //     {"do", TOKEN_TYPE::DO}, 
-        //     {"od", TOKEN_TYPE::OD}, 
-        //     {"call", TOKEN_TYPE::CALL}, 
-        //     {"function", TOKEN_TYPE::FUNCTION},
-        //     {"void", TOKEN_TYPE::VOID}, 
-        //     {"return", TOKEN_TYPE::RETURN}, 
-        //     {"main", TOKEN_TYPE::MAIN},
-        //     {"eof", TOKEN_TYPE::END_OF_FILE}
-        // };
-        // this->keyword_identifier_separator = this->sym_table.size();
-        
+        this->source_start = this->source.data();
+        next(); // load first char into [sym]      
+        #ifdef DEBUG
+            std::cout << "\tnext() turned [this->sym] into val [" << this->sym << "]" << std::endl;  
+        #endif
     }
-    // std::vector<TOKEN> lex();
     std::vector<int> tokenize();
 
+    std::unordered_map<std::string, int> get_sym_table() { return this->sym_table; }
 
-
-    std::unordered_map<std::string, int> get_sym_table() {
-        return this->sym_table;
-    }
-
-    int get_eof_val() {
-        return this->sym_table.find("eof")->second;
-    }
+    int get_eof_val() const noexcept { return this->sym_table.find(".")->second; }
     
     size_t source_len, s_index;
     // const std::string source;
     std::string buff;
     std::vector<int> tokens;
-    const char *source;
-    char *sym;
+    std::string source;
+    char *source_start, sym;
     int token, keyword_identifier_separator = 30; // if number:: val; if ident::sym_table id 
     // this->curr_sym_table_index = 31; [can just be size - 1]
     // const int eof_val = static_cast<const int&>(this->sym_table.find("eof")->second);
@@ -91,6 +55,7 @@ private:
     void number();
     void identkeyword();
     std::unordered_map<std::string, int> sym_table = {
+        {"EOF", -1},
         {"+", 0},
         {"-", 1},
         {"*", 2},
@@ -121,20 +86,27 @@ private:
         {"void", 27}, 
         {"return", 28}, 
         {"main", 29},
-        {"eof", 30}
+        {".", 30}
     };
-    
+    std::unordered_set<char> whitespace_symbols = {' ', '\n', '\0'};
 
     // DOES consume char
     inline void next() {
+        // #ifdef DEBUG
+        //     std::cout << "in next(this->s_index=" << this->s_index << ", this->source_len=" << this->source_len << ")" << std::endl;
+        // #endif
         if (this->s_index < this->source_len) {
-            const char *ret = &(this->source[this->s_index]);
+            // const char *ret = &(this->source[this->s_index]);
+            // this->sym = const_cast<char *>(&(this->source[this->s_index]));
+            this->sym = *(this->source_start + s_index);
             this->s_index++;
-            this->sym = const_cast<char *>(ret);
-            return;
+        } else {
+            #ifdef DEBUG
+                std::cout << "\tindex exceeds source_len!!! exit(EXIT_FAILURE)" << std::endl;
+            #endif
+            this->sym = '\0';
+            // exit(EXIT_FAILURE);
         }
-        // else: EOF
-        this->sym = nullptr;
     }
     // inline char consume() noexcept { return this->source[this->s_index++]; }
 

@@ -8,23 +8,53 @@
 // using namespace tinyExceptions_ns;
 
 std::vector<int> Tokenizer::tokenize() {
+    // #ifdef DEBUG
+    //     std::cout << "in tokenize(this->sym=[" << this->sym << "])" << std::endl;
+    // #endif
     int retVal = GetNext();
-    while (retVal != get_eof_val()) {
+    #ifdef DEBUG
+        std::cout << "\tGetNext() returned [" << retVal << "]";
+    #endif
+    while (retVal != this->get_eof_val()) {
+        #ifdef DEBUG_RESULTS
+            std::cout << "pushing back val of [" << retVal << "]" << std::endl;
+        #endif
         this->tokens.push_back(retVal);
         retVal = GetNext();
+        #ifdef DEBUG
+            std::cout << "\tGetNext() returned [" << retVal << "]" << std::endl;
+        #endif
     }
+    #ifdef DEBUG_RESULTS
+        std::cout << "\tdone tokenize(); [this->sym_table] looks like: " << std::endl;
+        for (const auto& pair : this->sym_table) {
+            std::cout << "Key: " << pair.first << ", Value: " << pair.second << std::endl;
+        }
+    #endif
     return this->tokens;
 }
 
 // include functions here
 int Tokenizer::GetNext() {
-    while (*(this->sym) == ' ') { // skip whitespace
+    // #ifdef DEBUG
+    //     std::cout << "in GetNext(this->sym=[" << this->sym << "])" << std::endl;
+    // #endif
+    while (this->whitespace_symbols.find(this->sym) != this->whitespace_symbols.end()) { // skip whitespace
         next();
+        // #ifdef DEBUG
+        //     std::cout << "\tGetNext(WHILE): [this->sym]=[" << this->sym << "]" << std::endl;
+        // #endif
     }
+    #ifdef DEBUG
+        std::cout << "\tafter skipping whitespace [this->sym] curr has val [" << this->sym << "]" << std::endl;
+    #endif
 
-    if (*(this->sym) != EOF) {
-        std::string str(1, *(this->sym));
-        switch(*(this->sym)) {
+    if (this->sym != EOF) {
+        std::string str(1, this->sym);
+        // #ifdef DEBUG
+        //     std::cout << "current symbol: [" << this->sym << "] != EOF! string val looks like: [" << str << "]" << std::endl;
+        // #endif
+        switch(this->sym) {
             case '*':
                 next();
                 return (this->sym_table.find(str))->second;
@@ -223,39 +253,101 @@ int Tokenizer::GetNext() {
             case 'z':
                 identkeyword();
                 return this->token;
-            default:
-                // Handle other characters if needed
-                std::cerr << "GetNext() found unknown char(" << *(this->sym) << ")! [EXIT_FAILURE]" << std::endl;
+            case EOF:
+                std::cerr << "GetNext() found EOF)! [EXIT_FAILURE]" << std::endl;
                 exit(EXIT_FAILURE);
                 break;
+            default:
+                // Handle other characters if needed
+                identkeyword();
+                return this->token;
         }
     }
+    #ifdef DEBUG
+        std::cout << "\tGETNEXT() [this->sym]==EOF!!!" << std::endl;
+    #endif
     return get_eof_val();
 }
 
 // loads number into [this->token] 
 void Tokenizer::number() {
-    this->token = int(*(this->sym));
+    this->token = int(this->sym);
     next();
-    while((*(this->sym) <= '9') && (*(this->sym) >= '0')) {
-        this->token = 10 * int(*(this->sym));
+    while((this->sym <= '9') && (this->sym >= '0')) {
+        this->token = 10 * int(this->sym);
         next();
     }
+    #ifdef DEBUG
+        std::cout << "\t\tdone number(token=" << this->token << ")" << std::endl;
+    #endif
 }
 
 
 void Tokenizer::identkeyword() {
-    std::string buff = "";
-    buff.push_back(*(this->sym));
-    next();
-    while (std::isalpha(*(this->sym))) {
-        buff.push_back(*(this->sym));
+    if (std::isalpha(this->sym)) {
+        std::string buff = "";
+        buff.push_back(this->sym);
         next();
-    }
-    auto it = this->sym_table.find(buff);
-    if (it != this->sym_table.end()) {
-        this->token = it->second;
+        while (std::isalpha(this->sym)) {
+            buff.push_back(this->sym);
+            next();
+        }
+        if (std::isalnum(this->sym)) {
+            // could be an identifier (can have num or char after first char)
+            while (std::isalnum(this->sym)) {
+                buff.push_back(this->sym);
+                next();
+            }
+        }
+        auto it = this->sym_table.find(buff);
+        if (it != this->sym_table.end()) {
+            #ifdef DEBUG
+                std::cout << "\t\t\tin identkeyword(buff=[" << buff << "], found val in [this->sym_table]=[" << it->second << "])";
+            #endif
+            this->token = it->second;
+        } else {
+            #ifdef DEBUG
+                std::cout << "\t\t\tin identkeyword(buff=[" << buff << "], adding NEW ENTRY to [this->sym_table] with val=[" << this->sym_table.size() << "])";
+            #endif
+            this->token = this->sym_table.size();
+            this->sym_table.emplace(buff, this->sym_table.size());
+        }
+    } else if (this->sym == EOF) {
+        std::string buff = "";
+        buff.push_back(this->sym);
+        this->token = this->sym_table.find(buff)->second;
     } else {
-        this->sym_table.emplace(buff, this->sym_table.size() - 1);
+        #ifdef DEBUG
+            std::cout << "\t\tin identkeyword() checking if [this->sym]=[" << this->sym << "] is a terminal sym or not!" << std::endl;
+        #endif
+        // could be a terminal symbol
+        std::string buff = "";
+        buff.push_back(this->sym);
+        auto it = this->sym_table.find(buff);
+        next();
+        #ifdef DEBUG
+            std::cout << "\t\t\tnext char is [" << this->sym << "]" << std::endl;
+        #endif
+        // add chars while it's not a whitespace char
+        while ((this->whitespace_symbols.find(this->sym) == this->whitespace_symbols.end()) && !std::isalnum(this->sym)) {
+            buff.push_back(this->sym);
+            next();
+        }
+        #ifdef DEBUG
+            std::cout << "\tidentkeyword() could be a terminal! got buff=[" << buff << "]" << std::endl;
+        #endif
+        it = this->sym_table.find(buff);
+        if (it != this->sym_table.end()) {
+            this->token = it->second;
+        } else {
+            #ifdef DEBUG
+                std::cout << "\t\tnew symbol added to table with int buff=[" << this->sym_table.size() << "]" << std::endl;
+            #endif
+            this->token = this->sym_table.size();
+            this->sym_table.emplace(buff, this->sym_table.size());
+        }
     }
+    #ifdef DEBUG
+        std::cout << "\t\tdone identkeyword(token=" << this->token << ")" << std::endl;
+    #endif
 }

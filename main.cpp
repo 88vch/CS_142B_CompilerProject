@@ -57,13 +57,20 @@ int main() {
     FileReader fr = FileReader(in_f);
     fr.read_file();
     std::string contents = fr.get_inFile_contents();
-    #ifdef DEBUG
-        std::cout << "done reading file contents. got:\n" << contents << std::endl;
-    #endif
+    // #ifdef DEBUG
+    //     std::cout << "done reading file contents. got:\n" << contents << std::endl;
+    // #endif
 
     // Tokenizer will be here
     Tokenizer tokenizer = Tokenizer(contents);
+    #ifdef DEBUG
+        std::cout << "after tokenizer initializer, [this->sym]=[" << tokenizer.sym << "]" << std::endl;
+    #endif
+
     std::vector<int> tokens = tokenizer.tokenize();
+    #ifdef DEBUG
+        std::cout << "after tokenizer tokenize(), [tokens] size = [" << tokens.size() << "]" << std::endl;
+    #endif
 
     // Lexer lexer = Lexer(contents);
     // std::vector<TOKEN> tokens = lexer.lex();
@@ -89,10 +96,10 @@ int main() {
         }
         if (token < tokenizer.keyword_identifier_separator) {
             // keyword
-            tmp = "[KEYWORD::" + std::to_string(token) + "]: \t[" + val + "]";
+            tmp = "[KEYWORD::" + std::to_string(token) + "]: \t[" + val + "]\n";
         } else {
             // identifier
-            tmp = "[IDENTIFIER::" + std::to_string(token) + "]: \t[" + val + "]";
+            tmp = "[IDENTIFIER::" + std::to_string(token) + "]: \t[" + val + "]\n";
         }
         out_str += tmp;
     }
