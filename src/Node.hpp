@@ -17,64 +17,30 @@ the only terminals we have are: [
     keywords ex: [if | while | return | let | var | main | call | return | etc... ]
 ]
 */
-// struct terminal_n { std::string val; };
-// - leave these as token_types
 
-// struct n_non_terminal {
-//     // could we js union all the nodes in the node class we created?    
-// };
-
-// struct n_parseTree {
-//     bool n_type; // [0] = terminal, [1] = non-terminal
-//     union {
-//         n_terminal *token_t;
-//         n_non_terminal *token_nt;
-//     } *data;
-// };
-
-
-
-// const std::unordered_set<int> statement_start_KEYWORDS {
-//     TOKEN_TYPE::LET,
-//     TOKEN_TYPE::CALL,
-//     TOKEN_TYPE::IF,
-//     TOKEN_TYPE::WHILE,
-//     TOKEN_TYPE::RETURN
-// };
-
-// enum OP_TYPE {
-//     PLUS=TOKEN_TYPE::PLUS,
-//     MINUS=TOKEN_TYPE::MINUS,
-//     MULTIPLY=TOKEN_TYPE::MULTIPLY,
-//     DIVIDE=TOKEN_TYPE::DIVIDE
-// };
-
-// enum ROP_TYPE {
-//     PLUS=TOKEN_TYPE::PLUS,
-//     MINUS=TOKEN_TYPE::MINUS,
-//     TIMES=TOKEN_TYPE::TIMES,
-//     DIVIDE=TOKEN_TYPE::DIVIDE
-// };
+enum statement_data {
+    ASSIGNMENT_S,
+    FUNCCALL_S,
+    IFSTAT_S,
+    WHILESTAT_S,
+    RETURNSTAT_S
+};
+enum term_data {
+    IDENT_T,
+    NUM_T,
+    EXPR_T,
+    FUNCCALL_T
+};
 
 namespace node {
-    // struct op {
-    //     OP_TYPE t_type;
-    //     std::string data; // [op] should only be one char; but js to keep in line w def's [relOp]
-    // };
-
-    // struct relOp { 
-    //     // ROP_TYPE t_type; [not sure what to do since we've only declared one relOp [TOKEN_TYPE]]
-    //     std::string data;
-    // };
-
     struct ident { 
-        TOKEN *val;
-        ident(TOKEN *curr)
+        int val;
+        ident(int curr)
             : val(curr) {}
     };
     struct num { 
-        TOKEN *val;
-        num(TOKEN *curr)
+        int val;
+        num(int curr)
             : val(curr) {}
     };
 
@@ -82,16 +48,16 @@ namespace node {
 
     struct term {
         union {
-        TOKEN *ident;
+        int ident;
         num *num;
         expr *expr;
         funcCall *funcCall;
         } *factor_A;
-        TOKEN *op; // [*, /]
+        int op; // [*, /]
 
         // NEW
         union {
-        TOKEN *ident;
+        int ident;
         num *num;
         expr *expr;
         funcCall *funcCall;
@@ -112,7 +78,7 @@ namespace node {
             expr *e; // iff [op] != nullptr, then should a [next] exist! (with it's [termA] being the [termB] of the prior [expr])
             term *t;
         } *term_A; // in fact, this will be the last [term] (in a series of consecutive expr's)
-        TOKEN *op; // [+, -]
+        int op; // [+, -]
         union {
             expr *e; // iff [op] != nullptr, then should a [next] exist! (with it's [termA] being the [termB] of the prior [expr])
             term *t;
@@ -127,47 +93,48 @@ namespace node {
 
     struct relation {
         expr *exprA;
-        TOKEN *relOp;
+        int relOp;
         expr *exprB;
     };
 
     struct assignment {
-        TOKEN *terminal_sym_let;
-        TOKEN *ident;
-        TOKEN *terminal_sym_assignment;
+        int terminal_sym_let;
+        int ident;
+        int terminal_sym_assignment;
         expr *expr;
     };
 
     struct funcCall {
-        TOKEN *terminal_sym_call;
-        TOKEN *ident;
+        int terminal_sym_call;
+        int ident;
         expr *head; // this will be a linked list (bc multiple statements can exist in a single statSeq)
     };
 
     struct ifStat {
-        TOKEN *terminal_sym_if;
+        int terminal_sym_if;
         relation *relation;
-        TOKEN *terminal_sym_then;
+        int terminal_sym_then;
         statSeq *then_statSeq;
-        TOKEN *terminal_sym_else;
+        int terminal_sym_else;
         statSeq *else_statSeq;
-        TOKEN *terminal_sym_fi;
+        int terminal_sym_fi;
     };
 
     struct whileStat {
-        TOKEN *terminal_sym_while;
+        int terminal_sym_while;
         relation *relation;
-        TOKEN *terminal_sym_do;
+        int terminal_sym_do;
         statSeq *statSeq;
-        TOKEN *terminal_sym_od;
+        int terminal_sym_od;
     };
 
     struct returnStat {
-        TOKEN *terminal_sym_return;
+        int terminal_sym_return;
         expr *expr; // optional!
     };
 
     struct statement {
+        statement_data type;
         union {
             assignment *assignment_S;
             funcCall *funcCall_S;
@@ -175,7 +142,7 @@ namespace node {
             whileStat *whileStat_S;
             returnStat *ret_S;
         } *data;
-        TOKEN *terminal_sym_semi;
+        int terminal_sym_semi;
         statement *next;
     };
 
@@ -186,8 +153,8 @@ namespace node {
     };
 
     struct var { // Q: no need to add "var" bc we know it by it's struct type right?
-        TOKEN *ident;
-        // TOKEN *terminal_sym_comma; [if parse tree]
+        int ident;
+        // int terminal_sym_comma; [if parse tree]
         var *next;
         
         // Constructor
@@ -199,7 +166,7 @@ namespace node {
     };
 
     struct varDecl { // Q: no need to add "var" bc we know it by it's struct type right?
-        TOKEN *terminal_sym_var;
+        int terminal_sym_var;
         var *head;
 
         // Constructor
@@ -211,15 +178,15 @@ namespace node {
     };
 
     struct funcDecl { // Q: no need to add "function" bc we know it by it's struct type right?
-        TOKEN *terminal_sym_retType;
-        TOKEN *terminal_sym_func;
-        TOKEN *terminal_sym_name; // include [name] in here
+        int terminal_sym_retType;
+        int terminal_sym_func;
+        int terminal_sym_name; // include [name] in here
         formalParams *head; // this will be a linked list (bc multiple [funcParam] can exist in a single [funcDecl])
         funcBody *funcBody;
     };
 
     struct formalParams {
-        TOKEN *ident;
+        int ident;
         formalParams *next;
         // formalParams *prev; [not sure if needed; js in case]
     };
@@ -230,13 +197,13 @@ namespace node {
     };
 
     struct computation { // Q: no need to add "main" bc we know it by it's struct type right?
-        TOKEN *terminal_sym_main;
+        int terminal_sym_main;
         varDecl *varDecl;
         funcDecl *funcDecl;
-        // TOKEN *terminal_sym_startSS; [if parse tree] `{`
+        // int terminal_sym_startSS; [if parse tree] `{`
         statSeq *statSeq;
-        // TOKEN *terminal_sym_endSS; [if parse tree] `}`
-        TOKEN *terminal_sym_eof; 
+        // int terminal_sym_endSS; [if parse tree] `}`
+        int terminal_sym_eof; 
 
         // Constructor
         computation()

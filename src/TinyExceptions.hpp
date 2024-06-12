@@ -6,6 +6,15 @@
 #include <string>
 
 namespace tinyExceptions_ns {
+    class SyntaxError : public std::exception {
+        public:
+            SyntaxError(const std::string &err) : msg(err) { }
+            // Override the what() function to return the error message
+            const char* what() const noexcept override { return msg.c_str(); }
+        private:
+            std::string msg;
+    }; 
+
     enum numExceptions {
         Incomplete_relation_LexException,
         Incomplete_whileStatement_LexException, 

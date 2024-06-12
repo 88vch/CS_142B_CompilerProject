@@ -9,6 +9,7 @@
 #include <unordered_set>
 
 #include "Token.hpp"
+#include "SymbolTable.hpp"
 #define DEBUG
 #define DEBUG_RESULTS
 
@@ -37,9 +38,9 @@ public:
     }
     std::vector<int> tokenize();
 
-    std::unordered_map<std::string, int> get_sym_table() { return this->sym_table; }
+    std::unordered_map<std::string, int> get_symbol_table() { return SymbolTable::symbol_table; }
 
-    int get_eof_val() const noexcept { return this->sym_table.find(".")->second; }
+    int get_eof_val() const noexcept { return SymbolTable::symbol_table.find(".")->second; }
     
     size_t source_len, s_index;
     // const std::string source;
@@ -47,47 +48,13 @@ public:
     std::vector<int> tokens;
     std::string source;
     char *source_start, sym;
-    int token, keyword_identifier_separator = 30; // if number:: val; if ident::sym_table id 
-    // this->curr_sym_table_index = 31; [can just be size - 1]
-    // const int eof_val = static_cast<const int&>(this->sym_table.find("eof")->second);
+    int token, keyword_identifier_separator = 30; // if number:: val; if ident::SymbolTable::symbol_table id 
+    // this->SymbolTable::symbol_table = 31; [can just be size - 1]
+    // const int eof_val = static_cast<const int&>(SymbolTable::symbol_table.find("eof")->second);
 private:
     int GetNext();
     void number();
     void identkeyword();
-    std::unordered_map<std::string, int> sym_table = {
-        {"EOF", -1},
-        {"+", 0},
-        {"-", 1},
-        {"*", 2},
-        {"/", 3},
-        {";", 4},
-        {"var", 5}, 
-        {"let", 6}, 
-        {"<-", 7}, 
-        {">", 8}, 
-        {"<", 9},  
-        {"==", 10}, 
-        {">=", 11}, 
-        {"<=", 12}, 
-        {"(", 13}, 
-        {")", 14},
-        {"{", 15}, 
-        {"}", 16},  
-        {",", 17}, 
-        {"if", 18}, 
-        {"then", 19}, 
-        {"else", 20}, 
-        {"fi", 21},
-        {"while", 22}, 
-        {"do", 23}, 
-        {"od", 24}, 
-        {"call", 25}, 
-        {"function", 26},
-        {"void", 27}, 
-        {"return", 28}, 
-        {"main", 29},
-        {".", 30}
-    };
     std::unordered_set<char> whitespace_symbols = {' ', '\n', '\0'};
 
     // DOES consume char

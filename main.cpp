@@ -4,49 +4,12 @@
 #include <fstream>
 #include <sstream>
 
+#include "src/SymbolTable.hpp"
 #include "src/FileReader.hpp"
 #include "src/Tokenizer.hpp"
+#include "src/Parser.hpp"
+#include "src/Node.hpp"
 // #include "src/Lexer.hpp"
-
-// std::string get_file_contents(const std::string &f) {
-//     // Open a file for reading
-//     std::ifstream file(f);
-
-//     // Check if the file was opened successfully
-//     if (!file.is_open()) {
-//         std::cerr << "Failed to open the file." << std::endl;
-//         return ""; // Return empty str to indicate failure
-//     }
-
-//     // Read data from the file using std::istream
-//     std::string line, buff = "";
-//     while (std::getline(file, line)) {
-//         // std::cout << line << std::endl; // Print each line read from the file
-//         buff.append(line);
-//     }
-
-//     // Close the file
-//     file.close();
-//     return buff;
-// }
-
-// bool write_file_contents(const std::string &f, const std::string& content) {
-//     // Open the file for writing
-//     std::ofstream file(f);
-
-//     // Check if the file was opened successfully
-//     if (!file.is_open()) {
-//         std::cerr << "Failed to open the file." << std::endl;
-//         return false; // Return false to indicate failure
-//     }
-
-//     // Write content to the file
-//     file << content;
-
-//     // Close the file
-//     file.close();
-//     return true; // Return true to indicate success
-// }
 
 // input file: [tst/temp.ty]
 // input file: [tst/Lexer_results.txt]
@@ -57,23 +20,21 @@ int main() {
     FileReader fr = FileReader(in_f);
     fr.read_file();
     std::string contents = fr.get_inFile_contents();
-    // #ifdef DEBUG
-    //     std::cout << "done reading file contents. got:\n" << contents << std::endl;
-    // #endif
 
     // Tokenizer will be here
     Tokenizer tokenizer = Tokenizer(contents);
-    #ifdef DEBUG
-        std::cout << "after tokenizer initializer, [this->sym]=[" << tokenizer.sym << "]" << std::endl;
-    #endif
-
     std::vector<int> tokens = tokenizer.tokenize();
-    #ifdef DEBUG
-        std::cout << "after tokenizer tokenize(), [tokens] size = [" << tokens.size() << "]" << std::endl;
-    #endif
+    // #ifdef DEBUG
+    //     std::cout << "after tokenizer tokenize(), [tokens] size = [" << tokens.size() << "]" << std::endl;
+    // #endif
 
+    // OLD: Lexer, NEW: Parser
     // Lexer lexer = Lexer(contents);
     // std::vector<TOKEN> tokens = lexer.lex();
+    Parser parser = Parser(tokens);
+    parser.parse();
+    node::computation *root = parser.head();
+    // std::vector<TOKEN> tokens = parser.parse(); [should return a parse tree!]
 
     std::string out_str = "Syntax;\n[TOKEN_TYPE::DIGIT]: \t[STRING]\n";
     // // for (auto iit = tokens.begin(); iit != tokens.end(); iit++) {
@@ -88,7 +49,7 @@ int main() {
         // Access each integer token here using the variable 'token'
         // For example:
         std::string val = "";
-        for (const auto& pair : tokenizer.get_sym_table()) {
+        for (const auto& pair : SymbolTable::symbol_table) {
             if (pair.second == token) {
                 val = pair.first;
                 break;

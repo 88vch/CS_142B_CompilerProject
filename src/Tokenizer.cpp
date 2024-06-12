@@ -27,8 +27,8 @@ std::vector<int> Tokenizer::tokenize() {
     }
     this->tokens.push_back(retVal); // push back the EOF `.` val
     #ifdef DEBUG_RESULTS
-        std::cout << "\tdone tokenize(); [this->sym_table] looks like: " << std::endl;
-        for (const auto& pair : this->sym_table) {
+        std::cout << "\tdone tokenize(); \n[SymbolTable::symbol_table] looks like: " << std::endl;
+        for (const auto& pair : SymbolTable::symbol_table) {
             std::cout << "Key: " << pair.first << ", Value: " << pair.second << std::endl;
         }
     #endif
@@ -58,16 +58,16 @@ int Tokenizer::GetNext() {
         switch(this->sym) {
             case '*':
                 next();
-                return (this->sym_table.find(str))->second;
+                return (SymbolTable::symbol_table.find(str))->second;
             case '/':
                 next();
-                return (this->sym_table.find(str))->second;
+                return (SymbolTable::symbol_table.find(str))->second;
             case '+':
                 next();
-                return (this->sym_table.find(str))->second;
+                return (SymbolTable::symbol_table.find(str))->second;
             case '-':
                 next();
-                return (this->sym_table.find(str))->second;
+                return (SymbolTable::symbol_table.find(str))->second;
             case '0':
                 number();
                 return this->token;
@@ -306,23 +306,23 @@ void Tokenizer::identkeyword() {
                 next();
             }
         }
-        auto it = this->sym_table.find(buff);
-        if (it != this->sym_table.end()) {
+        auto it = SymbolTable::symbol_table.find(buff);
+        if (it != SymbolTable::symbol_table.end()) {
             #ifdef DEBUG
-                std::cout << "\t\t\tin identkeyword(buff=[" << buff << "], found val in [this->sym_table]=[" << it->second << "])";
+                std::cout << "\t\t\tin identkeyword(buff=[" << buff << "], found val in [SymbolTable::symbol_table]=[" << it->second << "])";
             #endif
             this->token = it->second;
         } else {
             #ifdef DEBUG
-                std::cout << "\t\t\tin identkeyword(buff=[" << buff << "], adding NEW ENTRY to [this->sym_table] with val=[" << this->sym_table.size() << "])";
+                std::cout << "\t\t\tin identkeyword(buff=[" << buff << "], adding NEW ENTRY to [SymbolTable::symbol_table] with val=[" << SymbolTable::symbol_table.size() << "])";
             #endif
-            this->token = this->sym_table.size();
-            this->sym_table.emplace(buff, this->sym_table.size());
+            this->token = SymbolTable::symbol_table.size();
+            SymbolTable::symbol_table.emplace(buff, SymbolTable::symbol_table.size());
         }
     // } else if (this->sym == EOF) {
     //     std::string buff = "";
     //     buff.push_back(this->sym);
-    //     this->token = this->sym_table.find(buff)->second;
+    //     this->token = SymbolTable::symbol_table.find(buff)->second;
     } else {
         /* TODO: figure out why random [IDENTIFIER] coming after certain symbols: [terminal symbols!!!!] */
         #ifdef DEBUG
@@ -331,7 +331,7 @@ void Tokenizer::identkeyword() {
         // could be a terminal symbol
         std::string buff = "";
         buff.push_back(this->sym);
-        auto it = this->sym_table.find(buff);
+        auto it = SymbolTable::symbol_table.find(buff);
         next();
         #ifdef DEBUG
             std::cout << "\t\t\tnext char is [" << this->sym << "]" << std::endl;
@@ -344,15 +344,15 @@ void Tokenizer::identkeyword() {
         #ifdef DEBUG
             std::cout << "\tidentkeyword() could be a terminal! got buff=[" << buff << "]" << std::endl;
         #endif
-        it = this->sym_table.find(buff);
-        if (it != this->sym_table.end()) {
+        it = SymbolTable::symbol_table.find(buff);
+        if (it != SymbolTable::symbol_table.end()) {
             this->token = it->second;
         } else {
             #ifdef DEBUG
-                std::cout << "\t\tnew symbol added to table with int buff=[" << this->sym_table.size() << "]" << std::endl;
+                std::cout << "\t\tnew symbol added to table with int buff=[" << SymbolTable::symbol_table.size() << "]" << std::endl;
             #endif
-            this->token = this->sym_table.size();
-            this->sym_table.emplace(buff, this->sym_table.size());
+            this->token = SymbolTable::symbol_table.size();
+            SymbolTable::symbol_table.emplace(buff, this->token);
         }
     }
     #ifdef DEBUG

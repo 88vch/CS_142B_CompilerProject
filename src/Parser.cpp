@@ -1,6 +1,6 @@
 #include "Parser.hpp"
 
-
+// Question: do we need the terminals??? (i.e. struct->terminal_sym_*)
 
 // Function to perform common subexpression elimination (CSE)
 void performCSE(std::vector<IRNode>& ir) {
@@ -33,41 +33,31 @@ std::vector<IRNode> Parser::getIR() {
 }
 
 
-// assume input file has no errors
-void Parser::parse_FIRSTPASS() {
-    node::computation *s;
-    this->curr = next(); // expected start: [main]
+// if error [CheckFor() handles it]
+void Parser::parse() {
+    node::computation *s; // expected start: [main]
 
-    if (this->curr->type == TOKEN_TYPE::MAIN) {
-        s->terminal_sym_main = this->curr;
-        consume();
-        this->curr = next();
-    } else {
-        fprintf(stderr, "expected computation to start with [MAIN]!\n");
-        exit(EXIT_FAILURE);
-    }
+    this->CheckFor(SymbolTable::symbol_table.at("main")); 
+    s->terminal_sym_main = this->sym; 
+    next(); // consumes `main` token
 
-    if (this->curr->type == TOKEN_TYPE::VAR) {
-        s->varDecl = parse_varDecl(); // ends with `;` = end of varDecl (consume it in the func)
-        this->curr = next();
-    }
-    if (this->curr->type == TOKEN_TYPE::FUNCTION || 
-        this->curr->type == TOKEN_TYPE::VOID) {
-        s->funcDecl = parse_funcDecl(); // ends with `;` = end of funcDecl (consume it in the func)
-        this->curr = next();
-    }
+    this->CheckFor(SymbolTable::symbol_table.at("var")); 
+    s->varDecl = parse_varDecl(); // ends with `;` = end of varDecl (consume it in the func)
+    // next(); // do we need this?
+    
+    this->CheckForMultiple(this->func_startTokens, FUNCTION_ST_SIZE); 
+    s->funcDecl = parse_funcDecl(); // ends with `;` = end of funcDecl (consume it in the func)
+    // next(); // do we need this?
     
     // if we cared about the parse tree, we'd keep the `{` and `}` like tokens, but we don't
     // more so trying to go as fast as we can: direct Abstract Syntax Tree (AST)
-    if (this->curr->type == TOKEN_TYPE::OPEN_CURLY) {        
-        consume(); // `{`
-        s->statSeq = parse_statSeq();
-        consume(); // `}`
-    }
-    this->curr = next();
-    if (this->curr->type == TOKEN_TYPE::END_OF_FILE) {
-        s->terminal_sym_eof = this->curr;
-    }
+    this->CheckFor(SymbolTable::symbol_table.at("{")); 
+    next(); // consumes `{`
+    s->statSeq = parse_statSeq();
+    // next(); // do we need this?
+    this->CheckFor(SymbolTable::symbol_table.at(".")); 
+    s->terminal_sym_eof = this->sym;
+    next(); // consumes `.`
     
     this->root = s; // head-node of AST
 }
@@ -83,35 +73,26 @@ node::statement* Parser::parse_statement() {
 
     // statement starting tokens: [let, call, if, while, return]
     // assume after every statement has a semicolon
-    switch (this->curr->type) {
-        case TOKEN_TYPE::LET:
-            s->data->assignment_S = parse_assignment();
-            break;
-        case TOKEN_TYPE::CALL:
-            s->data->funcCall_S = parse_funcCall();
-            break;
-        case TOKEN_TYPE::IF:
-            s->data->ifStat_S = parse_ifStatement();
-            break;
-        case TOKEN_TYPE::WHILE:
-            s->data->whileStat_S = parse_whileStatement();
-            break;
-        case TOKEN_TYPE::RETURN:
-            s->data->ret_S = parse_return();
-            consume();
-            this->curr = next();
-            break;
-        default:
-            break;
-    };
-    s->terminal_sym_semi = next(); // assume `;` comes after all statements
-    consume();
-    this->curr = next();
-    if (this->curr->type == TOKEN_TYPE::LET || this->curr->type == TOKEN_TYPE::CALL ||
-        this->curr->type == TOKEN_TYPE::IF || this->curr->type == TOKEN_TYPE::WHILE || 
-        this->curr->type == TOKEN_TYPE::RETURN) {
-            // if we see any of these tokens then it means the next thing is another statement
+    this->CheckForMultiple(this->statement_startTokens, STATEMENT_ST_SIZE);
+    if (this->sym == this->statement_startTokens[0]) { // `let`
+        s->data->assignment_S = parse_assignment();
+    } else if (this->sym == this->statement_startTokens[0]) { // `call`
+        s->data->funcCall_S = parse_funcCall();
+    } else if (this->sym == this->statement_startTokens[0]) { // `if`
+        s->data->ifStat_S = parse_ifStatement();
+    } else if (this->sym == this->statement_startTokens[0]) { // `while`
+        s->data->whileStat_S = parse_whileStatement();
+    } else if (this->sym == this->statement_startTokens[0]) { // `return`
+        s->data->ret_S = parse_return();
+    }
+    next(); // do we need this?
+    if (this->CheckForOptional(SymbolTable::symbol_table.at(";"))) { // if [optional] next token is ';', then we still have statements
+        s->terminal_sym_semi = this->sym; // assume `;` comes after all statements
+        next();
+        // if we see any of these tokens then it means the next thing is another statement
+        if (this->CheckForMultipleOptionals(this->statement_startTokens, STATEMENT_ST_SIZE)) {
             s->next = parse_statement();
+        }
     }
     return s;
 }

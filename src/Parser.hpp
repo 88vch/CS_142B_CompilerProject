@@ -14,6 +14,11 @@
 
 #include "Token.hpp"
 #include "Node.hpp"
+#include "SymbolTable.hpp"
+#include "TinyExceptions.hpp"
+
+#define FUNCTION_ST_SIZE 2
+#define STATEMENT_ST_SIZE 5
 
 // IR Node struct
 struct IRNode {
@@ -34,25 +39,87 @@ void printIR(const std::vector<IRNode>& ir);
 // Parser class
 class Parser {
 public:
-    Parser(const std::vector<TOKEN>& in) 
+    Parser(const std::vector<int> &in) 
         : source(std::move(in))//, currentPos(0) 
     {
         this->source_len = this->source.size();
+        next(); // load first int into [sym]
     }
 
 
-    void parse_FIRSTPASS(); 
+    void parse(); 
+    node::computation* head() { return this->root; }
 
     // OLD STUFF
     // Get intermediate representation (IR)
     std::vector<IRNode> getIR();
 
+
+    int sym;
 private:
     size_t source_len, s_index = 0;
-    const std::vector<TOKEN> source;
-    TOKEN *curr; // current token we're working with
+    const std::vector<int> source; // which can be translated (as needed) to a digit or to grab the identifier/keyword/terminal associated in the SymbolTable::symbol_table
     node::computation *root;
+
+    // START TOKENS
+    int func_startTokens[] = {
+        SymbolTable::symbol_table.at("function"), 
+        SymbolTable::symbol_table.at("void")
+    };
+    int statement_startTokens[] = {
+        SymbolTable::symbol_table.at("let"),
+        SymbolTable::symbol_table.at("call"),
+        SymbolTable::symbol_table.at("if"),
+        SymbolTable::symbol_table.at("while"),
+        SymbolTable::symbol_table.at("return")
+    };
     
+    void CheckFor(int expected_token) {
+        if (this->sym != expected_token) {
+            std::stringstream ss;
+            ss << "Expected: " << expected_token << ". Got: " << this->sym << "." << std::endl;
+            tinyExceptions_ns::SyntaxError(ss.str());
+        }
+    }
+    bool CheckForOptional(int expected_token) {
+        if (this->sym != expected_token) {
+            return false;
+        }
+        return true;
+    }
+    // if we have optionals, we should check multiple symbols, since we throw a syntax error if we don't see the expected token
+    void CheckForMultiple(int expected_tokens[], int size) { 
+        bool exists = false;
+        std::string expected_tokens_str = "[";
+        for (int i = 0; i < size; i++) {
+            if (this->sym == expected_tokens[i]) {
+                expected_tokens_str += std::to_string(expected_tokens[i]);
+                exists = true;
+                break;
+            }
+            expected_tokens_str += std::to_string(expected_tokens[i]) + ", ";
+        }
+        expected_tokens_str += "]";
+        if (!exists) {
+            std::stringstream ss;
+            ss << "Expected: " << expected_tokens_str << ". Got: " << this->sym << "." << std::endl;
+            tinyExceptions_ns::SyntaxError(ss.str());
+        }
+    }
+    bool CheckForMultipleOptionals(int expected_tokens[], int size) { // for optionals, don't throw error if dne
+        bool exists = false;
+        std::string expected_tokens_str = "[";
+        for (int i = 0; i < size; i++) {
+            if (this->sym == expected_tokens[i]) {
+                expected_tokens_str += std::to_string(expected_tokens[i]);
+                exists = true;
+                break;
+            }
+            expected_tokens_str += std::to_string(expected_tokens[i]) + ", ";
+        }
+        expected_tokens_str += "]";
+        return exists;
+    }
     
     // OLD STUFF
     // size_t currentPos;
@@ -62,18 +129,15 @@ private:
 
     // helper function modeled on: Lexer.hpp next() & consume()
     // does NOT consume char, only peeks()
-    inline TOKEN* next() const {
+    inline void next() {
         if (this->s_index < this->source_len) {
-            const TOKEN *ret = &(source.at(s_index));
-            return const_cast<TOKEN *>(ret); 
+            this->sym = this->source.at(this->s_index);
+            this->s_index++;
+        } else {
+            this->sym = SymbolTable::symbol_table.at("EOF"); // what value to denote end???
         }
-        // else: EOF
-        // OG: return NULL;
-        // Revision: we should use pointers
-        // - replace w (char *) and return nullptr
-        return nullptr;
     }
-    inline TOKEN consume() noexcept { return source.at(s_index++); }
+    // inline TOKEN consume() noexcept { return source.at(s_index++); }
 
     node::statSeq* parse_statSeq();
     node::statement* parse_statement();
