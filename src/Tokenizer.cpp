@@ -312,11 +312,12 @@ void Tokenizer::identkeyword() {
             this->token = this->sym_table.size();
             this->sym_table.emplace(buff, this->sym_table.size());
         }
-    } else if (this->sym == EOF) {
-        std::string buff = "";
-        buff.push_back(this->sym);
-        this->token = this->sym_table.find(buff)->second;
+    // } else if (this->sym == EOF) {
+    //     std::string buff = "";
+    //     buff.push_back(this->sym);
+    //     this->token = this->sym_table.find(buff)->second;
     } else {
+        /* TODO: figure out why random [IDENTIFIER] coming after certain symbols: [terminal symbols!!!!] */
         #ifdef DEBUG
             std::cout << "\t\tin identkeyword() checking if [this->sym]=[" << this->sym << "] is a terminal sym or not!" << std::endl;
         #endif
