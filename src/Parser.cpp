@@ -38,8 +38,8 @@ std::vector<IRNode> Parser::getIR() {
 // if error [CheckFor() handles it]
 void Parser::parse() {
     // node::main *s; // expected start: [main]
-    BasicBlock *main = BasicBlock(nullptr, this->instruction_list);
-    this->root = main;
+    BasicBlock main = BasicBlock(nullptr, this->instruction_list);
+    this->root = &main;
 
     this->CheckFor(SymbolTable::symbol_table.at("main")); // consumes `main` token
 
@@ -59,11 +59,9 @@ void Parser::parse() {
     // more so trying to go as fast as we can: direct Abstract Syntax Tree (AST)
     this->CheckFor(SymbolTable::symbol_table.at("{")); // consumes `{`
     // s->statSeq = parse_statSeq();
-    parse_statSeq(main);
+    parse_statSeq(this->root);
     // next(); // do we need this?
     this->CheckFor(SymbolTable::symbol_table.at(".")); // consumes `.`
-    
-    // this->root = s; // head-node of AST
 }
 
 // node::statSeq* Parser::parse_statSeq() {
@@ -115,18 +113,23 @@ void Parser::parse_statement(BasicBlock *blk) {
     } else if (this->sym == this->statement_startTokens[1]) { // `call`
         parse_funcCall(blk);
     } else if (this->sym == this->statement_startTokens[2]) { // `if`
-        parse_ifStatement(blk);
+        BasicBlock *join = parse_ifStatement(blk);
+        if (join->parent2 == nullptr) { // means that [ifStat_then] was returned (no else)
+            blk->children.push_back(join);
+        }
     } else if (this->sym == this->statement_startTokens[3]) { // `while`
-        parse_whileStatement(blk);
+        BasicBlock while_blk = BasicBlock(blk, this->instruction_list);
+        blk->children.push_back(&while_blk);
+        parse_whileStatement(&while_blk);
     } else if (this->sym == this->statement_startTokens[4]) { // `return`
-        parse_return();
+        parse_return(blk);
     }
     next(); // do we need this?
     if (this->CheckForOptional(SymbolTable::symbol_table.at(";"))) { // if [optional] next token is ';', then we still have statements
         next();
         // if we see any of these tokens then it means the next thing is another statement
         if (this->CheckForMultipleOptionals(this->statement_startTokens, STATEMENT_ST_SIZE)) {
-            parse_statement();
+            parse_statement(blk);
         }
     }
 }
@@ -184,6 +187,28 @@ void Parser::parse_statement(BasicBlock *blk) {
 //     return s;
 // }
 
+// node::whileStat* Parser::parse_whileStatement() { // this->curr->type == TOKEN_TYPE::WHILE
+//     node::whileStat *s;
+
+//     // WHILE
+//     s->relation = parse_relation(); // WHILE: relation
+
+//     // DO
+//     this->CheckFor(SymbolTable::symbol_table.at("do"));
+//     s->do_statSeq = parse_statSeq(); // DO: relation
+
+//     // OD
+//     this->CheckFor(SymbolTable::symbol_table.at("od"));
+
+//     return s;
+// }
+
+// node::returnStat* Parser::parse_return() { // this->curr->type == TOKEN_TYPE::RETURN
+//     node::returnStat *s;
+//     s->expr = parse_expr(); // TODO: how to determine optional expr?
+//     return s;
+// }
+
 void Parser::parse_assignment(BasicBlock *blk) { 
     // LET(TUCE GO)
     this->CheckFor(SymbolTable::symbol_table.at("let"));
@@ -203,7 +228,7 @@ void Parser::parse_assignment(BasicBlock *blk) {
     next();
 
     // EXPRESSION
-    int value = parse_expr();
+    int value = parse_expr(blk);
     if (blk->updated_varval_map.find(ident) == blk->updated_varval_map.end()) {
         blk->updated_varval_map.insert({ident, value});
     } else {
@@ -222,16 +247,19 @@ BasicBlock* Parser::parse_ifStatement(BasicBlock *blk) {
 
     // THEN
     this->CheckFor(SymbolTable::symbol_table.at("then"));
-    BasicBlock *ifStat_then = BasicBlock(blk, this->instruction_list);
-    blk->add_child_blk(ifStat_then);
+    BasicBlock *ifStat_then;
+    BasicBlock if_then = BasicBlock(blk, this->instruction_list);
+    ifStat_then = &if_then;
+    blk->children.push_back(ifStat_then);
     parse_statSeq(ifStat_then);
 
     // [Optional] ELSE
-    BasicBLock *ifStat_else = nullptr;
+    BasicBlock *ifStat_else = nullptr;
     if (this->CheckForOptional(SymbolTable::symbol_table.at("else"))) {
         next();
-        ifStat_else = BasicBlock(blk, this->instruction_list);
-        blk->add_child_blk(ifStat_else);
+        BasicBlock if_else = BasicBlock(blk, this->instruction_list);
+        ifStat_else = &if_else;
+        blk->children.push_back(ifStat_else);
         parse_statSeq(ifStat_else);
     }
 
@@ -241,107 +269,278 @@ BasicBlock* Parser::parse_ifStatement(BasicBlock *blk) {
     // no need for phi since only one path! just return the [ifStat_then] block (i think)
     if (ifStat_else == nullptr) { return ifStat_then; }
 
-    BasicBlock *join = BasicBlock(ifStat_then, ifStat_else, this->instruction_list);
-    ifStat_then->add_child_blk(join);
-    ifStat_else->add_child_blk(join);
+    BasicBlock *join_ptr;
+    BasicBlock join = BasicBlock(ifStat_then, ifStat_else, blk->updated_varval_map, this->instruction_list);
+    join_ptr = &join;
+    ifStat_then->children.push_back(join_ptr);
+    ifStat_else->children.push_back(join_ptr);
+
+    return join_ptr;
 }
 
 
-node::whileStat* Parser::parse_whileStatement() { // this->curr->type == TOKEN_TYPE::WHILE
-    node::whileStat *s;
-
+void Parser::parse_whileStatement(BasicBlock *blk) {
     // WHILE
-    s->relation = parse_relation(); // WHILE: relation
+    parse_relation(blk); // WHILE: relation
 
     // DO
     this->CheckFor(SymbolTable::symbol_table.at("do"));
-    s->do_statSeq = parse_statSeq(); // DO: relation
+    BasicBlock *while_body;
+    BasicBlock body = BasicBlock(blk, this->instruction_list);
+    while_body = &body;
+    blk->children.push_back(while_body);
+    while_body->children.push_back(blk); // technically a "child" since we loop back to it
+    parse_statSeq(while_body); // DO: relation
 
     // OD
     this->CheckFor(SymbolTable::symbol_table.at("od"));
-
-    return s;
 }
 
-node::returnStat* Parser::parse_return() { // this->curr->type == TOKEN_TYPE::RETURN
-    node::returnStat *s;
-    s->expr = parse_expr(); // TODO: how to determine optional expr?
-    return s;
-}
+// what we supposed to do with this??? RAHHHHHH
+void Parser::parse_return(BasicBlock *blk) {
+    int val = parse_expr(blk);
 
-node::relation* Parser::parse_relation() {
-    node::relation *s;
-    s->exprA = parse_expr();
-    
-    if (CheckForMultipleOptionals(this->relational_operations, RELATIONAL_OP_SIZE)) {
-        s->relOp = this->sym;
-        next();
+    if (val == -1) { // no expr (optional)
+        int op = SymbolTable::operator_table.at("ret");
+        this->instruction_list.at(op).InsertAtHead(SSA(op, {val}));
+        blk->instruction_list.at(op).InsertAtHead(SSA(op, {val}));
     }
-    s->exprB = parse_expr();
-    return s;
 }
 
-// maintain root node and then return that root node 
-node::expr* Parser::parse_expr() { // this->sym = first token in expr
-    node::expr *s;
+// node::relation* Parser::parse_relation() {
+//     node::relation *s;
+//     s->exprA = parse_expr();
+    
+//     if (CheckForMultipleOptionals(this->relational_operations, RELATIONAL_OP_SIZE)) {
+//         s->relOp = this->sym;
+//         next();
+//     }
+//     s->exprB = parse_expr();
+//     return s;
+// }
 
-    s->A = parse_term();
-    if (s->A == nullptr) { return nullptr; }
+void Parser::parse_relation(BasicBlock *blk) {
+    std::vector<int> operands;
+
+    int val1 = parse_expr(blk);
+    this->CheckForMultiple(this->relational_operations, RELATIONAL_OP_SIZE);
+    int relOp = this->sym;
+    next(); // is this necessary?
+    int val2 = parse_expr(blk);
+    operands = {val1, val2};
+    this->add_ssa_entry(SSA(5, operands));
+
+    int op;
+    switch (relOp) {
+        case relational_operations_arr[0]:
+            op = SymbolTable::operator_table.at("blt");
+            break;
+        case relational_operations_arr[1]:
+            op = SymbolTable::operator_table.at("bgt");
+            break;
+        case relational_operations_arr[2]:
+            op = SymbolTable::operator_table.at("ble");
+            break;
+        case relational_operations_arr[3]:
+            op = SymbolTable::operator_table.at("bge");
+            break;
+        case relational_operations_arr[4]:
+            op = SymbolTable::operator_table.at("beq");
+            break;
+        default:
+            std::cout << "relation op [sym_table id: " << this->sym << "] doesn't exist! exiting prematurely..." << std::endl;
+            exit(EXIT_FAILURE);
+            break;
+    }
+    operands = {curr_instr_num, -1}; // [-1] bc we don't know the specific instr yet
+    this->add_ssa_entry(SSA(op, operands));
+}
+// return: int
+// maintain root node and then return that root node 
+// node::expr* Parser::parse_expr() { // this->sym = first token in expr
+//     node::expr *s;
+
+//     s->A = parse_term();
+//     if (s->A == nullptr) { return nullptr; }
+
+//     // OLD COMMENT
+//     // if an [OP] exists, then [termB] also exists! put it as [termA] of new [expr]!
+//     if (this->CheckForMultipleOptionals(this->expression_operations, EXPRESSION_OP_SIZE)) {
+//         s->op = this->sym;
+//         next();
+//         s->B->e = parse_expr();
+//     } else {
+//         s->op = -1;
+//         s->B = nullptr;
+//     }
+//     return s;
+// }
+
+int Parser::parse_expr(BasicBlock *blk) { 
+    int val1 = parse_term(blk);
+    if (this->CheckForIdentifier(val1)) {
+        if (blk->updated_varval_map.find(val1) != blk->updated_varval_map.end()) {
+            val1 = blk->updated_varval_map.at(val1);
+        } else {
+            // std::cout << "expr [sym_table id: " << val1 << "] doesn't exist! exiting prematurely..." << std::endl;
+            // std::cout << "\tblk's [updated_varval_map] looks like: " << std::endl;
+            // for (const auto& pair : blk->updated_varval_map) {
+            //     std::cout << "Key: " << pair.first << ", Value: " << pair.second << std::endl;
+            // }
+            // exit(EXIT_FAILURE);
+            return -1;
+        }
+    }
 
     // OLD COMMENT
     // if an [OP] exists, then [termB] also exists! put it as [termA] of new [expr]!
     if (this->CheckForMultipleOptionals(this->expression_operations, EXPRESSION_OP_SIZE)) {
-        s->op = this->sym;
+        int op = this->sym;
         next();
-        s->B->e = parse_expr();
-    } else {
-        s->op = -1;
-        s->B = nullptr;
+        int val2 = parse_expr(blk);
+        if (this->CheckForIdentifier(val2)) {
+            // if it's not a number then it's an ident
+            if (blk->updated_varval_map.find(val2) != blk->updated_varval_map.end()) {
+                return val1 + blk->updated_varval_map.at(val2);
+            } else {
+                std::cout << "expr [sym_table id: " << val2 << "] doesn't exist! exiting prematurely..." << std::endl;
+                std::cout << "\tblk's [updated_varval_map] looks like: " << std::endl;
+                for (const auto& pair : blk->updated_varval_map) {
+                    std::cout << "Key: " << pair.first << ", Value: " << pair.second << std::endl;
+                }
+                exit(EXIT_FAILURE);
+            }
+        }
+
+        if (SymbolTable::symbol_table.at("+") == op) {
+            int operatorr = SymbolTable::operator_table.at("add");
+            this->instruction_list.at(operatorr).InsertAtHead(SSA(operatorr, {val1, val2}));
+            blk->instruction_list.at(operatorr).InsertAtHead(SSA(operatorr, {val1, val2}));
+            
+            return val1 + val2;
+        } else if (SymbolTable::symbol_table.at("-") == op) {
+            int operatorr = SymbolTable::operator_table.at("sub");
+            this->instruction_list.at(operatorr).InsertAtHead(SSA(operatorr, {val1, val2}));
+            blk->instruction_list.at(operatorr).InsertAtHead(SSA(operatorr, {val1, val2}));
+            
+            return val1 - val2;
+        }
     }
-    return s;
+    return val1;
 }
 
-node::term* Parser::parse_term() {
-    node::term *s;
+// node::term* Parser::parse_term() {
+//     node::term *s;
 
-    s->A = parse_factor();
-    if (s->A == nullptr) { return nullptr; }
+//     s->A = parse_factor();
+//     if (s->A == nullptr) { return nullptr; }
+
+//     if (this->CheckForMultipleOptionals(this->term_operations, TERM_OP_SIZE)) {
+//         s->op = this->sym;
+//         next();
+//         s->B->f = parse_factor();
+//     } else {
+//         s->op = -1;
+//         s->B = nullptr;
+//     }
+//     return s;
+// }
+
+int Parser::parse_term(BasicBlock *blk) {
+    int val1 = parse_factor(blk);
+    if (this->CheckForIdentifier(val1)) {
+        if (blk->updated_varval_map.find(val1) != blk->updated_varval_map.end()) {
+            val1 = blk->updated_varval_map.at(val1);
+        } else {
+            std::cout << "term [sym_table id: " << val1 << "] doesn't exist! exiting prematurely..." << std::endl;
+            std::cout << "\tblk's [updated_varval_map] looks like: " << std::endl;
+            for (const auto& pair : blk->updated_varval_map) {
+                std::cout << "Key: " << pair.first << ", Value: " << pair.second << std::endl;
+            }
+            exit(EXIT_FAILURE);
+        }
+    }
 
     if (this->CheckForMultipleOptionals(this->term_operations, TERM_OP_SIZE)) {
-        s->op = this->sym;
+        int op = this->sym;
         next();
-        s->B->f = parse_factor();
-    } else {
-        s->op = -1;
-        s->B = nullptr;
+        int val2 = parse_factor(blk);
+        if (this->CheckForIdentifier(val2)) {
+            if (blk->updated_varval_map.find(val2) != blk->updated_varval_map.end()) {
+                val2 = blk->updated_varval_map.at(val2);
+            } else {
+                std::cout << "term [sym_table id: " << val2 << "] doesn't exist! exiting prematurely..." << std::endl;
+                std::cout << "\tblk's [updated_varval_map] looks like: " << std::endl;
+                for (const auto& pair : blk->updated_varval_map) {
+                    std::cout << "Key: " << pair.first << ", Value: " << pair.second << std::endl;
+                }
+                exit(EXIT_FAILURE);
+            }
+        }
+
+        if (SymbolTable::symbol_table.at("*") == op) {
+            this->instruction_list.at(SymbolTable::operator_table.at("mul")).InsertAtHead(SSA(SymbolTable::operator_table.at("mul"), {val1, val2}));
+            blk->instruction_list.at(SymbolTable::operator_table.at("mul")).InsertAtHead(SSA(SymbolTable::operator_table.at("mul"), {val1, val2}));
+            
+            return val1 + val2;
+        } else if (SymbolTable::symbol_table.at("/") == op) {
+            this->instruction_list.at(SymbolTable::operator_table.at("div")).InsertAtHead(SSA(SymbolTable::operator_table.at("div"), {val1, val2}));
+            blk->instruction_list.at(SymbolTable::operator_table.at("div")).InsertAtHead(SSA(SymbolTable::operator_table.at("div"), {val1, val2}));
+            
+            return val1 - val2;
+        }
     }
-    return s;
+    return val1;
 }
 
-node::factor* Parser::parse_factor() {
-    node::factor *s;
+// node::factor* Parser::parse_factor() {
+//     node::factor *s;
 
+//     if (this->CheckForOptional(SymbolTable::symbol_table.at("("))) { // expr
+//         s->data_type = factor_data::EXPR_F;
+//         next();
+//         s->data->expr->e = parse_expr();
+//         this->CheckFor(SymbolTable::symbol_table.at(")"));
+//     } else if (this->CheckForOptional(SymbolTable::symbol_table.at("call"))) { // funcCall
+//         s->data_type = factor_data::FUNCCALL_F;
+//         s->data->funcCall = parse_funcCall();
+//     } else {
+//         // either [ident] or [number]
+//         if (this->CheckForIdentifier()) { // ident
+//             s->data_type = factor_data::IDENT_F;
+//             s->data->ident = this->sym;
+//             next();
+//         } else if (this->CheckForNumber()) { // number
+//             s->data_type = factor_data::NUM_F;
+//             s->data->num = this->sym;
+//             next();
+//         } else { return nullptr; } // else it's not a factor!
+//     }
+//     return s;
+// }
+
+int Parser::parse_factor(BasicBlock *blk) {
     if (this->CheckForOptional(SymbolTable::symbol_table.at("("))) { // expr
-        s->data_type = factor_data::EXPR_F;
         next();
-        s->data->expr->e = parse_expr();
+        int val1 = parse_expr(blk);
         this->CheckFor(SymbolTable::symbol_table.at(")"));
+        return val1;
     } else if (this->CheckForOptional(SymbolTable::symbol_table.at("call"))) { // funcCall
-        s->data_type = factor_data::FUNCCALL_F;
-        s->data->funcCall = parse_funcCall();
+        parse_funcCall(blk);
     } else {
         // either [ident] or [number]
+        int res = this->sym;
         if (this->CheckForIdentifier()) { // ident
-            s->data_type = factor_data::IDENT_F;
-            s->data->ident = this->sym;
             next();
+            return blk->updated_varval_map.at(res);
         } else if (this->CheckForNumber()) { // number
-            s->data_type = factor_data::NUM_F;
-            s->data->num = this->sym;
             next();
-        } else { return nullptr; } // else it's not a factor!
+            return res;
+        } else { 
+            std::cout << "term [sym_table id: " << res << "] doesn't exist! exiting prematurely..." << std::endl;
+            exit(EXIT_FAILURE);    
+        } // else it's not a factor!
     }
-    return s;
 }
 
 // node::funcDecl* Parser::parse_funcDecl() {
@@ -389,7 +588,7 @@ void Parser::parse_varDecl() {
 void Parser::parse_vars() { 
     // node::var *s;
     // s->ident = this->sym;
-    this->varDeclarations.push_back(this->sym);
+    this->varDeclarations.insert(this->sym);
     next();
 
     // existence of a `,` indicates a next variable exists
@@ -417,108 +616,12 @@ node::ident* Parser::parse_ident() { // this->curr->type == TOKEN_TYPE::IDENTIFI
 
 
 
-
-
-
-
-
-// // Statement parsing functions
-// void Parser::parseStatement() {
-//     if (curr.type == LET) {
-//         Parser::parseDeclaration();
-//     } else if (curr.type == IDENTIFIER) {
-//         Parser::parseAssignment();
-//     } else if (curr.type == PRINT) {
-//         Parser::parsePrintStatement();
-//     } else {
-//         std::cerr << "Syntax error: Unexpected token " << curr.lexeme << std::endl;
-//         curr = Parser::getNextToken(); // Skip token
-//     }
-// }
-
-// // Declaration parsing function
-// void Parser::parseDeclaration() {
-//     consume(LET); // Consume 'let' keyword
-//     std::string identifier = curr.lexeme;
-//     consume(IDENTIFIER); // Consume identifier
-//     // consume('='); // Consume '='
-//     std::string expressionResult = parseExpression();
-//     symbolTable[identifier] = expressionResult; // Store result in symbol table for copy propagation
-//     consume(SEMICOLON); // Consume ';'
-// }
-
-// // Assignment parsing function
-// void Parser::parseAssignment() {
-//     std::string identifier = curr.lexeme;
-//     consume(IDENTIFIER); // Consume identifier
-//     // consume('='); // Consume '='
-//     std::string expressionResult = parseExpression();
-//     symbolTable[identifier] = expressionResult; // Store result in symbol table for copy propagation
-//     consume(SEMICOLON); // Consume ';'
-// }
-
-// // Print statement parsing function
-// void Parser::parsePrintStatement() {
-//     consume(PRINT); // Consume 'print' keyword
-//     std::string expressionResult = parseExpression();
-//     ir.push_back({"", "print", expressionResult, ""}); // Generate IR for print statement
-//     consume(SEMICOLON); // Consume ';'
-// }
-
-// // Expression parsing function
-// std::string Parser::parseExpression() {
-//     std::string left = parseTerm();
-//     while (curr.type == PLUS || curr.type == MINUS) {
-//         TOKEN_TYPE op = curr.type;
-//         consume(op); // Consume operator
-//         std::string right = parseTerm();
-//         // Generate IR for addition or subtraction
-//         std::string result = generateIRBinaryOperation(left, right, op);
-//         // Perform copy propagation
-//         left = propagateCopy(result);
-//     }
-//     return left;
-// }
-
-// // Term parsing function
-// std::string Parser::parseTerm() {
-//     std::string left = parseFactor();
-//     while (curr.type == MULTIPLY || curr.type == DIVIDE) {
-//         TOKEN_TYPE op = curr.type;
-//         consume(op); // Consume operator
-//         std::string right = parseFactor();
-//         // Generate IR for multiplication or division
-//         std::string result = generateIRBinaryOperation(left, right, op);
-//         // Perform copy propagation
-//         left = propagateCopy(result);
-//     }
-//     return left;
-// }
-
-// // Factor parsing function
-// std::string Parser::parseFactor() {
-//     if (curr.type == IDENTIFIER || curr.type == NUMBER) {
-//         std::string factorResult = curr.lexeme;
-//         consume(curr.type); // Consume identifier or number
-//         return factorResult;
-//     // } else if (curr.type == '(') {
-//         // consume('('); // Consume '('
-//         std::string expressionResult = parseExpression();
-//         // consume(')'); // Consume ')'
-//         // return expressionResult;
-//     } else {
-//         std::cerr << "Syntax error: Unexpected token " << curr.lexeme << std::endl;
-//         curr = getNextToken(); // Skip token
-//         return ""; // Return empty string for error recovery
-//     }
-// }
-
 // Helper function to generate IR for binary operations
-std::string Parser::generateIRBinaryOperation(const std::string& left, const std::string& right, TOKEN_TYPE op) {
-    std::string result = "t" + std::to_string(ir.size()); // Temporary variable name
-    ir.push_back({result, getTokenString(op), left, right}); // Generate IR for binary operation
-    return result;
-}
+// std::string Parser::generateIRBinaryOperation(const std::string& left, const std::string& right, TOKEN_TYPE op) {
+//     std::string result = "t" + std::to_string(ir.size()); // Temporary variable name
+//     ir.push_back({result, getTokenString(op), left, right}); // Generate IR for binary operation
+//     return result;
+// }
 
 // Helper function to perform copy propagation
 std::string Parser::propagateCopy(const std::string& result) {
@@ -532,32 +635,14 @@ std::string Parser::propagateCopy(const std::string& result) {
 }
 
 // Helper function to get string representation of token
-std::string Parser::getTokenString(TOKEN_TYPE type) {
-    switch (type) {
-        case PLUS: return "+";
-        case MINUS: return "-";
-        case MULTIPLY: return "*";
-        case DIVIDE: return "/";
-        case SEMICOLON: return ";";
-        case PRINT: return "PRINT"; // TODO: fix this
-        default: return "";
-    }
-}
-
-
-
-
-// int main() {
-//     std::string source = "let a = 3 + 5 * (4 - 2); print a;";
-//     Parser parser(source);
-//     parser.parse_FIRSTPASS();
-//     std::vector<IRNode> ir = parser.getIR();
-
-//     // Perform common subexpression elimination (CSE)
-//     performCSE(ir);
-
-//     // Print IR
-//     printIR(ir);
-
-//     return 0;
+// std::string Parser::getTokenString(TOKEN_TYPE type) {
+//     switch (type) {
+//         case PLUS: return "+";
+//         case MINUS: return "-";
+//         case MULTIPLY: return "*";
+//         case DIVIDE: return "/";
+//         case SEMICOLON: return ";";
+//         case PRINT: return "PRINT"; // TODO: fix this
+//         default: return "";
+//     }
 // }

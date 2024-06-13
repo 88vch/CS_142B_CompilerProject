@@ -17,7 +17,7 @@ public:
 class LinkedList {
 public:
     LinkedList() 
-        : head(nullptr), tail(nullptr), length(0) 
+        : length(0) , head(nullptr), tail(nullptr)
     {
     }
     
@@ -67,7 +67,7 @@ public:
         Node *curr = head;
 
         while (curr != tail) {
-            if (curr->instr == instruction) {
+            if (SSA::compare(curr->instr, instruction)) {
                 return true;
             }
             curr = curr->next;

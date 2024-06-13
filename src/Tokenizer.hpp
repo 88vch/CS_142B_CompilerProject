@@ -11,7 +11,7 @@
 #include "Token.hpp"
 #include "SymbolTable.hpp"
 #undef DEBUG
-#define DEBUG_RESULTS
+#undef DEBUG_RESULTS
 
 class SymbolTable; // forward declaration (?)
 

@@ -7,7 +7,7 @@
 #include "src/SymbolTable.hpp"
 #include "src/FileReader.hpp"
 #include "src/Tokenizer.hpp"
-// #include "src/Parser.hpp"
+#include "src/Parser.hpp"
 // #include "src/Node.hpp"
 // #include "src/Lexer.hpp"
 
@@ -35,6 +35,7 @@ int main() {
     // std::vector<TOKEN> tokens = lexer.lex();
     Parser parser = Parser(tokens);
     parser.parse();
+    std::cout << "done parsing" << std::endl;
     // node::computation *root = parser.head();
     // std::vector<TOKEN> tokens = parser.parse(); [should return a parse tree!]
 

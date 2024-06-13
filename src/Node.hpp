@@ -17,9 +17,27 @@ the only terminals we have are: [
     keywords ex: [if | while | return | let | var | main | call | return | etc... ]
 ]
 */
+enum n_type {
+    FACTOR,
+    TERM,
+    EXPRESSION,
+    RELATION,
+    ASSIGNMENT,
+    FUNCTION_CALL,
+    IF_STATEMENT,
+    WHILE_STATEMENT,
+    RETURN_STATEMENT,
+    STATEMENT,
+    STAT_SEQUENCE,
+    VARIABLE_DECLARATION,
+    FUNCTION_DECLARATION,
+    FORMAL_PARAMETERS,
+    FUNCTION_BODY,
+    MAIN
+};
 
 std::unordered_set<n_type> terminal_nodes = {
-
+    
 };
 std::unordered_set<n_type> non_terminal_nodes = {
     
@@ -41,25 +59,6 @@ enum factor_data {
 };
 
 namespace node {
-    enum n_type {
-        FACTOR,
-        TERM,
-        EXPRESSION,
-        RELATION,
-        ASSIGNMENT,
-        FUNCTION_CALL,
-        IF_STATEMENT,
-        WHILE_STATEMENT,
-        RETURN_STATEMENT,
-        STATEMENT,
-        STAT_SEQUENCE,
-        VARIABLE_DECLARATION,
-        FUNCTION_DECLARATION,
-        FORMAL_PARAMETERS,
-        FUNCTION_BODY,
-        MAIN
-    };
-
     struct factor;
     struct term;
     struct expr;

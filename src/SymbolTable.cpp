@@ -73,7 +73,7 @@ std::unordered_map<std::string, int> SymbolTable::operator_table = {
     {"read", 23},
     {"write", 24},
     {"writeNL", 25}
-}
+};
 
 void SymbolTable::print_table() {
     std::cout << "Symbol Table;" << std::endl << "[KEYWORD/TERMINAL]: \t[INT_VAL]" << std::endl;

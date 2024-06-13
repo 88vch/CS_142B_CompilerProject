@@ -154,7 +154,7 @@ namespace tinyExceptions_ns {
     
 
 
-    void throwException(numExceptions eType, std::string errMsg) {
+    inline void throwException(numExceptions eType, std::string errMsg) {
         switch (eType) {
             case numExceptions::Incomplete_relation_LexException:
                 throw tinyExceptions_ns::Lexer_ns::Incomplete_relation_LexException(errMsg);

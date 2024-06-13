@@ -25,12 +25,20 @@ public:
     int get_operator() { return instr.at(1); }
     std::vector<int> get_operands() { 
         std::vector<int> operands = {};
-        for (int i = 2; i < instr.size(); i++) {
+        for (size_t i = 2; i < instr.size(); i++) {
             operands.push_back(instr.at(i));
         }
         return operands;
      }
     std::vector<int> get_instr() { return this->instr; }
+
+    static bool compare(SSA a, SSA b) {
+        if ((a.get_operator() == b.get_operator()) && 
+            (a.get_operands() == b.get_operands())) {
+            return true;
+        }
+        return false;
+    }
 private:
     std::vector<int> instr;
 };

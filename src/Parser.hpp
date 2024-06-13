@@ -12,11 +12,11 @@
 #include <sstream>
 #include <stack>
 
-#include "Token.hpp"
-#include "Node.hpp"
+// #include "Token.hpp"
+// #include "Node.hpp"
 #include "SymbolTable.hpp"
 #include "TinyExceptions.hpp"
-#include "SSA_DS.hpp"
+#include "SSA.hpp"
 #include "BasicBlock.hpp"
 #include "LinkedList.hpp"
 
@@ -58,25 +58,25 @@ public:
         this->funcDeclarations = {};
         this->instruction_list = {};
         for (const auto& pair : SymbolTable::operator_table) {
-            LinkedList L = new LinkedList();
-            this->instruction_list.emplace({pair.second, L});
+            LinkedList L;
+            this->instruction_list.insert({pair.second, L});
         }
     }
-    ~Parser() {
-        for (const auto& pair : this->instruction_list) {
-            LinkedList L = pair.second;
-            delete L;
-        }
-    }
+    // ~Parser() {
+    //     for (const auto& pair : this->instruction_list) {
+    //         LinkedList L = pair.second;
+    //         delete L;
+    //     }
+    // }
 
-    void add_ssa_entry(SSA instr) {
+    inline void add_ssa_entry(SSA instr) {
         LinkedList curr = this->instruction_list.at(instr.get_operator());
         curr.InsertAtHead(instr);
     }
 
     void parse(); 
     // node::main* head() { return this->root; }
-    BasicBlock head() { return this->root; }
+    BasicBlock* head() { return this->root; }
 
 
     // OLD STUFF
@@ -122,6 +122,7 @@ private:
         SymbolTable::symbol_table.at(">="),
         SymbolTable::symbol_table.at("==")
     }};
+    static constexpr int relational_operations_arr[5] = { 9, 8, 12, 11, 10 }; // the literal values taken from sym_table directly 
     
     void CheckFor(int expected_token) {
         if (this->sym != expected_token) {
@@ -136,21 +137,39 @@ private:
         }
         return true;
     }
-    bool CheckForIdentifier() {
-        for (const int &it: SymbolTable::identifiers) {
-            if (this->sym == it) {
-                return true;
+    bool CheckForIdentifier(int val = -1) {
+        if (val == -1) {
+            for (const int &it: SymbolTable::identifiers) {
+                if (this->sym == it) {
+                    return true;
+                }
             }
+            return false;
+        } else {
+            for (const int &it: SymbolTable::identifiers) {
+                if (val == it) {
+                    return true;
+                }
+            }
+            return false;
         }
-        return false;
     }
-    bool CheckForNumber() {
-        for (const int &it: SymbolTable::numbers) {
-            if (this->sym == it) {
-                return true;
+    bool CheckForNumber(int val = -1) {
+        if (val == -1) {
+            for (const int &it: SymbolTable::numbers) {
+                if (this->sym == it) {
+                    return true;
+                }
             }
+            return false;
+        } else {
+            for (const int &it: SymbolTable::numbers) {
+                if (val == it) {
+                    return true;
+                }
+            }
+            return false;
         }
-        return false;
     }
     // if we have optionals, we should check multiple symbols, since we throw a syntax error if we don't see the expected token
     void CheckForMultiple(std::vector<int> expected_tokens, int size) { 
@@ -203,53 +222,68 @@ private:
         }
     }
 
+    void parse_statSeq(BasicBlock *blk);
+    void parse_statement(BasicBlock *blk);
+    void parse_assignment(BasicBlock *blk);
+    void parse_funcCall(BasicBlock *blk);
+    BasicBlock* parse_ifStatement(BasicBlock *blk);
+    void parse_whileStatement(BasicBlock *blk);
+    void parse_return(BasicBlock *blk);
+    void parse_relation(BasicBlock *blk);
+    int parse_expr(BasicBlock *blk);
+    int parse_term(BasicBlock *blk);
+    int parse_factor(BasicBlock *blk);
+    void parse_funcDecl();
+    void parse_varDecl();
+    void parse_vars(); // helper func
+
+
+
+    // OLD STUFF [2]
     // regular grammar (should be in symbol_table)
     // node::ident* parse_ident();
     // node::num* parse_number();
 
-    node::factor* parse_factor();
-    node::term* parse_term();
-    node::expr* parse_expr();
-    node::relation* parse_relation();
+    // node::factor* parse_factor();
+    // node::term* parse_term();
+    // node::expr* parse_expr();
+    // node::relation* parse_relation();
     
-    node::assignment* parse_assignment();
-    node::funcCall* parse_funcCall();
-    node::ifStat* parse_ifStatement();
-    node::whileStat* parse_whileStatement();
-    node::returnStat* parse_return();
+    // node::assignment* parse_assignment();
+    // node::funcCall* parse_funcCall();
+    // node::ifStat* parse_ifStatement();
+    // node::whileStat* parse_whileStatement();
+    // node::returnStat* parse_return();
 
-    node::statSeq* parse_statSeq();
-    node::statement* parse_statement();
+    // node::statSeq* parse_statSeq();
+    // node::statement* parse_statement();
     
-    node::varDecl* parse_varDecl();
-    node::var* parse_vars();
-    node::funcDecl* parse_funcDecl();
+    // node::varDecl* parse_varDecl();
+    // node::var* parse_vars();
+    // node::funcDecl* parse_funcDecl();
     
     
-
-
-
-    // OLD STUFF
-    // Statement parsing functions
-    void parseStatement();
-    // Declaration parsing function
-    void parseDeclaration();
-    // Assignment parsing function
-    void parseAssignment();
-    // Print statement parsing function
-    void parsePrintStatement();
-    // Expression parsing function
-    std::string parseExpression();
-    // Term parsing function
-    std::string parseTerm();
-    // Factor parsing function
-    std::string parseFactor();
+    // OLD STUFF [1]
+    // // Statement parsing functions
+    // void parseStatement();
+    // // Declaration parsing function
+    // void parseDeclaration();
+    // // Assignment parsing function
+    // void parseAssignment();
+    // // Print statement parsing function
+    // void parsePrintStatement();
+    // // Expression parsing function
+    // std::string parseExpression();
+    // // Term parsing function
+    // std::string parseTerm();
+    // // Factor parsing function
+    // std::string parseFactor();
     // Helper function to generate IR for binary operations
-    std::string generateIRBinaryOperation(const std::string& left, const std::string& right, TOKEN_TYPE op);
+    // std::string generateIRBinaryOperation(const std::string& left, const std::string& right, TOKEN_TYPE op);
     // Helper function to perform copy propagation
     std::string propagateCopy(const std::string& result);
     // Helper function to get string representation of token
-    std::string getTokenString(TOKEN_TYPE type);
+    // std::string getTokenString(TOKEN_TYPE type);
 };
 
 
