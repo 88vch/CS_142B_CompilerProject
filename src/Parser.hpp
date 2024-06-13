@@ -17,6 +17,8 @@
 #include "SymbolTable.hpp"
 #include "TinyExceptions.hpp"
 #include "SSA_DS.hpp"
+#include "BasicBlock.hpp"
+#include "LinkedList.hpp"
 
 // [ST]: Start Tokens
 // [T]: Tokens
@@ -53,11 +55,29 @@ public:
         this->source_len = this->source.size();
         next(); // load first int into [sym]
         this->varDeclarations = {};
+        this->funcDeclarations = {};
+        this->instruction_list = {};
+        for (const auto& pair : SymbolTable::operator_table) {
+            LinkedList L = new LinkedList();
+            this->instruction_list.emplace({pair.second, L});
+        }
+    }
+    ~Parser() {
+        for (const auto& pair : this->instruction_list) {
+            LinkedList L = pair.second;
+            delete L;
+        }
     }
 
+    void add_ssa_entry(SSA instr) {
+        LinkedList curr = this->instruction_list.at(instr.get_operator());
+        curr.InsertAtHead(instr);
+    }
 
     void parse(); 
-    node::main* head() { return this->root; }
+    // node::main* head() { return this->root; }
+    BasicBlock head() { return this->root; }
+
 
     // OLD STUFF
     // Get intermediate representation (IR)
@@ -65,12 +85,14 @@ public:
 
 
     int sym;
-    std::vector<int> varDeclarations; // the int in the symbol table
-    std::vector<std::vector<int>> ssa_instructions; 
+    std::unordered_set<int> varDeclarations; // the int in the symbol table
+    std::unordered_set<int> funcDeclarations;
+    std::unordered_map<int, LinkedList> instruction_list; 
 private:
     size_t source_len, s_index = 0;
     const std::vector<int> source; // which can be translated (as needed) to a digit or to grab the identifier/keyword/terminal associated in the SymbolTable::symbol_table
-    node::main *root;
+    BasicBlock *root; // BB0
+
 
     // START TOKENS
     // int func_startTokens[] = {
@@ -78,7 +100,6 @@ private:
         SymbolTable::symbol_table.at("function"), 
         SymbolTable::symbol_table.at("void")
     }};
-    // int statement_startTokens[] = {
     std::vector<int> statement_startTokens = {{
         SymbolTable::symbol_table.at("let"),
         SymbolTable::symbol_table.at("call"),
@@ -131,7 +152,6 @@ private:
         }
         return false;
     }
-    // TODO: resume at fixing change type [int array] to [std::vector<int>]
     // if we have optionals, we should check multiple symbols, since we throw a syntax error if we don't see the expected token
     void CheckForMultiple(std::vector<int> expected_tokens, int size) { 
         bool exists = false;
@@ -182,7 +202,6 @@ private:
             this->sym = SymbolTable::symbol_table.at("EOF"); // what value to denote end???
         }
     }
-    // inline TOKEN consume() noexcept { return source.at(s_index++); }
 
     // regular grammar (should be in symbol_table)
     // node::ident* parse_ident();

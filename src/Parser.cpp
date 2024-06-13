@@ -37,75 +37,165 @@ std::vector<IRNode> Parser::getIR() {
 
 // if error [CheckFor() handles it]
 void Parser::parse() {
-    node::main *s; // expected start: [main]
+    // node::main *s; // expected start: [main]
+    BasicBlock *main = BasicBlock(nullptr, this->instruction_list);
+    this->root = main;
 
     this->CheckFor(SymbolTable::symbol_table.at("main")); // consumes `main` token
 
     if (this->CheckForOptional(SymbolTable::symbol_table.at("var"))) {
         next();
-        s->varDecl = parse_varDecl(); // ends with `;` = end of varDecl (consume it in the func)
+        // s->varDecl = parse_varDecl(); // ends with `;` = end of varDecl (consume it in the func)
+        parse_varDecl();
     }
     
     if (this->CheckForMultipleOptionals(this->func_startTokens, FUNCTION_ST_SIZE)) {
         next(); // might change (bc func retType)
-        s->funcDecl = parse_funcDecl(); // ends with `;` = end of funcDecl (consume it in the func)
+        // s->funcDecl = parse_funcDecl(); // ends with `;` = end of funcDecl (consume it in the func)
+        parse_funcDecl();
     }
     
     // if we cared about the parse tree, we'd keep the `{` and `}` like tokens, but we don't
     // more so trying to go as fast as we can: direct Abstract Syntax Tree (AST)
     this->CheckFor(SymbolTable::symbol_table.at("{")); // consumes `{`
-    s->statSeq = parse_statSeq();
+    // s->statSeq = parse_statSeq();
+    parse_statSeq(main);
     // next(); // do we need this?
     this->CheckFor(SymbolTable::symbol_table.at(".")); // consumes `.`
     
-    this->root = s; // head-node of AST
+    // this->root = s; // head-node of AST
 }
 
-node::statSeq* Parser::parse_statSeq() {
-    node::statSeq *s;
-    s->head = parse_statement(); // ends with `;` = end of varDecl (consume it in the func)
-    return s;
+// node::statSeq* Parser::parse_statSeq() {
+//     node::statSeq *s;
+//     s->head = parse_statement(); // ends with `;` = end of varDecl (consume it in the func)
+//     return s;
+// }
+
+// node::statement* Parser::parse_statement() {
+//     node::statement *s;
+
+//     // statement starting tokens: [let, call, if, while, return]
+//     // assume after every statement has a semicolon
+//     this->CheckForMultiple(this->statement_startTokens, STATEMENT_ST_SIZE);
+//     if (this->sym == this->statement_startTokens[0]) { // `let`
+//         s->data->assignment_S = parse_assignment();
+//     } else if (this->sym == this->statement_startTokens[1]) { // `call`
+//         s->data->funcCall_S = parse_funcCall();
+//     } else if (this->sym == this->statement_startTokens[2]) { // `if`
+//         s->data->ifStat_S = parse_ifStatement();
+//     } else if (this->sym == this->statement_startTokens[3]) { // `while`
+//         s->data->whileStat_S = parse_whileStatement();
+//     } else if (this->sym == this->statement_startTokens[4]) { // `return`
+//         s->data->ret_S = parse_return();
+//     }
+//     next(); // do we need this?
+//     if (this->CheckForOptional(SymbolTable::symbol_table.at(";"))) { // if [optional] next token is ';', then we still have statements
+//         next();
+//         // if we see any of these tokens then it means the next thing is another statement
+//         if (this->CheckForMultipleOptionals(this->statement_startTokens, STATEMENT_ST_SIZE)) {
+//             s->next = parse_statement();
+//         }
+//     } else {
+//         s->next = nullptr;
+//     }
+//     return s;
+// }
+
+void Parser::parse_statSeq(BasicBlock *blk) {
+    parse_statement(blk); // ends with `;` = end of varDecl (consume it in the func)
 }
 
-node::statement* Parser::parse_statement() {
-    node::statement *s;
-
+void Parser::parse_statement(BasicBlock *blk) {
     // statement starting tokens: [let, call, if, while, return]
     // assume after every statement has a semicolon
     this->CheckForMultiple(this->statement_startTokens, STATEMENT_ST_SIZE);
     if (this->sym == this->statement_startTokens[0]) { // `let`
-        s->data->assignment_S = parse_assignment();
+        parse_assignment(blk);
     } else if (this->sym == this->statement_startTokens[1]) { // `call`
-        s->data->funcCall_S = parse_funcCall();
+        parse_funcCall(blk);
     } else if (this->sym == this->statement_startTokens[2]) { // `if`
-        s->data->ifStat_S = parse_ifStatement();
+        parse_ifStatement(blk);
     } else if (this->sym == this->statement_startTokens[3]) { // `while`
-        s->data->whileStat_S = parse_whileStatement();
+        parse_whileStatement(blk);
     } else if (this->sym == this->statement_startTokens[4]) { // `return`
-        s->data->ret_S = parse_return();
+        parse_return();
     }
     next(); // do we need this?
     if (this->CheckForOptional(SymbolTable::symbol_table.at(";"))) { // if [optional] next token is ';', then we still have statements
         next();
         // if we see any of these tokens then it means the next thing is another statement
         if (this->CheckForMultipleOptionals(this->statement_startTokens, STATEMENT_ST_SIZE)) {
-            s->next = parse_statement();
+            parse_statement();
         }
-    } else {
-        s->next = nullptr;
     }
-    return s;
 }
 
-node::assignment* Parser::parse_assignment() { // this->curr->type == TOKEN_TYPE::LET
-    node::assignment *s;
 
-    // LET
+// node::assignment* Parser::parse_assignment() { // this->curr->type == TOKEN_TYPE::LET
+//     node::assignment *s;
+
+//     // LET
+//     this->CheckFor(SymbolTable::symbol_table.at("let"));
+//     next();
+
+//     // IDENT: not checking for a specific since this could be [variable]
+//     s->ident = this->sym; 
+//     next();
+
+//     // ASSIGNMENT
+//     this->CheckFor(SymbolTable::symbol_table.at("<-"));
+//     next();
+
+//     // EXPRESSION
+//     s->expr = parse_expr();
+    
+//     // this->ssa_instructions.push_back(SSA::generate_ssa_instr());
+//     return s;
+// }
+
+// node::funcCall* Parser::parse_funcCall() { // this->curr->type == TOKEN_TYPE::CALL
+//     node::funcCall *s;
+//     return s; // stub
+// }
+
+
+// node::ifStat* Parser::parse_ifStatement() { // this->curr->type == TOKEN_TYPE::IF
+//     node::ifStat *s;
+    
+//     // IF
+//     s->relation = parse_relation(); // IF: relation
+
+//     // THEN
+//     this->CheckFor(SymbolTable::symbol_table.at("then"));
+//     s->then_statSeq = parse_statSeq();
+
+//     // [Optional] ELSE
+//     if (this->CheckForOptional(SymbolTable::symbol_table.at("else"))) {
+//         next();
+//         s->else_statSeq = parse_statSeq();
+//     } else {
+//         s->else_statSeq = nullptr;
+//     }
+
+//     // FI
+//     this->CheckFor(SymbolTable::symbol_table.at("fi"));
+
+//     return s;
+// }
+
+void Parser::parse_assignment(BasicBlock *blk) { 
+    // LET(TUCE GO)
     this->CheckFor(SymbolTable::symbol_table.at("let"));
     next();
 
     // IDENT: not checking for a specific since this could be [variable]
-    s->ident = this->sym; 
+    // - validate that [variable] has been declared
+    if (this->varDeclarations.find(this->sym) == this->varDeclarations.end()) {
+        std::cout << "var [sym_table id: " << this->sym << "] doesn't exist! exiting prematurely..." << std::endl;
+        exit(EXIT_FAILURE);
+    }
+    int ident = this->sym;
     next();
 
     // ASSIGNMENT
@@ -113,40 +203,49 @@ node::assignment* Parser::parse_assignment() { // this->curr->type == TOKEN_TYPE
     next();
 
     // EXPRESSION
-    s->expr = parse_expr();
-    
-    // this->ssa_instructions.push_back(SSA::generate_ssa_instr());
-    return s;
+    int value = parse_expr();
+    if (blk->updated_varval_map.find(ident) == blk->updated_varval_map.end()) {
+        blk->updated_varval_map.insert({ident, value});
+    } else {
+        blk->updated_varval_map[ident] = value;
+    }
 }
 
-node::funcCall* Parser::parse_funcCall() { // this->curr->type == TOKEN_TYPE::CALL
-    node::funcCall *s;
-    return s; // stub
+void Parser::parse_funcCall(BasicBlock *blk) { 
+    // TODO: 
 }
 
-node::ifStat* Parser::parse_ifStatement() { // this->curr->type == TOKEN_TYPE::IF
-    node::ifStat *s;
-    
+// [BasicBlock *blk] gets modified & returned [BasicBlock] is the [join-blk]
+BasicBlock* Parser::parse_ifStatement(BasicBlock *blk) {     
     // IF
-    s->relation = parse_relation(); // IF: relation
+    parse_relation(blk); // IF: relation
 
     // THEN
     this->CheckFor(SymbolTable::symbol_table.at("then"));
-    s->then_statSeq = parse_statSeq();
+    BasicBlock *ifStat_then = BasicBlock(blk, this->instruction_list);
+    blk->add_child_blk(ifStat_then);
+    parse_statSeq(ifStat_then);
 
     // [Optional] ELSE
+    BasicBLock *ifStat_else = nullptr;
     if (this->CheckForOptional(SymbolTable::symbol_table.at("else"))) {
         next();
-        s->else_statSeq = parse_statSeq();
-    } else {
-        s->else_statSeq = nullptr;
+        ifStat_else = BasicBlock(blk, this->instruction_list);
+        blk->add_child_blk(ifStat_else);
+        parse_statSeq(ifStat_else);
     }
 
     // FI
     this->CheckFor(SymbolTable::symbol_table.at("fi"));
 
-    return s;
+    // no need for phi since only one path! just return the [ifStat_then] block (i think)
+    if (ifStat_else == nullptr) { return ifStat_then; }
+
+    BasicBlock *join = BasicBlock(ifStat_then, ifStat_else, this->instruction_list);
+    ifStat_then->add_child_blk(join);
+    ifStat_else->add_child_blk(join);
 }
+
 
 node::whileStat* Parser::parse_whileStatement() { // this->curr->type == TOKEN_TYPE::WHILE
     node::whileStat *s;
@@ -245,31 +344,63 @@ node::factor* Parser::parse_factor() {
     return s;
 }
 
-node::funcDecl* Parser::parse_funcDecl() {
-    node::funcDecl *s;
-    return s; // stub
+// node::funcDecl* Parser::parse_funcDecl() {
+//     node::funcDecl *s;
+//     return s; // stub
+// }
+
+void Parser::parse_funcDecl() {
+    // TODO: add into symbol_table (?) & [this->funcDeclarations]
+
+    // node::funcDecl *s;
+    // return s; // stub
 }
 
-node::varDecl* Parser::parse_varDecl() { // this->curr->type == TOKEN_TYPE::VAR
-    node::varDecl *s;
-    s->head = parse_vars();
+// node::varDecl* Parser::parse_varDecl() { // this->curr->type == TOKEN_TYPE::VAR
+//     node::varDecl *s;
+//     s->head = parse_vars();
+//     this->CheckFor(SymbolTable::symbol_table.at(";"));
+//     return s;
+// }
+
+// node::var* Parser::parse_vars() { // this->curr->type == TOKEN_TYPE::IDENTIFIER
+//     node::var *s;
+//     s->ident = this->sym;
+//     this->varDeclarations.push_back(this->sym);
+//     next();
+
+//     // existence of a `,` indicates a next variable exists
+//     if (this->CheckForOptional(SymbolTable::symbol_table.at(","))) {
+//         next(); // consuming the `,`
+//         s->next = parse_vars();
+//     }
+//     return s;
+// }
+
+
+void Parser::parse_varDecl() { 
+    // node::varDecl *s;
+    // s->head = parse_vars();
+    parse_vars();
     this->CheckFor(SymbolTable::symbol_table.at(";"));
-    return s;
+    // return s;
 }
 
-node::var* Parser::parse_vars() { // this->curr->type == TOKEN_TYPE::IDENTIFIER
-    node::var *s;
-    s->ident = this->sym;
+void Parser::parse_vars() { 
+    // node::var *s;
+    // s->ident = this->sym;
     this->varDeclarations.push_back(this->sym);
     next();
 
     // existence of a `,` indicates a next variable exists
     if (this->CheckForOptional(SymbolTable::symbol_table.at(","))) {
         next(); // consuming the `,`
-        s->next = parse_vars();
+        // s->next = parse_vars();
+        parse_vars();
     }
-    return s;
+    // return s;
 }
+
 
 /*
 whether or not this will actually work is another story

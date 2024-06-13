@@ -2,63 +2,69 @@
 #define BASICBLOCK_HPP
 
 #include "SymbolTable.hpp"
-#include "AST_Node.hpp"
+// #include "AST_Node.hpp"
 #include <variant>
-#include "SSA_DS.hpp"
+#include "SSA.hpp"
+#include "LinkedList.hpp"
 
 // Remark: the [SubTree]'s should become our [BasicBlock]'s (i.e. we shouldn't need BasicBlock.hpp)
 
-// using NodeVariant = std::variant<std::shared_ptr<main_Node>,
-//                                  std::shared_ptr<funcBody_Node>,
-//                                  std::shared_ptr<formalParam_Node>,
-//                                  std::shared_ptr<funcDecl_Node>,
-//                                  std::shared_ptr<varDecl_Node>,
-//                                  std::shared_ptr<statSequence_Node>,
-//                                  std::shared_ptr<statement_Node>,
-//                                  std::shared_ptr<return_Node>,
-//                                  std::shared_ptr<while_Node>,
-//                                  std::shared_ptr<if_Node>,
-//                                  std::shared_ptr<funcCall_Node>,
-//                                  std::shared_ptr<assignment_Node>,
-//                                  std::shared_ptr<relation_Node>,
-//                                  std::shared_ptr<expression_Node>,
-//                                  std::shared_ptr<term_Node>,
-//                                  std::shared_ptr<factor_Node>,
-//                                  std::shared_ptr<identNum_Node>>;
 
 class BasicBlock {
 public:
-    BasicBlock(BasicBlock *parent) : ssa_instructions()
+    BasicBlock(BasicBlock *p, std::unordered_map<int, LinkedList> curr_instr_lst) //: ssa_instructions()
     {
-        if (parent != nullptr) { // assume BB0!
-            this->updated_sym_table = parent->get_sym_table();
-            this->children = {};
-        } else {
-            this->updated_sym_table = {};
-            this->children = {};
+        if (p != nullptr) { 
+            this->parent = p;
+            this->updated_varval_map = this->parent->get_curr_vv_map();
+        } else { // assume BB0!
+            this->parent = nullptr;
+            this->updated_varval_map = {};
         }
+        this->instruction_list = curr_instr_lst;
+        this->children = {};
     }
 
-    // Custom destructor to properly manage shared pointers
-    ~BasicBlock() {
-        // Resetting the shared pointer will release the associated resource (if any)
-        std::visit([](auto& ptr) { ptr.reset(); }, root);
-    }
-
-
-    std::unordered_map<std::string, int> get_sym_table() const noexcept { return this->updated_sym_table; }
+    // std::unordered_map<int, LinkedList> get_instr_list() const noexcept { return instruction_list; }
+    // void set_instr_list(std::unordered_map<int, LinkedList> lst) { instruction_list = lst; }
+    std::unordered_map<int, int> get_curr_vv_map() const noexcept { return this->updated_varval_map; }
     void add_child_blk(BasicBlock *child) { this->children.push_back(child); }
-    // BasicBlock MakeTree(NodeVariant base);
-    // BasicBlock CombineTree(BasicBlock x, BasicBlock y, int op);
-
-    // NodeVariant root;
-
 private:
+    BasicBlock *parent;
     std::vector<BasicBlock *> children;
+    std::unordered_map<int, int> updated_varval_map; // [variable (sym_table val) : value]
     // an ssa instruction: std::vector<int>
     // [#: debugging] [operation] [operand(s)]
-    std::vector<std::vector<int>> ssa_instructions; 
-    std::unordered_map<std::string, int> updated_sym_table; // symbol table int
+    std::vector<SSA> ssa_instructions; 
+    std::unordered_map<int, LinkedList> instruction_list; 
+};
+
+class BB0 : BasicBlock {
+public:
+    BasicBlock(std::unordered_map<int, LinkedList> curr_instr_lst) //: ssa_instructions()
+    {
+        // assume BB0! [no parent BasicBlock]
+        this->parent = nullptr;
+        this->updated_varval_map = {};
+        this->instruction_list = curr_instr_lst;
+        this->children = {};
+    }
+private:
+    // TODO: copy from [BasicBlock]
+};
+
+class BB_Join : BasicBlock {
+public:
+    // special block: [join]
+    BasicBlock(BasicBlock *p1, BasicBlock *p2, std::unordered_map<int, int> DOM_vv_map, std::unordered_map<int, LinkedList> curr_instr_lst)
+    {
+        this->parent = nullptr;
+        this->updated_varval_map = DOM_vv_map;
+        this->instruction_list = curr_instr_lst;
+        this->children = {};
+    }
+private:
+    // TODO: copy from [BasicBlock]
 };
 
 #endif
