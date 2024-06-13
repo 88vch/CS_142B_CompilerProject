@@ -16,6 +16,7 @@
 #include "Node.hpp"
 #include "SymbolTable.hpp"
 #include "TinyExceptions.hpp"
+#include "SSA_DS.hpp"
 
 // [ST]: Start Tokens
 // [T]: Tokens
@@ -51,6 +52,7 @@ public:
     {
         this->source_len = this->source.size();
         next(); // load first int into [sym]
+        this->varDeclarations = {};
     }
 
 
@@ -63,6 +65,8 @@ public:
 
 
     int sym;
+    std::vector<int> varDeclarations; // the int in the symbol table
+    std::vector<std::vector<int>> ssa_instructions; 
 private:
     size_t source_len, s_index = 0;
     const std::vector<int> source; // which can be translated (as needed) to a digit or to grab the identifier/keyword/terminal associated in the SymbolTable::symbol_table

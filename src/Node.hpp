@@ -13,10 +13,18 @@ so this should be for generating Abstract Syntax Tree (AST)???
 // everything that is NOT in a [terminal] node will be considered [non-terminal]
 /* 
 the only terminals we have are: [
-    number, letter, op, relOp, semicolon, period,
+    number, letter
     keywords ex: [if | while | return | let | var | main | call | return | etc... ]
 ]
 */
+
+std::unordered_set<n_type> terminal_nodes = {
+
+};
+std::unordered_set<n_type> non_terminal_nodes = {
+    
+};
+
 
 enum statement_data {
     ASSIGNMENT_S,

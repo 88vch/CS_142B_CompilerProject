@@ -33,8 +33,8 @@ int main() {
     // OLD: Lexer, NEW: Parser
     // Lexer lexer = Lexer(contents);
     // std::vector<TOKEN> tokens = lexer.lex();
-    // Parser parser = Parser(tokens);
-    // parser.parse();
+    Parser parser = Parser(tokens);
+    parser.parse();
     // node::computation *root = parser.head();
     // std::vector<TOKEN> tokens = parser.parse(); [should return a parse tree!]
 

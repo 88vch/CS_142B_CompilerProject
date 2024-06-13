@@ -46,7 +46,7 @@ void Parser::parse() {
         s->varDecl = parse_varDecl(); // ends with `;` = end of varDecl (consume it in the func)
     }
     
-    if (this->CheckForMultipleOptional(this->func_startTokens, FUNCTION_ST_SIZE)) {
+    if (this->CheckForMultipleOptionals(this->func_startTokens, FUNCTION_ST_SIZE)) {
         next(); // might change (bc func retType)
         s->funcDecl = parse_funcDecl(); // ends with `;` = end of funcDecl (consume it in the func)
     }
@@ -115,6 +115,7 @@ node::assignment* Parser::parse_assignment() { // this->curr->type == TOKEN_TYPE
     // EXPRESSION
     s->expr = parse_expr();
     
+    // this->ssa_instructions.push_back(SSA::generate_ssa_instr());
     return s;
 }
 
@@ -259,6 +260,7 @@ node::varDecl* Parser::parse_varDecl() { // this->curr->type == TOKEN_TYPE::VAR
 node::var* Parser::parse_vars() { // this->curr->type == TOKEN_TYPE::IDENTIFIER
     node::var *s;
     s->ident = this->sym;
+    this->varDeclarations.push_back(this->sym);
     next();
 
     // existence of a `,` indicates a next variable exists
