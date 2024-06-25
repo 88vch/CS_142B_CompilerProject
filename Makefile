@@ -16,7 +16,7 @@ EXECUTABLE = $(BINDIR)/tiny
 
 .PHONY: all clean
 
-all: dir $(EXECUTABLE)
+all: dir $(EXECUTABLE) mv_dir
 
 $(EXECUTABLE): $(OBJECTS)
 	$(CC) $(CFLAGS) $(OBJECTS) -o $@
@@ -26,6 +26,9 @@ $(EXECUTABLE): $(OBJECTS)
 
 dir:
 	@mkdir -p $(BINDIR)
+
+mv_dir:
+	@mv src/*.o $(BINDIR)
 
 clean:
 	@rm -rf $(BINDIR)
