@@ -4,6 +4,9 @@
 
 #include <stdio.h>
 #include <cstdio>
+#include <string>
+#include <vector>
+#include <unordered_map>
 
 #define DEBUG
 
@@ -56,6 +59,52 @@ public:
 
         // Write content to the file
         file << content;
+
+        // Close the file
+        file.close();
+        return true; // Return true to indicate success
+    }
+
+    static bool write_file_contents(const std::string &out_f, const std::vector<int>& content, const std::string &tableName) {
+        // Open the file for writing
+        std::ofstream file(out_f);
+
+        // Check if the file was opened successfully
+        if (!file.is_open()) {
+            std::cerr << "Failed to open the file." << std::endl;
+            return false; // Return false to indicate failure
+        }
+
+        // Write content to the file
+        std::cout << tableName << ";" << std::endl << "[INT_VAL]" << std::endl;
+        for (int c : content) {
+            file << std::to_string(c) << std::endl;
+        }
+
+        // Close the file
+        file.close();
+        return true; // Return true to indicate success
+    }
+    
+    static bool write_file_contents(const std::string &out_f, const std::unordered_map<std::string, int>& content, const std::string &tableName) {
+        // Open the file for writing
+        std::ofstream file(out_f);
+
+        // Check if the file was opened successfully
+        if (!file.is_open()) {
+            std::cerr << "Failed to open the file." << std::endl;
+            return false; // Return false to indicate failure
+        }
+
+        // Write content to the file
+        std::cout << tableName << ";" << std::endl << "[KEYWORD/TERMINAL]: \t[INT_VAL]" << std::endl;
+        for (const auto &pair : content) {
+            if ((pair.first).length() > 3) {
+                std::cout << "[" << pair.first << "]" << ": \t\t[" << pair.second << "]" << std::endl;
+            } else {
+                std::cout << "[" << pair.first << "]" << ": \t\t\t[" << pair.second << "]" << std::endl;
+            }
+        }
 
         // Close the file
         file.close();

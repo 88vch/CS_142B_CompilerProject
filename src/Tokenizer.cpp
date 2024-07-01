@@ -301,6 +301,7 @@ void Tokenizer::number() {
 
 
 void Tokenizer::identkeyword() {
+    // could be an identifier (can have num or char after first char)
     if (std::isalpha(this->sym)) {
         std::string buff = "";
         buff.push_back(this->sym);
@@ -309,20 +310,13 @@ void Tokenizer::identkeyword() {
             buff.push_back(this->sym);
             next();
         }
-        if (std::isalnum(this->sym)) {
-            // could be an identifier (can have num or char after first char)
-            while (std::isalnum(this->sym)) {
-                buff.push_back(this->sym);
-                next();
-            }
-        }
         auto it = SymbolTable::symbol_table.find(buff);
         if (it != SymbolTable::symbol_table.end()) {
             #ifdef DEBUG
                 std::cout << "\t\t\tin identkeyword(buff=[" << buff << "], found val in [SymbolTable::symbol_table]=[" << it->second << "])";
             #endif
             this->token = it->second;
-        } else {
+        } else { // if it's not in the [symbol_table], it's an identifier: 1) check if alr exists, if so use that value, else add it into [identifier] map 
             #ifdef DEBUG
                 std::cout << "\t\t\tin identkeyword(buff=[" << buff << "], adding NEW ENTRY to [SymbolTable::symbol_table] with val=[" << SymbolTable::symbol_table.size() << "])";
             #endif

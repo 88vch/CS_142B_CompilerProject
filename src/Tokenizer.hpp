@@ -13,7 +13,7 @@
 #undef DEBUG
 #undef DEBUG_RESULTS
 
-class SymbolTable; // forward declaration (?)
+// class SymbolTable; // forward declaration (?)
 
 class Tokenizer {
 public:

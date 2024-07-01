@@ -9,18 +9,15 @@
 
 #include <string>
 
-class SymbolTable {
-public:
-    SymbolTable() 
-    {
-    }
-
-    static void update_table(std::string s);
-    static std::vector<int> identifiers;
-    static std::vector<int> numbers;
-    static std::unordered_map<std::string, int> symbol_table;
-    static std::unordered_map<std::string, int> operator_table;
-    static void print_table();
+namespace SymbolTable {
+    void print_symbol_table();
+    void print_identifiers_table();
+    void print_numbers_table();
+    void update_table(std::string s);
+    extern std::vector<int> identifiers;
+    extern std::vector<int> numbers;
+    extern std::unordered_map<std::string, int> symbol_table; // find() from [symbol_table]
+    extern const std::unordered_map<std::string, int> operator_table; // translate into operator from [operator_table]
 };
 
 // extern std::unordered_map<std::string, int> SymbolTable::symbol_table;

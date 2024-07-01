@@ -2,6 +2,7 @@ CC = g++
 CFLAGS = -g -Wall -Wextra -std=c++20
 SRCDIR = src
 BINDIR = bin
+RESDIR = res
 
 # List of source files
 SOURCES := $(wildcard $(SRCDIR)/*.cpp)
@@ -26,11 +27,14 @@ $(EXECUTABLE): $(OBJECTS)
 
 dir:
 	@mkdir -p $(BINDIR)
+	@mkdir -p $(RESDIR)
 
 mv_dir:
 	@mv src/*.o $(BINDIR)
+	@mv main.o $(BINDIR)
 
 clean:
 	@rm -rf $(BINDIR)
+	@rm -rf $(RESDIR)
 	@rm -f src/*.o
 	@rm -rf tst/Lexer_results.txt
