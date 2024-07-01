@@ -85,6 +85,38 @@ public:
         file.close();
         return true; // Return true to indicate success
     }
+
+    static bool write_file_contents(const std::string &out_f, const std::unordered_map<int, std::string>& content, const std::string &tableName) {
+        // Open the file for writing
+        std::ofstream file(out_f);
+
+        // Check if the file was opened successfully
+        if (!file.is_open()) {
+            std::cerr << "Failed to open the file." << std::endl;
+            return false; // Return false to indicate failure
+        }
+
+        const int content_size = content.size();
+
+        // Write content to the file
+        file << tableName << ";" << std::endl << "[KEYWORD/TERMINAL]: \t[INT_VAL]" << std::endl;
+        for (int i = -1; i < content_size - 1; i++) {
+            for (const auto &pair : content) {
+                if (pair.first != i) { continue; } 
+                if ((pair.second).length() > 7) {
+                    file << "[" << pair.first << "]" << ": \t\t[" << pair.second << "]" << std::endl;
+                } else if ((pair.second).length() > 3) {
+                    file << "[" << pair.first << "]" << ": \t\t\t[" << pair.second << "]" << std::endl;
+                } else {
+                    file << "[" << pair.first << "]" << ": \t\t\t\t[" << pair.second << "]" << std::endl;
+                }
+            }
+        }
+
+        // Close the file
+        file.close();
+        return true; // Return true to indicate success
+    }
     
     static bool write_file_contents(const std::string &out_f, const std::unordered_map<std::string, int>& content, const std::string &tableName) {
         // Open the file for writing
@@ -96,13 +128,20 @@ public:
             return false; // Return false to indicate failure
         }
 
+        const int content_size = content.size();
+
         // Write content to the file
-        std::cout << tableName << ";" << std::endl << "[KEYWORD/TERMINAL]: \t[INT_VAL]" << std::endl;
-        for (const auto &pair : content) {
-            if ((pair.first).length() > 3) {
-                std::cout << "[" << pair.first << "]" << ": \t\t[" << pair.second << "]" << std::endl;
-            } else {
-                std::cout << "[" << pair.first << "]" << ": \t\t\t[" << pair.second << "]" << std::endl;
+        file << tableName << ";" << std::endl << "[KEYWORD/TERMINAL]: \t[INT_VAL]" << std::endl;
+        for (int i = -1; i < content_size - 1; i++) {
+            for (const auto &pair : content) {
+                if (pair.second != i) { continue; } 
+                if ((pair.first).length() > 7) {
+                    file << "[" << pair.first << "]" << ": \t\t[" << pair.second << "]" << std::endl;
+                } else if ((pair.first).length() > 3) {
+                    file << "[" << pair.first << "]" << ": \t\t\t[" << pair.second << "]" << std::endl;
+                } else {
+                    file << "[" << pair.first << "]" << ": \t\t\t\t[" << pair.second << "]" << std::endl;
+                }
             }
         }
 

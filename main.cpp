@@ -47,10 +47,19 @@ int main() {
     std::string numbers_f = "res/Numbers_result.txt";
 
     bool res = fr.write_file_contents(tokenize_f, tokens, "Tokenizer Tokens");
-    bool st = fr.write_file_contents(symbolTable_f, SymbolTable::symbol_table, "Symbol Table");
-    bool ids = fr.write_file_contents(identifiers_f, SymbolTable::identifiers, "Identifiers");
-    bool nums = fr.write_file_contents(numbers_f, SymbolTable::numbers, "Numbers");
     if (res) { std::cout << "Results have successfully been written to: " << tokenize_f << std::endl; }
+    else { std::cout << "Error occured when trying to write results!" << std::endl; }
+
+    bool st = fr.write_file_contents(symbolTable_f, SymbolTable::symbol_table, "Symbol Table");
+    if (res) { std::cout << "Results have successfully been written to: " << symbolTable_f << std::endl; }
+    else { std::cout << "Error occured when trying to write results!" << std::endl; }
+
+    bool ids = fr.write_file_contents(identifiers_f, SymbolTable::identifiers, "Identifiers");
+    if (res) { std::cout << "Results have successfully been written to: " << identifiers_f << std::endl; }
+    else { std::cout << "Error occured when trying to write results!" << std::endl; }
+
+    bool nums = fr.write_file_contents(numbers_f, SymbolTable::numbers, "Numbers");
+    if (res) { std::cout << "Results have successfully been written to: " << numbers_f << std::endl; }
     else { std::cout << "Error occured when trying to write results!" << std::endl; }
 
     // // OLD: Lexer, NEW: Parser

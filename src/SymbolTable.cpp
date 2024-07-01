@@ -1,43 +1,90 @@
 #include "SymbolTable.hpp"
 
 namespace SymbolTable {
-    std::vector<int> identifiers = {};
-    std::vector<int> numbers = {};
+    // std::vector<int> identifiers = {};
+    // std::vector<int> numbers = {};
 
-    std::unordered_map<std::string, int> symbol_table  = { // find() from [symbol_table]
-        {"EOF", -1},
-        {"+", 0},
-        {"-", 1},
-        {"*", 2},
-        {"/", 3},
-        {";", 4},
-        {"var", 5}, 
-        {"let", 6}, 
-        {"<-", 7}, 
-        {">", 8}, 
-        {"<", 9},  
-        {"==", 10}, 
-        {">=", 11}, 
-        {"<=", 12}, 
-        {"(", 13}, 
-        {")", 14},
-        {"{", 15}, 
-        {"}", 16},  
-        {",", 17}, 
-        {"if", 18}, 
-        {"then", 19}, 
-        {"else", 20}, 
-        {"fi", 21},
-        {"while", 22}, 
-        {"do", 23}, 
-        {"od", 24}, 
-        {"call", 25}, 
-        {"function", 26},
-        {"void", 27}, 
-        {"return", 28}, 
-        {"main", 29},
-        {".", 30}
+
+    std::unordered_map<std::string, int> keywords = {
+        
     };
+
+    // holds symbol_table key's that are identifiers [identifier: literal = std::string, value = int]
+    std::unordered_map<std::string, int> identifiers = {};  
+
+    // holds symbol_table key's that are numbers [number: literal = std::string, value = int]
+    std::unordered_map<std::string, int> numbers = {};
+
+    // should make int=key & std::string=value
+    std::unordered_map<int, std::string> symbol_table  = { // find() from [symbol_table]
+        {-1, "EOF"},
+        {0, "+"},
+        {1, "-"},
+        {2, "*"},
+        {3, "/"},
+        {4, ";"},
+        {5, "var"}, 
+        {6, "let"}, 
+        {7, "<-"}, 
+        {8, ">"}, 
+        {9, "<"},  
+        {10, "=="}, 
+        {11, ">="}, 
+        {12, "<="}, 
+        {13, "("}, 
+        {14, ")"},
+        {15, "{"}, 
+        {16, "}"},  
+        {17, ","}, 
+        {18, "if"}, 
+        {19, "then"}, 
+        {20, "else"}, 
+        {21, "fi"},
+        {22, "while"}, 
+        {23, "do"}, 
+        {24, "od"}, 
+        {25, "call"}, 
+        {26, "function"},
+        {27, "void"}, 
+        {28, "return"}, 
+        {29, "main"},
+        {30, "."}
+    };
+    
+    // std::unordered_map<std::string, int> symbol_table  = { // find() from [symbol_table]
+    //     {"EOF", -1},
+    //     {"+", 0},
+    //     {"-", 1},
+    //     {"*", 2},
+    //     {"/", 3},
+    //     {";", 4},
+    //     {"var", 5}, 
+    //     {"let", 6}, 
+    //     {"<-", 7}, 
+    //     {">", 8}, 
+    //     {"<", 9},  
+    //     {"==", 10}, 
+    //     {">=", 11}, 
+    //     {"<=", 12}, 
+    //     {"(", 13}, 
+    //     {")", 14},
+    //     {"{", 15}, 
+    //     {"}", 16},  
+    //     {",", 17}, 
+    //     {"if", 18}, 
+    //     {"then", 19}, 
+    //     {"else", 20}, 
+    //     {"fi", 21},
+    //     {"while", 22}, 
+    //     {"do", 23}, 
+    //     {"od", 24}, 
+    //     {"call", 25}, 
+    //     {"function", 26},
+    //     {"void", 27}, 
+    //     {"return", 28}, 
+    //     {"main", 29},
+    //     {".", 30}
+    // };
     
     const std::unordered_map<std::string, int> operator_table = { // translate into operator from [operator_table]
         {"const", 0},       // special func
@@ -70,34 +117,62 @@ namespace SymbolTable {
         {"writeNL", 25}
     };
 
-    void update_table(std::string s) {
-        int id = symbol_table.size();
-        symbol_table.emplace(s, id);
-        identifiers.push_back(id);
+    void update_table(std::string s, std::string type) {
+        int id = symbol_table.size() - 1;
+        // symbol_table.emplace(s, id);
+        symbol_table.emplace(id, s);
+
+        if (type == "identifier") {
+            // identifiers.push_back(id);
+
+            /*
+                ToDo: do we need to [check] & [differentiate]
+                    between the same variable if it contains different values?
+                        - if so, we need to check and do this in [Tokenizer], 
+                            since that's where we check for existence
+            */
+            
+
+            identifiers.emplace(s, id);
+        } else if (type == "number") {
+            numbers.emplace(s, id);
+        }
     }
 
     void print_symbol_table() {
         std::cout << "Symbol Table;" << std::endl << "[KEYWORD/TERMINAL]: \t[INT_VAL]" << std::endl;
         for (const auto &pair : symbol_table) {
-            if ((pair.first).length() > 3) {
-                std::cout << "[" << pair.first << "]" << ": \t\t[" << pair.second << "]" << std::endl;
-            } else {
-                std::cout << "[" << pair.first << "]" << ": \t\t\t[" << pair.second << "]" << std::endl;
-            }
+            // if ((pair.first).length() > 3) {
+            //     std::cout << "[" << pair.first << "]" << ": \t\t[" << pair.second << "]" << std::endl;
+            // } else {
+            //     std::cout << "[" << pair.first << "]" << ": \t\t\t[" << pair.second << "]" << std::endl;
+            // }
+            std::cout << "[" << pair.first << "]" << ": \t\t\t[" << pair.second << "]" << std::endl;
         }
     }
 
     void print_identifiers_table() {
         std::cout << "Identifier Table;" << std::endl << "[i-th IDENT]: \t[INT_VAL]" << std::endl;
-        for (size_t i = 0; i < identifiers.size(); i++) {
-            std::cout << "[" << i << "]" << ": \t\t\t[" << identifiers.at(i) << "]" << std::endl;
+        // for (size_t i = 0; i < identifiers.size(); i++) {
+        //     std::cout << "[" << i << "]" << ": \t\t\t[" << identifiers.at(i) << "]" << std::endl;
+        // }
+        int i = 0;
+        for (const auto &c : identifiers) {
+            std::cout << "[" << c.first << "]" << ": \t\t\t[" << c.second << "]" << std::endl;
+            i++;
         }
     }
 
     void print_number_table() {
         std::cout << "Number Table;" << std::endl << "[i-th NUM]: \t[INT_VAL]" << std::endl;
-        for (size_t i = 0; i < numbers.size(); i++) {
-            std::cout << "[" << i << "]" << ": \t\t\t[" << numbers.at(i) << "]" << std::endl;
+        // for (size_t i = 0; i < numbers.size(); i++) {
+        //     std::cout << "[" << i << "]" << ": \t\t\t[" << numbers.at(i) << "]" << std::endl;
+        // }
+
+        int i = 0;
+        for (const auto &c : numbers) {
+            std::cout << "[" << c.first << "]" << ": \t\t\t[" << c.second << "]" << std::endl;
+            i++;
         }
     }
 };

@@ -296,7 +296,7 @@ void Tokenizer::number() {
     #ifdef DEBUG
         std::cout << "\t\tdone number(token=" << this->token << ")" << std::endl;
     #endif
-    SymbolTable::numbers.push_back(this->token);
+    SymbolTable::update_table(std::to_string(this->token), "number");
 }
 
 
@@ -306,23 +306,21 @@ void Tokenizer::identkeyword() {
         std::string buff = "";
         buff.push_back(this->sym);
         next();
-        while (std::isalpha(this->sym)) {
+        while (std::isalnum(this->sym)) { // identifiers only need to START with an alpha
             buff.push_back(this->sym);
             next();
         }
-        auto it = SymbolTable::symbol_table.find(buff);
-        if (it != SymbolTable::symbol_table.end()) {
+        auto it = SymbolTable::identifiers.find(buff);
+        if (it != SymbolTable::identifiers.end()) {
             #ifdef DEBUG
-                std::cout << "\t\t\tin identkeyword(buff=[" << buff << "], found val in [SymbolTable::symbol_table]=[" << it->second << "])";
+                std::cout << "\t\t\tin identkeyword(buff=[" << buff << "], found val in [SymbolTable::identifiers]=[" << it->second << "])";
             #endif
             this->token = it->second;
         } else { // if it's not in the [symbol_table], it's an identifier: 1) check if alr exists, if so use that value, else add it into [identifier] map 
             #ifdef DEBUG
                 std::cout << "\t\t\tin identkeyword(buff=[" << buff << "], adding NEW ENTRY to [SymbolTable::symbol_table] with val=[" << SymbolTable::symbol_table.size() << "])";
             #endif
-            this->token = SymbolTable::symbol_table.size();
-            // SymbolTable::symbol_table.emplace(buff, SymbolTable::symbol_table.size());
-            SymbolTable::update_table(buff);
+            SymbolTable::update_table(buff, "identifier");
         }
     // } else if (this->sym == EOF) {
     //     std::string buff = "";
@@ -355,9 +353,7 @@ void Tokenizer::identkeyword() {
             #ifdef DEBUG
                 std::cout << "\t\tnew ident added to table with int buff=[" << SymbolTable::symbol_table.size() << "]" << std::endl;
             #endif
-            this->token = SymbolTable::symbol_table.size();
-            // SymbolTable::symbol_table.emplace(buff, this->token);
-            SymbolTable::update_table(buff);
+            SymbolTable::update_table(buff, "identifier");
         }
     }
     #ifdef DEBUG
