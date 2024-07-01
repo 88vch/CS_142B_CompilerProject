@@ -14,6 +14,7 @@ SymbolTable::numbers <br>
 - QUESTION: are we only using [SymbolTable::numbers], [SymbolTable::identifiers], & [SymbolTable::keywords]
     during [Tokenizer] tokenization process? 
     - (I ask bc I assume after tokenizer we only use lookup on [SymbolTable::symbol_table]) <br><br>
+
 [06/30/2024; 23:00]
 - why do we keep track of this again? could we just make it a set if we only care about the numbers we've seen?
 - i'm assuming we care about order (and therefore WANT duplicate numbers) because it's a vector.
