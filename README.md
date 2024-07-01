@@ -5,6 +5,7 @@
 <br>
 <br>
 ### Notes
+<br> 
 **SymbolTable::numbers** <br> 
 [06/30/2024; 23:30]
 - the point was assuming we cared about order, 
@@ -21,5 +22,6 @@
 
 <br>
 <br>
-##### Done
+#### Done 
+<br>
 changed [SymbolTable::symbol_table from <std::string, int> to <int, std::string>] & all it's respective functions [SymbolTable.hpp] & the calls in [Tokenizer.*]
