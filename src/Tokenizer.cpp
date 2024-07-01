@@ -67,16 +67,20 @@ int Tokenizer::GetNext() {
         switch(this->sym) {
             case '*':
                 next();
-                return (SymbolTable::symbol_table.find(str))->second;
+                this->token = SymbolTable::keywords.at(str);
+                return this->token;
             case '/':
                 next();
-                return (SymbolTable::symbol_table.find(str))->second;
+                this->token = SymbolTable::keywords.at(str);
+                return this->token;
             case '+':
                 next();
-                return (SymbolTable::symbol_table.find(str))->second;
+                this->token = SymbolTable::keywords.at(str);
+                return this->token;
             case '-':
                 next();
-                return (SymbolTable::symbol_table.find(str))->second;
+                this->token = SymbolTable::keywords.at(str);
+                return this->token;
             case '0':
                 number();
                 return this->token;
@@ -296,10 +300,15 @@ void Tokenizer::number() {
     #ifdef DEBUG
         std::cout << "\t\tdone number(token=" << this->token << ")" << std::endl;
     #endif
-    SymbolTable::update_table(std::to_string(this->token), "number");
+
+    // this is the first time we see this number
+    if (SymbolTable::numbers.find(std::to_string(this->token)) == SymbolTable::numbers.end()) {
+        SymbolTable::update_table(std::to_string(this->token), "number");
+    }
+    this->token = SymbolTable::numbers.at(std::to_string(this->token));
 }
 
-
+// ToDo a1: would be revising here
 void Tokenizer::identkeyword() {
     // could be an identifier (can have num or char after first char)
     if (std::isalpha(this->sym)) {
@@ -310,30 +319,31 @@ void Tokenizer::identkeyword() {
             buff.push_back(this->sym);
             next();
         }
-        auto it = SymbolTable::identifiers.find(buff);
-        if (it != SymbolTable::identifiers.end()) {
+        auto it = SymbolTable::keywords.find(buff);
+        if (it != SymbolTable::keywords.end()) {
             #ifdef DEBUG
                 std::cout << "\t\t\tin identkeyword(buff=[" << buff << "], found val in [SymbolTable::identifiers]=[" << it->second << "])";
             #endif
             this->token = it->second;
-        } else { // if it's not in the [symbol_table], it's an identifier: 1) check if alr exists, if so use that value, else add it into [identifier] map 
-            #ifdef DEBUG
-                std::cout << "\t\t\tin identkeyword(buff=[" << buff << "], adding NEW ENTRY to [SymbolTable::symbol_table] with val=[" << SymbolTable::symbol_table.size() << "])";
-            #endif
-            SymbolTable::update_table(buff, "identifier");
+        } else { // if it's not in a [keyword], it will be an identifier: 1) check if alr exists, if so use that value, else add it into [identifier] map 
+            it = SymbolTable::identifiers.find(buff);
+            if (it != SymbolTable::identifiers.end()) {
+                this->token = it->second;
+            } else {
+                #ifdef DEBUG
+                    std::cout << "\t\t\tin identkeyword(buff=[" << buff << "], adding NEW ENTRY to [SymbolTable::symbol_table] with val=[" << SymbolTable::symbol_table.size() << "])";
+                #endif
+                SymbolTable::update_table(buff, "identifier");
+                this->token = SymbolTable::identifiers.at(buff);
+            }
         }
-    // } else if (this->sym == EOF) {
-    //     std::string buff = "";
-    //     buff.push_back(this->sym);
-    //     this->token = SymbolTable::symbol_table.find(buff)->second;
-    } else {
+    } else { // check if it's a keyword (it has to be if it cannot be an identifier)
         #ifdef DEBUG
             std::cout << "\t\tin identkeyword() checking if [this->sym]=[" << this->sym << "] is a terminal sym or not!" << std::endl;
         #endif
         // could be a terminal symbol
         std::string buff = "";
         buff.push_back(this->sym);
-        auto it = SymbolTable::symbol_table.find(buff);
         next();
         #ifdef DEBUG
             std::cout << "\t\t\tnext char is [" << this->sym << "]" << std::endl;
@@ -346,14 +356,13 @@ void Tokenizer::identkeyword() {
         #ifdef DEBUG
             std::cout << "\tidentkeyword() could be a terminal! got buff=[" << buff << "]" << std::endl;
         #endif
-        it = SymbolTable::symbol_table.find(buff);
-        if (it != SymbolTable::symbol_table.end()) {
+        auto it = SymbolTable::keywords.find(buff);
+        if (it != SymbolTable::keywords.end()) {
             this->token = it->second;
-        } else {
-            #ifdef DEBUG
-                std::cout << "\t\tnew ident added to table with int buff=[" << SymbolTable::symbol_table.size() << "]" << std::endl;
-            #endif
-            SymbolTable::update_table(buff, "identifier");
+        } else { 
+            // unknown keyword!
+            std::cout << "ERROR: unknown keyword: [" << buff << "]" << std::endl;
+            exit(EXIT_FAILURE);
         }
     }
     #ifdef DEBUG

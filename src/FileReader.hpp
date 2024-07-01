@@ -103,13 +103,14 @@ public:
         for (int i = -1; i < content_size - 1; i++) {
             for (const auto &pair : content) {
                 if (pair.first != i) { continue; } 
-                if ((pair.second).length() > 7) {
-                    file << "[" << pair.first << "]" << ": \t\t[" << pair.second << "]" << std::endl;
-                } else if ((pair.second).length() > 3) {
-                    file << "[" << pair.first << "]" << ": \t\t\t[" << pair.second << "]" << std::endl;
-                } else {
-                    file << "[" << pair.first << "]" << ": \t\t\t\t[" << pair.second << "]" << std::endl;
-                }
+                // if ((pair.second).length() > 7) {
+                //     file << "[" << pair.first << "]" << ": \t\t\t[" << pair.second << "]" << std::endl;
+                // } else if ((pair.second).length() > 3) {
+                //     file << "[" << pair.first << "]" << ": \t\t\t\t[" << pair.second << "]" << std::endl;
+                // } else {
+                //     file << "[" << pair.first << "]" << ": \t\t\t\t\t[" << pair.second << "]" << std::endl;
+                // }
+                file << "[" << pair.first << "]" << ": \t\t\t\t\t[" << pair.second << "]" << std::endl;
             }
         }
 
@@ -131,18 +132,20 @@ public:
         const int content_size = content.size();
 
         // Write content to the file
-        file << tableName << ";" << std::endl << "[KEYWORD/TERMINAL]: \t[INT_VAL]" << std::endl;
-        for (int i = -1; i < content_size - 1; i++) {
-            for (const auto &pair : content) {
-                if (pair.second != i) { continue; } 
-                if ((pair.first).length() > 7) {
-                    file << "[" << pair.first << "]" << ": \t\t[" << pair.second << "]" << std::endl;
-                } else if ((pair.first).length() > 3) {
-                    file << "[" << pair.first << "]" << ": \t\t\t[" << pair.second << "]" << std::endl;
-                } else {
-                    file << "[" << pair.first << "]" << ": \t\t\t\t[" << pair.second << "]" << std::endl;
-                }
+        file << tableName << ";" << std::endl << "[KEYWORD/TERMINAL Literal]: \t[SymbolTable INT_VAL]" << std::endl;
+        // for (int i = 0; i < content_size - 1; i++) {
+        for (const auto &pair : content) {
+            // for (const auto &pair : content) {
+            //     if (pair.second != i) { continue; } 
+            if ((pair.first).length() > 7) {
+                file << "[" << pair.first << "]" << ": \t\t\t\t\t[" << std::to_string(pair.second) << "]" << std::endl;
+            } else if ((pair.first).length() > 3) {
+                file << "[" << pair.first << "]" << ": \t\t\t\t\t\t[" << std::to_string(pair.second) << "]" << std::endl;
+            } else {
+                file << "[" << pair.first << "]" << ": \t\t\t\t\t\t\t[" << std::to_string(pair.second) << "]" << std::endl;
             }
+            // }
+            // file << "[" << pair.first << "]: \t\t\t\t\t[" << std::to_string(pair.second) << "]" << std::endl;
         }
 
         // Close the file

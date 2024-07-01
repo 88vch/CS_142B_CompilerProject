@@ -35,7 +35,7 @@ public:
     }
     std::vector<int> tokenize();
 
-    int get_eof_val() const noexcept { return SymbolTable::symbol_table.find(".")->second; }
+    int get_eof_val() const noexcept { return SymbolTable::keywords.at("."); }
     
     size_t source_len, s_index;
     std::string buff;

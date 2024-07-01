@@ -4,9 +4,39 @@ namespace SymbolTable {
     // std::vector<int> identifiers = {};
     // std::vector<int> numbers = {};
 
-
-    std::unordered_map<std::string, int> keywords = {
-        
+    const std::unordered_map<std::string, int> keywords = {
+        {"EOF", -1},
+        {"+", 0},
+        {"-", 1},
+        {"*", 2},
+        {"/", 3},
+        {";", 4},
+        {"var", 5}, 
+        {"let", 6}, 
+        {"<-", 7}, 
+        {">", 8}, 
+        {"<", 9},  
+        {"==", 10}, 
+        {">=", 11}, 
+        {"<=", 12}, 
+        {"(", 13}, 
+        {")", 14},
+        {"{", 15}, 
+        {"}", 16},  
+        {",", 17}, 
+        {"if", 18}, 
+        {"then", 19}, 
+        {"else", 20}, 
+        {"fi", 21},
+        {"while", 22}, 
+        {"do", 23}, 
+        {"od", 24}, 
+        {"call", 25}, 
+        {"function", 26},
+        {"void", 27}, 
+        {"return", 28}, 
+        {"main", 29},
+        {".", 30}
     };
 
     // holds symbol_table key's that are identifiers [identifier: literal = std::string, value = int]
@@ -126,7 +156,7 @@ namespace SymbolTable {
             // identifiers.push_back(id);
 
             /*
-                ToDo: do we need to [check] & [differentiate]
+                ToDo a1: do we need to [check] & [differentiate]
                     between the same variable if it contains different values?
                         - if so, we need to check and do this in [Tokenizer], 
                             since that's where we check for existence
