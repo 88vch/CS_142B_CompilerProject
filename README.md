@@ -6,7 +6,7 @@ get [Tokenizer] results working
 - changed [SymbolTable::symbol_table from <std::string, int> to <int, std::string>] & all it's respective functions [SymbolTable.hpp] & the calls in [Tokenizer.*]
 
 ### Notes
-SymbolTable::numbers <br> 
+**SymbolTable::numbers** <br> 
 [06/30/2024; 23:30]
 - the point was assuming we cared about order, 
     but we don't because we're only using [this], [identifiers] and [keywords] as lookup's for 
