@@ -18,6 +18,13 @@
 // input file: [tst/temp.ty]
 // input file: [tst/Lexer_results.txt]
 int main() {
+    std::string symbolTable_f = "res/SymbolTable_result.txt";
+    std::string identifiers_f = "res/Identifiers_result.txt";
+    std::string numbers_f = "res/Numbers_result.txt";
+    std::string tokenize_f = "res/Tokenizer_results.txt";
+    std::string AST_f = "res/AST_results.txt";
+
+
     const char *in_f = "tst/temp.ty";
     const std::string out_f = "res/Lexer_results.txt";
 
@@ -41,10 +48,6 @@ int main() {
         std::cout << "[Tokenizer]: after tokenize(), [tokens] size = [" << tokens.size() << "]" << std::endl;
     #endif
 
-    std::string tokenize_f = "res/Tokenizer_results.txt";
-    std::string symbolTable_f = "res/SymbolTable_result.txt";
-    std::string identifiers_f = "res/Identifiers_result.txt";
-    std::string numbers_f = "res/Numbers_result.txt";
 
     bool res = fr.write_file_contents(tokenize_f, tokens, "Tokenizer Tokens");
     if (res) { std::cout << "Results have successfully been written to: " << tokenize_f << std::endl; }

@@ -5,7 +5,8 @@
 // #include <sstream>
 
 // /*
-//     will take a stream of "tokens" and turn them into an AST & do syntax checking
+//     will take a stream of "tokens" (i.e. ints in symbol_table) and turn them into an AST & do syntax checking
+//     - binary expression node?
 //  */
 
 // class Lexer {

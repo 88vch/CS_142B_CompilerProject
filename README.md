@@ -1,6 +1,8 @@
 # **To Do;**
-**get [Tokenizer] results working**
-- i.e. symbol_table, numbers, identifiers, and tokenizer_results => proper & expected output
+**generate [AST]**
+- following Upenn CIS 341 Lectures
+Recursive Descent LL(1) Parsing to Generate AST
+    - https://www.youtube.com/watch?v=SToUyjAsaFk&ab_channel=hhp3
 
 <br>
 
@@ -28,6 +30,9 @@
 <br>
 
 ## **Done** 
+[07/04/2024]: changed 
+**a.** [Tokenizer] results work
+
 [06/30/2024]: changed 
 **a.** [SymbolTable::symbol_table from <std::string, int> to <int, std::string>] <br>
 **b.** all it's respective functions [SymbolTable.hpp] <br>
