@@ -3,6 +3,8 @@
 - following Upenn CIS 341 Lectures
 Recursive Descent LL(1) Parsing to Generate AST
     - https://www.youtube.com/watch?v=SToUyjAsaFk&ab_channel=hhp3
+    - https://www.youtube.com/watch?v=bxpc9Pp5pZM&ab_channel=Computerphile
+        (haven't watched this one yet)
 
 <br>
 
