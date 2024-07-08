@@ -213,7 +213,7 @@ private:
 
 
     // helper function modeled on: Lexer.hpp next() & consume()
-    // does NOT consume char, only peeks()
+    // peek & consume char
     inline void next() {
         if (this->s_index < this->source_len) {
             this->sym = this->source.at(this->s_index);

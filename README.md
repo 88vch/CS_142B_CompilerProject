@@ -1,5 +1,10 @@
 # **To Do;**
 **generate [AST]**
+[Lexer.*]: translate [Tokenizer::tokens] from [std::vector<int>] to [std::vector<Result>] 
+[Parser.cpp]: [parse_first()] generate's AST
+- Recursive Descent LL(1) Parsing -> AST
+    - handle's computation's during parsing (whatever this means)
+
 - following Upenn CIS 341 Lectures
 Recursive Descent LL(1) Parsing to Generate AST
     - https://www.youtube.com/watch?v=SToUyjAsaFk&ab_channel=hhp3
