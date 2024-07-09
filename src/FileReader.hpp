@@ -8,6 +8,8 @@
 #include <vector>
 #include <unordered_map>
 
+#include "Result.hpp"
+
 #define DEBUG
 
 class FileReader {
@@ -103,13 +105,6 @@ public:
         for (int i = -1; i < content_size - 1; i++) {
             for (const auto &pair : content) {
                 if (pair.first != i) { continue; } 
-                // if ((pair.second).length() > 7) {
-                //     file << "[" << pair.first << "]" << ": \t\t\t[" << pair.second << "]" << std::endl;
-                // } else if ((pair.second).length() > 3) {
-                //     file << "[" << pair.first << "]" << ": \t\t\t\t[" << pair.second << "]" << std::endl;
-                // } else {
-                //     file << "[" << pair.first << "]" << ": \t\t\t\t\t[" << pair.second << "]" << std::endl;
-                // }
                 file << "[" << pair.first << "]" << ": \t\t\t\t\t[" << pair.second << "]" << std::endl;
             }
         }
@@ -133,10 +128,7 @@ public:
 
         // Write content to the file
         file << tableName << ";" << std::endl << "[KEYWORD/TERMINAL Literal]: \t[SymbolTable INT_VAL]" << std::endl;
-        // for (int i = 0; i < content_size - 1; i++) {
-        for (const auto &pair : content) {
-            // for (const auto &pair : content) {
-            //     if (pair.second != i) { continue; } 
+        for (const auto &pair : content) { 
             if ((pair.first).length() > 7) {
                 file << "[" << pair.first << "]" << ": \t\t\t\t\t[" << std::to_string(pair.second) << "]" << std::endl;
             } else if ((pair.first).length() > 3) {
@@ -144,8 +136,36 @@ public:
             } else {
                 file << "[" << pair.first << "]" << ": \t\t\t\t\t\t\t[" << std::to_string(pair.second) << "]" << std::endl;
             }
-            // }
-            // file << "[" << pair.first << "]: \t\t\t\t\t[" << std::to_string(pair.second) << "]" << std::endl;
+        }
+
+        // Close the file
+        file.close();
+        return true; // Return true to indicate success
+    }
+
+    static bool write_file_contents(const std::string &out_f, const std::vector<Res::Result>& content, const std::string &tableName) {
+        // Open the file for writing
+        std::ofstream file(out_f);
+
+        // Check if the file was opened successfully
+        if (!file.is_open()) {
+            std::cerr << "Failed to open the file." << std::endl;
+            return false; // Return false to indicate failure
+        }
+
+        const int content_size = content.size();
+
+        // Write content to the file
+        file << tableName << ";" << std::endl << "[KIND]: \t[VALUE]" << std::endl;
+        for (const Res::Result &res : content) { 
+            std::string kind = res.get_kind(), value = res.get_value();
+            if ((kind).length() > 7) {
+                file << "[" << kind << "]" << ": \t\t\t\t\t[" << value << "]" << std::endl;
+            } else if ((kind).length() > 3) {
+                file << "[" << kind << "]" << ": \t\t\t\t\t\t[" << value << "]" << std::endl;
+            } else {
+                file << "[" << kind << "]" << ": \t\t\t\t\t\t\t[" << value << "]" << std::endl;
+            }
         }
 
         // Close the file

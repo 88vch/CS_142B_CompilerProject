@@ -8,6 +8,7 @@
 #include "src/FileReader.hpp"
 #include "src/Tokenizer.hpp"
 #include "src/Parser.hpp"
+#include "src/Result.hpp"
 // #include "src/Node.hpp"
 // #include "src/Lexer.hpp"
 
@@ -22,6 +23,7 @@ int main() {
     std::string identifiers_f = "res/Identifiers_result.txt";
     std::string numbers_f = "res/Numbers_result.txt";
     std::string tokenize_f = "res/Tokenizer_results.txt";
+    std::string results_f = "res/Results_results.txt";
     std::string AST_f = "res/AST_results.txt";
 
 
@@ -49,20 +51,26 @@ int main() {
     #endif
 
 
-    bool res = fr.write_file_contents(tokenize_f, tokens, "Tokenizer Tokens");
-    if (res) { std::cout << "Results have successfully been written to: " << tokenize_f << std::endl; }
+    bool toks = fr.write_file_contents(tokenize_f, tokens, "Tokenizer Tokens");
+    if (toks) { std::cout << "Results have successfully been written to: " << tokenize_f << std::endl; }
     else { std::cout << "Error occured when trying to write results!" << std::endl; }
 
     bool st = fr.write_file_contents(symbolTable_f, SymbolTable::symbol_table, "Symbol Table");
-    if (res) { std::cout << "Results have successfully been written to: " << symbolTable_f << "(size=[" << SymbolTable::symbol_table.size() << "])" << std::endl; }
+    if (st) { std::cout << "Results have successfully been written to: " << symbolTable_f << "(size=[" << SymbolTable::symbol_table.size() << "])" << std::endl; }
     else { std::cout << "Error occured when trying to write results!" << std::endl; }
 
     bool ids = fr.write_file_contents(identifiers_f, SymbolTable::identifiers, "Identifiers");
-    if (res) { std::cout << "Results have successfully been written to: " << identifiers_f << "(size=[" << SymbolTable::identifiers.size() << "])" << std::endl; }
+    if (ids) { std::cout << "Results have successfully been written to: " << identifiers_f << "(size=[" << SymbolTable::identifiers.size() << "])" << std::endl; }
     else { std::cout << "Error occured when trying to write results!" << std::endl; }
 
     bool nums = fr.write_file_contents(numbers_f, SymbolTable::numbers, "Numbers");
-    if (res) { std::cout << "Results have successfully been written to: " << numbers_f << "(size=[" << SymbolTable::numbers.size() << "])" << std::endl; }
+    if (nums) { std::cout << "Results have successfully been written to: " << numbers_f << "(size=[" << SymbolTable::numbers.size() << "])" << std::endl; }
+    else { std::cout << "Error occured when trying to write results!" << std::endl; }
+
+    std::vector<Res::Result> results = Res::int_to_result(tokens);
+
+    bool res = fr.write_file_contents(results_f, results, "Results");
+    if (res) { std::cout << "Results have successfully been written to: " << results_f << "(size=[" << results.size() << "])" << std::endl; }
     else { std::cout << "Error occured when trying to write results!" << std::endl; }
 
     // // OLD: Lexer, NEW: Parser

@@ -29,13 +29,13 @@ public:
         }
     }   
     
-    Result parse_first(); // AST generation
-    BasicBlock parse_second(); // IR BB-representation
+    Res::Result parse_first(); // AST generation
+    // BasicBlock parse_second(); // IR BB-representation
 private:
     int sym;
     size_t source_len, s_index = 0;
     std::vector<int> source;
-    Result *start; // first result obj generated from this file
+    Res::Result *start; // first result obj generated from this file
 };
 
 #endif
