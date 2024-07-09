@@ -25,12 +25,24 @@ std::vector<Result> int_to_result(std::vector<int> tokenizerTokens) {
 
     for (const int &token_value : tokenizerTokens) {
         if (SymbolTable::symbol_table.find(token_value) != SymbolTable::symbol_table.end()) {
+            int token_kind, token_value; // ToDo: update this val once logic has been properly configured
+            std::string val = SymbolTable::symbol_table.at(token_value);
             // ToDo: determine if [current token] is [const, identifier, or keyword]
             // - first check const (i.e. num) [1) try convert string to int, 2) if successful (1), check for existence in [SymbolTable::numbers]]
-            // - then check keyword [SymbolTable::keywords -> map]
-            // - finally check identifier [SymbolTable::identifiers -> map]
+            //      - identifiers & keywords both start with a char, so [std::stoi()] works!
+            try {
+                int int_val = std::stoi(val);
+                // sanity check
+                if (SymbolTable::numbers.find(val) == SymbolTable::numbers.end()) {
+                    exit(EXIT_FAILURE);
+                }
+                token_kind = 0; // a [number] is a [const]
+                token_value = SymbolTable::numbers.at(val);
+            } catch (...) {
+                // - then check keyword [SymbolTable::keywords -> map]
+                // - finally check identifier [SymbolTable::identifiers -> map]
+            }
             // - if all have been checked and we haven't found the kind of [current token], we assume error (note: will this condition/branch even occur?)
-            int token_kind = 0; // ToDo: update this val once logic has been properly configured
             
             Result r(token_kind, token_value);
             resultTokens.push_back(r);

@@ -13,7 +13,7 @@
 class Parser {
 public:
     Parser(const std::vector<int> &tkns)
-        :tokens(std::move(tkns)) 
+        :source(std::move(tkns)) 
     {
         this->start = nullptr;
         this->source_len = tkns.size();
@@ -25,15 +25,16 @@ public:
             this->sym = this->source.at(this->s_index);
             this->s_index++;
         } else {
-            this->sym = SymbolTable::symbol_table.at("EOF"); // what value to denote end???
+            this->sym = SymbolTable::keywords.at("EOF"); // what value to denote end???
         }
-    }
+    }   
     
     Result parse_first(); // AST generation
     BasicBlock parse_second(); // IR BB-representation
 private:
+    int sym;
     size_t source_len, s_index = 0;
-    std::vector<int> tokens;
+    std::vector<int> source;
     Result *start; // first result obj generated from this file
 };
 
