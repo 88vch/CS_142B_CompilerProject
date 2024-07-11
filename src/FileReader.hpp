@@ -78,7 +78,7 @@ public:
         }
 
         // Write content to the file
-        std::cout << tableName << ";" << std::endl << "[INT_VAL]" << std::endl;
+        file << tableName << ";" << std::endl << "[INT_VAL]" << std::endl;
         for (int c : content) {
             file << std::to_string(c) << std::endl;
         }
@@ -124,8 +124,6 @@ public:
             return false; // Return false to indicate failure
         }
 
-        const int content_size = content.size();
-
         // Write content to the file
         file << tableName << ";" << std::endl << "[KEYWORD/TERMINAL Literal]: \t[SymbolTable INT_VAL]" << std::endl;
         for (const auto &pair : content) { 
@@ -153,18 +151,16 @@ public:
             return false; // Return false to indicate failure
         }
 
-        const int content_size = content.size();
-
         // Write content to the file
-        file << tableName << ";" << std::endl << "[KIND]: \t[VALUE]" << std::endl;
+        file << tableName << ";" << std::endl << "[KIND]: \t\t\t\t[VALUE]" << std::endl;
         for (const Res::Result &res : content) { 
             std::string kind = res.get_kind(), value = res.get_value();
             if ((kind).length() > 7) {
-                file << "[" << kind << "]" << ": \t\t\t\t\t[" << value << "]" << std::endl;
+                file << "[" << kind << "]" << ": \t\t\t[" << value << "]" << std::endl;
             } else if ((kind).length() > 3) {
-                file << "[" << kind << "]" << ": \t\t\t\t\t\t[" << value << "]" << std::endl;
+                file << "[" << kind << "]" << ": \t\t\t\t[" << value << "]" << std::endl;
             } else {
-                file << "[" << kind << "]" << ": \t\t\t\t\t\t\t[" << value << "]" << std::endl;
+                file << "[" << kind << "]" << ": \t\t\t\t\t[" << value << "]" << std::endl;
             }
         }
 

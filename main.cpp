@@ -19,9 +19,9 @@
 // input file: [tst/temp.ty]
 // input file: [tst/Lexer_results.txt]
 int main() {
-    std::string symbolTable_f = "res/SymbolTable_result.txt";
-    std::string identifiers_f = "res/Identifiers_result.txt";
-    std::string numbers_f = "res/Numbers_result.txt";
+    std::string symbolTable_f = "res/_SymbolTable_result.txt";
+    std::string identifiers_f = "res/_Identifiers_result.txt";
+    std::string numbers_f = "res/_Numbers_result.txt";
     std::string tokenize_f = "res/Tokenizer_results.txt";
     std::string results_f = "res/Results_results.txt";
     std::string AST_f = "res/AST_results.txt";
@@ -51,10 +51,6 @@ int main() {
     #endif
 
 
-    bool toks = fr.write_file_contents(tokenize_f, tokens, "Tokenizer Tokens");
-    if (toks) { std::cout << "Results have successfully been written to: " << tokenize_f << std::endl; }
-    else { std::cout << "Error occured when trying to write results!" << std::endl; }
-
     bool st = fr.write_file_contents(symbolTable_f, SymbolTable::symbol_table, "Symbol Table");
     if (st) { std::cout << "Results have successfully been written to: " << symbolTable_f << "(size=[" << SymbolTable::symbol_table.size() << "])" << std::endl; }
     else { std::cout << "Error occured when trying to write results!" << std::endl; }
@@ -65,6 +61,10 @@ int main() {
 
     bool nums = fr.write_file_contents(numbers_f, SymbolTable::numbers, "Numbers");
     if (nums) { std::cout << "Results have successfully been written to: " << numbers_f << "(size=[" << SymbolTable::numbers.size() << "])" << std::endl; }
+    else { std::cout << "Error occured when trying to write results!" << std::endl; }
+    
+    bool toks = fr.write_file_contents(tokenize_f, tokens, "Tokenizer Tokens");
+    if (toks) { std::cout << "Results have successfully been written to: " << tokenize_f << "(size=[" << tokens.size() << "])" << std::endl; }
     else { std::cout << "Error occured when trying to write results!" << std::endl; }
 
     std::vector<Res::Result> results = Res::int_to_result(tokens);
