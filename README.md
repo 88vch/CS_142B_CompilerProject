@@ -1,7 +1,6 @@
 # **To Do;**
 **generate [AST]**
-[Lexer.*]: translate [Tokenizer::tokens] from [std::vector<int>] to [std::vector<Result>] 
-[Parser.cpp]: [parse_first()] generate's AST
+[Parser.*]: [parse_first()] generate's AST
 - Recursive Descent LL(1) Parsing -> AST
     - handle's computation's during parsing (whatever this means)
 
