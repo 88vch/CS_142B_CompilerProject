@@ -21,6 +21,7 @@ namespace Res {
                 exit(EXIT_FAILURE);
             }
         }
+        Result(); // why do we need this to satisfy [Parser] constructor? 
 
         std::string get_kind() const {
             std::string res; 

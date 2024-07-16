@@ -1,4 +1,9 @@
 # **To Do;**
+**[07/16/2024]**
+[ToDo]: first generate all SSA using Recursive Descent
+- [Parser.*] use [OldParser.*] for base code (to revise!)
+    - [Parser] uses: {LinkedList.hpp, Result.hpp, SSA.hpp}
+
 **generate [AST]**
 [Parser.*]: [parse_first()] generate's AST
 - Recursive Descent LL(1) Parsing -> AST
@@ -36,6 +41,9 @@ Recursive Descent LL(1) Parsing to Generate AST
 <br>
 
 ## **Done** 
+[07/11/2024]: changed
+**a.** [Results] now generated
+
 [07/04/2024]: changed 
 **a.** [Tokenizer] results work
 

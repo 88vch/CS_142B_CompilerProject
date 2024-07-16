@@ -132,7 +132,7 @@ namespace SymbolTable {
         {"blt", 12},
         {"bge", 13},
         {"bgt", 14},
-        // user-defined functions (below):
+        // user-defined functions (below): FIRST GET ABOVE WORKING
         {"jsr", 15},
         {"ret", 16},
         {"getpar1", 17},

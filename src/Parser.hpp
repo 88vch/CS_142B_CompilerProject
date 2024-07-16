@@ -4,19 +4,22 @@
 #include <vector>
 #include "Result.hpp"
 #include "BasicBlock.hpp"
+#include "SSA.hpp"
+#include "LinkedList.hpp"
 
-// first:   pointer to the start Result of this AST
-// second:  IR through BasicBlocks
+// parse(): IR through BasicBlocks
 
 // Note: all nodes will be inherited from BasicBlock
 // Note: shouldn't need keywords bc we only care about computational code
 class Parser {
 public:
-    Parser(const std::vector<int> &tkns)
+    Parser(const std::vector<Res::Result> &tkns)
         :source(std::move(tkns)) 
     {
         this->start = nullptr;
         this->source_len = tkns.size();
+        this->parent = nullptr;
+        this->SSA_instrs = {};
     }
 
     // peek & consume char
@@ -25,17 +28,20 @@ public:
             this->sym = this->source.at(this->s_index);
             this->s_index++;
         } else {
-            this->sym = SymbolTable::keywords.at("EOF"); // what value to denote end???
+            this->sym = Res::Result(2, -1); // keyword: ["EOF": -1]
         }
-    }   
-    
-    Res::Result parse_first(); // AST generation
-    // BasicBlock parse_second(); // IR BB-representation
+    }
+
+    void generate_SSA(); // generate all SSA Instructions
+    BasicBlock parse(); // IR BB-representation
 private:
-    int sym;
+    Res::Result sym;
+    std::vector<Res::Result> source;
+    std::vector<SSA> SSA_instrs;
     size_t source_len, s_index = 0;
-    std::vector<int> source;
-    Res::Result *start; // first result obj generated from this file
+    std::unordered_map<int, LinkedList> instrList; // current instruction list (copied for each BB)
+    BasicBlock *start; // first result obj generated from this file
+    BasicBlock *parent; // most recent BasicBlock (or 2nd most [if/while])
 };
 
 #endif
