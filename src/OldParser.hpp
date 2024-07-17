@@ -138,34 +138,34 @@ private:
         }
         return true;
     }
-    bool CheckForIdentifier(int val = -1) {
-        if (val == -1) {
-            for (const int &it: SymbolTable::identifiers) {
-                if (this->sym == it) {
+    bool CheckForIdentifier(int v = -1) {
+        if (v == -1) {
+            for (const auto &it: SymbolTable::identifiers) {
+                if (this->sym == it.second) {
                     return true;
                 }
             }
             return false;
         } else {
-            for (const int &it: SymbolTable::identifiers) {
-                if (val == it) {
+            for (const auto &it: SymbolTable::identifiers) {
+                if (v == it.second) {
                     return true;
                 }
             }
             return false;
         }
     }
-    bool CheckForNumber(int val = -1) {
-        if (val == -1) {
-            for (const int &it: SymbolTable::numbers) {
-                if (this->sym == it) {
+    bool CheckForNumber(int v = -1) {
+        if (v == -1) {
+            for (const auto &it: SymbolTable::numbers) {
+                if (this->sym == it.second) {
                     return true;
                 }
             }
             return false;
         } else {
-            for (const int &it: SymbolTable::numbers) {
-                if (val == it) {
+            for (const auto &it: SymbolTable::numbers) {
+                if (v == it.second) {
                     return true;
                 }
             }

@@ -2,6 +2,8 @@
 **[07/16/2024]**
 [ToDo]: first generate all SSA using Recursive Descent
 - [Parser.*] use [OldParser.*] for base code (to revise!)
+    - [Parser]: SSA only holds operations (store values yourself)
+        - i.e. var/func values/declarations
     - [Parser] uses: {LinkedList.hpp, Result.hpp, SSA.hpp}
 
 **generate [AST]**

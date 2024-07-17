@@ -23,6 +23,20 @@ namespace Res {
         }
         Result(); // why do we need this to satisfy [Parser] constructor? 
 
+        // Overload the equality operator
+        bool operator==(const Result& other) const {
+            return (this->kind == other.kind) ? true : (this->value == other.value);
+        }
+
+        // Overload the inequality operator
+        bool operator!=(const Result& other) const {
+            return !(*this == other);
+        }
+
+        std::string to_string() const {
+            return "Result(" + std::to_string(this->kind) + ", " + std::to_string(this->value) + ")";
+        }
+
         std::string get_kind() const {
             std::string res; 
             switch(this->kind) {
