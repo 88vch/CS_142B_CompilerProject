@@ -6,6 +6,7 @@
         - i.e. var/func values/declarations
     - [Parser] uses: {LinkedList.hpp, Result.hpp, SSA.hpp}
 
+[07/17/2024]: assumtion that we can skip the AST generation step and go straight into Recursive-Descent to parse the tokens into SSA whilst doing error handling
 **generate [AST]**
 [Parser.*]: [parse_first()] generate's AST
 - Recursive Descent LL(1) Parsing -> AST
