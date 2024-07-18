@@ -62,26 +62,152 @@ void Parser::p_statSeq() {
     #ifdef DEBUG
         std::cout << "\t\t[Parser::parse_statSeq()]: found a statement to parse" << std::endl;
     #endif
-    p_statement(); // ends with `;` = end of varDecl (consume it in the func)
-
-    next(); // do we need this?
+    p_statement(); // ends with `;` = end of statement
     if (this->CheckFor(Res::Result(2, 4), true)) { // if [optional] next token is ';', then we still have statements
         next();
-        // if we see any of these tokens then it means the next thing is another statement
-        if (this->CheckFor(Res::Result(2, 6), true)) {          // check `let`
-            p_statSeq();
-        } else if (this->CheckFor(Res::Result(2, 25), true)) {  // check `call`
-            p_statSeq();
-        } else if (this->CheckFor(Res::Result(2, 18), true)) {  // check `if`
-            p_statSeq();
-        } else if (this->CheckFor(Res::Result(2, 22), true)) {  // check `while` 
-            p_statSeq();
-        } else if (this->CheckFor(Res::Result(2, 28), true)) {  // check `return`
-            p_statSeq();
-        }
+        p_statSeq();
     }
 }
 
 void Parser::p_statement() {
+    // if we see any of these tokens then it means the next thing is another statement
+    // - [let, call, if, while, return]: checked by [p_statSeq]
+    // assume after every statement has a semicolon
+    // assume if we're in this function that means we know the next thing is a statement
+    if (this->CheckFor(Res::Result(2, 6), true)) {          // check `let`
+        p_assignment();
+    } else if (this->CheckFor(Res::Result(2, 25), true)) {  // check `call`
+        p_funcCall();
+    } else if (this->CheckFor(Res::Result(2, 18), true)) {  // check `if`
+        p_ifStatement();
+        // need some way to check for `else`
 
+        // Old Version;
+        // BasicBlock *join = parse_ifStatement(blk);
+        // if (join->parent2 == nullptr) { // means that [ifStat_then] was returned (no else)
+        //     blk->children.push_back(join);
+        // }
+    } else if (this->CheckFor(Res::Result(2, 22), true)) {  // check `while` 
+        p_whileStatement();
+    } else if (this->CheckFor(Res::Result(2, 28), true)) {  // check `return`
+        p_return();
+    } else {
+        // ToDo: no more statements left to parse!
+    }
+}
+
+void Parser::p_assignment() {
+    // LET(TUCE GO)
+    this->CheckFor(Res::Result(2, 6)); // check for `let`
+
+    // IDENT: not checking for a specific since this is a [variable]
+    // - validate that [variable] has been declared
+    if (this->varDeclarations.find(SymbolTable::identifiers.at(this->sym.get_value())) == this->varDeclarations.end()) {
+        std::cout << "Error: var [" << this->sym << "] doesn't exist! exiting prematurely..." << std::endl;
+        exit(EXIT_FAILURE);
+    }
+    int ident = SymbolTable::identifiers.at(this->sym.get_value());
+    next();
+
+    // ASSIGNMENT
+    this->CheckFor(Res::Result(2, 7)); // check for `<-`
+
+    // EXPRESSION
+    int value = p_expr();
+    
+    // Update the current block's [variable-value mapping] to ensure we have the most up to date info
+    // - do we need to generate an [SSA] here？No; though we should create the constant (the value)
+
+    // if (blk->updated_varval_map.find(ident) == blk->updated_varval_map.end()) {
+    //     blk->updated_varval_map.insert({ident, value});
+    // } else {
+    //     blk->updated_varval_map[ident] = value;
+    // }
+}
+
+// ToDo: after generating the Dot & graph the first time
+void Parser::p_funcCall() {}
+
+// ToDo;
+void Parser::p_ifStatement() {
+    // IF
+    p_relation(); // IF: relation
+
+    // THEN
+    this->CheckFor(Res::Result(2, 19)); // check `then`
+
+    // previously: do something start here
+    BasicBlock *ifStat_then;
+    BasicBlock if_then = BasicBlock(blk, this->instruction_list);
+    ifStat_then = &if_then;
+    blk->children.push_back(ifStat_then);
+    // previously: do something end here
+
+    p_statSeq();
+
+    // [Optional] ELSE
+    BasicBlock *ifStat_else = nullptr; // should use some similar logic to check for existence of [else block]
+    bool else_exists = false;
+    if (this->CheckFor(Res::Result(2, 20), true)) { // check `else`
+        else_exists = true;
+        next();
+
+        // previously: do something start here
+        BasicBlock if_else = BasicBlock(blk, this->instruction_list);
+        ifStat_else = &if_else;
+        blk->children.push_back(ifStat_else);
+        // previously: do something end here
+
+        p_statSeq();
+    }
+
+    // FI
+    this->CheckFor(Res::Result(2, 21)); // check `fi`
+
+    // no need for phi since only one path! just return the [ifStat_then] block (i think)
+    // if (else_exists) {} // is this the same logic as below?
+    if (ifStat_else == nullptr) { return ifStat_then; }
+
+    // phi() goes here
+    BasicBlock *join_ptr;
+    BasicBlock join = BasicBlock(ifStat_then, ifStat_else, blk->updated_varval_map, this->instruction_list);
+    join_ptr = &join;
+    ifStat_then->children.push_back(join_ptr);
+    ifStat_else->children.push_back(join_ptr);
+
+    return join_ptr;
+}
+
+// ToDo;
+void Parser::p_whileStatement() {
+    // WHILE
+    p_relation(); // WHILE: relation
+
+    // DO
+    this->CheckFor(Res::Result(2, 23)); // check `do`
+
+    // previously: do something start here
+    BasicBlock *while_body;
+    BasicBlock body = BasicBlock(blk, this->instruction_list);
+    while_body = &body;
+    blk->children.push_back(while_body);
+    while_body->children.push_back(blk); // technically a "child" since we loop back to it
+    // previously: do something end here
+
+    p_statSeq(); // DO: relation
+
+    // OD
+    this->CheckFor(Res::Result(2, 24)); // check `od`
+}
+
+// ToDo;
+void Parser::p_return() {
+    int val = p_expr();
+
+    if (val == -1) { // no expr (optional)
+        // previously: do something here (add [return] SSA?)
+        int op = SymbolTable::operator_table.at("ret");
+        this->instruction_list.at(op).InsertAtHead(SSA(op, {val}));
+        blk->instruction_list.at(op).InsertAtHead(SSA(op, {val}));
+    }
 }

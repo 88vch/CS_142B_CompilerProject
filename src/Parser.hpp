@@ -55,11 +55,16 @@ private:
     void p_varDecl();
     void p_statSeq();
     void p_statement(); 
+    void p_assignment();
+    void p_funcCall();
+    void p_ifStatement();
+    void p_whileStatement();
+    void p_return();
 
     bool CheckFor(Res::Result expected_token, bool optional = false) {
         if (expected_token == Res::Result(2, -1)) { return false; }
 
-        if (optional) {
+        if (optional) { // optional's don't get consumed
             if (this->sym != expected_token) {
                 return false;
             }
