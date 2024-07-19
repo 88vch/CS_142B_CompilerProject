@@ -103,7 +103,8 @@ void Parser::p_assignment() {
     // IDENT: not checking for a specific since this is a [variable]
     // - validate that [variable] has been declared
     if (this->varDeclarations.find(SymbolTable::identifiers.at(this->sym.get_value())) == this->varDeclarations.end()) {
-        std::cout << "Error: var [" << this->sym << "] doesn't exist! exiting prematurely..." << std::endl;
+        // assumes that we require variables to be declared (i.e. `let`) before they are defined
+        std::cout << "Error: var [" << this->sym.to_string() << "] doesn't exist! exiting prematurely..." << std::endl;
         exit(EXIT_FAILURE);
     }
     int ident = SymbolTable::identifiers.at(this->sym.get_value());
@@ -211,3 +212,7 @@ void Parser::p_return() {
         blk->instruction_list.at(op).InsertAtHead(SSA(op, {val}));
     }
 }
+
+void Parser::p_relation() {}
+
+void Parser::p_expr() {}
