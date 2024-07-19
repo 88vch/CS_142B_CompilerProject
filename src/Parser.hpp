@@ -62,7 +62,7 @@ private:
     void p_return();
 
     void p_relation();
-    void p_expr();
+    Res::Result p_expr();
 
     bool CheckFor(Res::Result expected_token, bool optional = false) {
         if (expected_token == Res::Result(2, -1)) { return false; }

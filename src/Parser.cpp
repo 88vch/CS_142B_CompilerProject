@@ -114,7 +114,11 @@ void Parser::p_assignment() {
     this->CheckFor(Res::Result(2, 7)); // check for `<-`
 
     // EXPRESSION
-    int value = p_expr();
+    Res::Result value = p_expr();
+    if (value.get_kind_literal() == 0) {
+        // ToDo: should check for existence of constant in [this->SSA_instrs] first
+        this->SSA_instrs.push_back(SSA(0, value.get_value_literal())); // `const` value
+    }
     
     // Update the current block's [variable-value mapping] to ensure we have the most up to date info
     // - do we need to generate an [SSA] here？No; though we should create the constant (the value)
@@ -131,6 +135,12 @@ void Parser::p_funcCall() {}
 
 // ToDo;
 void Parser::p_ifStatement() {
+    /*
+    [07/19/2024] Thought about this:
+    ii) or we could create the SSA instr WITH the empty position,
+    then fill it once we see a corresponding `else`
+    - I think this might be better
+    */
     // IF
     p_relation(); // IF: relation
 
@@ -203,16 +213,78 @@ void Parser::p_whileStatement() {
 
 // ToDo;
 void Parser::p_return() {
-    int val = p_expr();
+    Res::Result v = p_expr();
 
-    if (val == -1) { // no expr (optional)
+    // [07/19/2024] This probably needs revising
+    if (v == -1) { // no expr (optional)
         // previously: do something here (add [return] SSA?)
         int op = SymbolTable::operator_table.at("ret");
-        this->instruction_list.at(op).InsertAtHead(SSA(op, {val}));
-        blk->instruction_list.at(op).InsertAtHead(SSA(op, {val}));
+        this->instruction_list.at(op).InsertAtHead(SSA(op, {v}));
+        blk->instruction_list.at(op).InsertAtHead(SSA(op, {v}));
     }
 }
 
-void Parser::p_relation() {}
+void Parser::p_relation() {
+    std::vector<int> operands;
 
-void Parser::p_expr() {}
+    Res::Result val1 = p_expr();
+    if (val1.get_kind_literal() == 0) {
+        // ToDo: should check for existence of constant in [this->SSA_instrs] first
+        this->SSA_instrs.push_back(SSA(0, val1.get_value_literal())); // `const` val1
+    }
+    
+    // Old Version
+    // this->CheckForMultiple(this->relational_operations, RELATIONAL_OP_SIZE);
+
+    // New Version [07/19/2024]
+    if (!(this->CheckFor(Res::Result(2, 8), true) || this->CheckFor(Res::Result(2, 9), true) || 
+        this->CheckFor(Res::Result(2, 10), true) || this->CheckFor(Res::Result(2, 11), true) || 
+        this->CheckFor(Res::Result(2, 12), true))) {
+            // if none of the check's [`<`, `>`, `<=`, `>=`, `==`] return true, it's not any of these EXPECTED operators: Error!
+            std::cout << "Error: relational operation expected: [`<`, `>`, `<=`, `>=`, `==`], got: [" << this->sym.to_string() << "]! exiting prematurely..." << std::endl;
+            exit(EXIT_FAILURE);
+        }
+    int relOp = this->sym.get_value_literal();
+    next();
+
+    Res::Result val2 = p_expr();
+    if (val2.get_kind_literal() == 0) {
+        // ToDo: should check for existence of constant in [this->SSA_instrs] first
+        this->SSA_instrs.push_back(SSA(0, val2.get_value_literal())); // `const` val2
+    }
+    
+    // [SymbolTable::operator_table `cmp`]
+    operands = {val1.get_value_literal(), val2.get_value_literal()};
+    this->SSA_instrs.push_back(SSA(5, operands));
+
+    // ToDo: figure this part out [branch after the comparison]
+    int op;
+    switch (relOp) {
+        case 8:
+            op = SymbolTable::operator_table.at("bgt");
+            break;
+        case 9:
+            op = SymbolTable::operator_table.at("blt");
+            break;
+        case 10:
+            op = SymbolTable::operator_table.at("beq");
+            break;
+        case 11:
+            op = SymbolTable::operator_table.at("bge");
+            break;
+        case 12:
+            op = SymbolTable::operator_table.at("ble");
+            break;
+        default:
+            std::cout << "Error: relational operation expected: [`<`, `>`, `<=`, `>=`, `==`], got: [" << this->sym.to_string() << "]! exiting prematurely..." << std::endl;
+            exit(EXIT_FAILURE);
+            break;
+    }
+
+    // [07/19/2024] This is definitely wrong
+    operands = {curr_instr_num, -1}; // [-1] bc we don't know the specific instr yet
+    this->SSA_instrs.push_back(SSA(op, operands));
+}
+
+// returns the corresponding value in [SymbolTable::symbol_table]
+Res::Result Parser::p_expr() {}

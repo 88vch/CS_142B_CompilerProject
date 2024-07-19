@@ -57,6 +57,12 @@ namespace Res {
             std::string res = SymbolTable::symbol_table.at(this->value);
             return res;
         }
+
+        // get the int value of the kind
+        int get_kind_literal() { return this->kind; }
+
+        // get the int value of the value
+        int get_value_literal() { return this->value; }
     };
     
     inline std::vector<Res::Result> int_to_result(std::vector<int> tokenizerTokens) {
