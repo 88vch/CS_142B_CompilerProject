@@ -255,6 +255,7 @@ void Parser::p_relation() {
     
     // [SymbolTable::operator_table `cmp`]
     operands = {val1.get_value_literal(), val2.get_value_literal()};
+    // ToDo: get [instr_num] from [cmp SSA] -> [cmp_instr_num] so that you can pass it below 
     this->SSA_instrs.push_back(SSA(5, operands));
 
     // ToDo: figure this part out [branch after the comparison]
@@ -282,7 +283,7 @@ void Parser::p_relation() {
     }
 
     // [07/19/2024] This is definitely wrong
-    operands = {curr_instr_num, -1}; // [-1] bc we don't know the specific instr yet
+    operands = {cmp_instr_num, -1}; // [-1] bc we don't know the specific instr yet
     this->SSA_instrs.push_back(SSA(op, operands));
 }
 

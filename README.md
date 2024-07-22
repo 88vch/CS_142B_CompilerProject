@@ -1,4 +1,7 @@
 # **To Do;**
+**[07/22/2024]**
+Remark: optimizing compiler will require us to remove SSA instrs if possible, won't this cause a change in the SSA-instr-num (we're currently js using size of arr rn)
+
 **[07/16/2024]**
 [ToDo]: first generate all SSA using Recursive Descent
 - [Parser.*] use [OldParser.*] for base code (to revise!)
