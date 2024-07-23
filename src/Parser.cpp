@@ -388,7 +388,7 @@ Res::Result Parser::p_expr() {
 }
 
 Res::Result Parser::p_term() {
-    Res::Result var1 = p_factor();
+    Res::Result val1 = p_factor();
 
     // Check For `*` && `/`
     if (this->CheckFor(Res::Result(2, true), true) || this->CheckFor(Res::Result(3, true), true)) {

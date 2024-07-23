@@ -1,4 +1,6 @@
 # **To Do;**
+**[07/23/2024]**
+we shouldn't be returning [Res::Result] rather [SSA]?
 **[07/22/2024]**
 [Remark]: optimizing compiler will require us to remove SSA instrs if possible, won't this cause a change in the SSA-instr-num (we're currently js using size of arr rn)
 [Question]: do we return from [p_expr(), p_term(), etc...] as SSA?
