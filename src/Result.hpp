@@ -10,7 +10,7 @@
 namespace Res {
     struct Result {
         int kind;   // [0: const, 1: identifier, 2: keyword]
-        int value;  // symbol_table value representing that kind of Result
+        int value;  // [symbol_table] value representing that kind of Result
 
         Result(int k, int v) {
             if (k >= 0 && k <= 2) {

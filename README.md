@@ -1,6 +1,9 @@
 # **To Do;**
 **[07/22/2024]**
-Remark: optimizing compiler will require us to remove SSA instrs if possible, won't this cause a change in the SSA-instr-num (we're currently js using size of arr rn)
+[Remark]: optimizing compiler will require us to remove SSA instrs if possible, won't this cause a change in the SSA-instr-num (we're currently js using size of arr rn)
+[Question]: do we return from [p_expr(), p_term(), etc...] as SSA?
+    Or do we actually compute the value and return the newly computed value (i.e. 5-4 return's 1 or the SSA instr with the `sub` operation?)
+    - I'm leaning towards the later: returning the SSA instr with sub op 
 
 **[07/16/2024]**
 [ToDo]: first generate all SSA using Recursive Descent

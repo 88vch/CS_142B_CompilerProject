@@ -63,6 +63,8 @@ private:
 
     void p_relation();
     Res::Result p_expr();
+    Res::Result p_term();
+    Res::Result p_factor();
 
     bool CheckFor(Res::Result expected_token, bool optional = false) {
         if (expected_token == Res::Result(2, -1)) { return false; }
@@ -80,6 +82,15 @@ private:
             } else { next(); }
             return true;
         }
+    }
+
+    bool SSA_exists(SSA new_instr) const {
+        for (SSA instr : this->SSA_instrs) {
+            if (SSA::compare(instr, new_instr)) {
+                return true;
+            }
+        }
+        return false;
     }
 };
 

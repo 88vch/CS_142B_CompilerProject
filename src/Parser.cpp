@@ -115,13 +115,19 @@ void Parser::p_assignment() {
 
     // EXPRESSION
     Res::Result value = p_expr();
+    SSA new_instr = SSA(0, value.get_value_literal()); // Why is this SSA hardcoded as a const????
+    // [07/22/2024]: Done
+    // ToDo: should check for existence of constant in [this->SSA_instrs] first
     if (value.get_kind_literal() == 0) {
-        // ToDo: should check for existence of constant in [this->SSA_instrs] first
-        this->SSA_instrs.push_back(SSA(0, value.get_value_literal())); // `const` value
+        if (!SSA_exists(new_instr)) {
+            this->SSA_instrs.push_back(new_instr); // `const` value
+        } else {
+            // ToDo: when modifying curr BB's symbol table (?) point to prev existing SSA that DOM's
+        }
     }
     
     // Update the current block's [variable-value mapping] to ensure we have the most up to date info
-    // - do we need to generate an [SSA] here？No; though we should create the constant (the value)
+    // - do we need to generate an [SSA] for the assignment? No; though we should create the constant (the value)
 
     // if (blk->updated_varval_map.find(ident) == blk->updated_varval_map.end()) {
     //     blk->updated_varval_map.insert({ident, value});
@@ -140,6 +146,8 @@ void Parser::p_ifStatement() {
     ii) or we could create the SSA instr WITH the empty position,
     then fill it once we see a corresponding `else`
     - I think this might be better
+
+    Note: the curr instr list here DOMinates all 3 following blocks for [if-statement][then, else, && join]
     */
     // IF
     p_relation(); // IF: relation
@@ -228,9 +236,15 @@ void Parser::p_relation() {
     std::vector<int> operands;
 
     Res::Result val1 = p_expr();
+    SSA val1_instr = SSA(0, val1.get_value_literal()); // Why is this SSA hardcoded as a const????
+    // [07/22/2024]: Done
+    // ToDo: should check for existence of constant in [this->SSA_instrs] first
     if (val1.get_kind_literal() == 0) {
-        // ToDo: should check for existence of constant in [this->SSA_instrs] first
-        this->SSA_instrs.push_back(SSA(0, val1.get_value_literal())); // `const` val1
+        if (!SSA_exists(val1_instr)) {
+            this->SSA_instrs.push_back(val1_instr); // `const` val1
+        } else {
+            // ToDo: when modifying curr BB's symbol table (?) point to prev existing SSA that DOM's
+        }
     }
     
     // Old Version
@@ -248,15 +262,20 @@ void Parser::p_relation() {
     next();
 
     Res::Result val2 = p_expr();
+    SSA val2_instr = SSA(0, val2.get_value_literal()); // Why is this SSA hardcoded as a const????
     if (val2.get_kind_literal() == 0) {
-        // ToDo: should check for existence of constant in [this->SSA_instrs] first
-        this->SSA_instrs.push_back(SSA(0, val2.get_value_literal())); // `const` val2
+        if (!SSA_exists(val2_instr)) {
+            // ToDo: should check for existence of constant in [this->SSA_instrs] first
+           this->SSA_instrs.push_back(val2_instr); // `const` val2
+        } else {
+            // ToDo: when modifying curr BB's symbol table (?) point to prev existing SSA that DOM's
+        }
     }
     
     // [SymbolTable::operator_table `cmp`]
-    operands = {val1.get_value_literal(), val2.get_value_literal()};
     // ToDo: get [instr_num] from [cmp SSA] -> [cmp_instr_num] so that you can pass it below 
-    this->SSA_instrs.push_back(SSA(5, operands));
+    SSA cmp_instr = SSA(5, val1.get_value_literal(), val2.get_value_literal());
+    this->SSA_instrs.push_back(cmp_instr);
 
     // ToDo: figure this part out [branch after the comparison]
     int op;
@@ -288,4 +307,126 @@ void Parser::p_relation() {
 }
 
 // returns the corresponding value in [SymbolTable::symbol_table]
-Res::Result Parser::p_expr() {}
+// [07/24/2024]: Should always return a [kind=0] const value bc all sub-routes lead to execution of a (+, -, *, /)
+Res::Result Parser::p_expr() {
+    Res::Result val1 = p_term();
+    // Old Version [07/24/2024]: Commented Out
+    // if (this->CheckForIdentifier(val1)) {
+    //     if (blk->updated_varval_map.find(val1) != blk->updated_varval_map.end()) {
+    //         val1 = blk->updated_varval_map.at(val1);
+    //     } else {
+    //         // std::cout << "expr [sym_table id: " << val1 << "] doesn't exist! exiting prematurely..." << std::endl;
+    //         // std::cout << "\tblk's [updated_varval_map] looks like: " << std::endl;
+    //         // for (const auto& pair : blk->updated_varval_map) {
+    //         //     std::cout << "Key: " << pair.first << ", Value: " << pair.second << std::endl;
+    //         // }
+    //         // exit(EXIT_FAILURE);
+    //         return -1;
+    //     }
+    // }
+
+    // OLD Version [07/24/2024]: Commented Out
+    // // if an [OP] exists, then [termB] also exists! put it as [termA] of new [expr]!
+    // if (this->CheckForMultipleOptionals(this->expression_operations, EXPRESSION_OP_SIZE)) {
+    //     int op = this->sym;
+    //     next();
+    //     int val2 = parse_expr(blk);
+    //     if (this->CheckForIdentifier(val2)) {
+    //         // if it's not a number then it's an ident
+    //         if (blk->updated_varval_map.find(val2) != blk->updated_varval_map.end()) {
+    //             return val1 + blk->updated_varval_map.at(val2);
+    //         } else {
+    //             std::cout << "expr [sym_table id: " << val2 << "] doesn't exist! exiting prematurely..." << std::endl;
+    //             std::cout << "\tblk's [updated_varval_map] looks like: " << std::endl;
+    //             for (const auto& pair : blk->updated_varval_map) {
+    //                 std::cout << "Key: " << pair.first << ", Value: " << pair.second << std::endl;
+    //             }
+    //             exit(EXIT_FAILURE);
+    //         }
+    //     }
+
+    //     if (SymbolTable::symbol_table.at("+") == op) {
+    //         int operatorr = SymbolTable::operator_table.at("add");
+    //         this->instruction_list.at(operatorr).InsertAtHead(SSA(operatorr, {val1, val2}));
+    //         blk->instruction_list.at(operatorr).InsertAtHead(SSA(operatorr, {val1, val2}));
+            
+    //         return val1 + val2;
+    //     } else if (SymbolTable::symbol_table.at("-") == op) {
+    //         int operatorr = SymbolTable::operator_table.at("sub");
+    //         this->instruction_list.at(operatorr).InsertAtHead(SSA(operatorr, {val1, val2}));
+    //         blk->instruction_list.at(operatorr).InsertAtHead(SSA(operatorr, {val1, val2}));
+            
+    //         return val1 - val2;
+    //     }
+    // }
+    // return val1;
+
+
+    // Check For `+` && `-`
+    if (this->CheckFor(Res::Result(0, true), true) || this->CheckFor(Res::Result(1, true), true)) {
+        Res::Result op = this->sym;
+        next();
+
+        Res::Result val2 = p_expr();
+
+        // Create SSA
+        SSA expr_instr;
+        switch (op.get_value_literal()) {
+            case 0: // `+`
+                // look in symbol table (?) for SSA of [val1 && val2]
+                expr_instr = SSA(1, ); // `add`; re-assignment
+                break;
+            case 1: // `-`
+                expr_instr = SSA(2, ); // `sub`; re-assignment
+                break;
+        }
+        // [Question/Suggestion]: should we re-assign val1 here with the result of the operation
+        // val1 = compute_expr(op, val1, val2) OR SHOULD IT BE expr_instr;
+        //      See [README.md]
+    }
+    return val1;
+}
+
+Res::Result Parser::p_term() {
+    Res::Result var1 = p_factor();
+
+    // Check For `*` && `/`
+    if (this->CheckFor(Res::Result(2, true), true) || this->CheckFor(Res::Result(3, true), true)) {
+        Res::Result op = this->sym;
+        next();
+
+        Res::Result val2 = p_term();
+
+        // Create SSA
+        SSA term_instr;
+        switch (op.get_value_literal()) {
+            case 2: // `+`
+                // look in symbol table (?) for SSA of [val1 && val2]
+                term_instr = SSA(3, ); // `mul`; re-assignment
+                break;
+            case 3: // `-`
+                term_instr = SSA(4, ); // `div`; re-assignment
+                break;
+        }
+        // [Question/Suggestion]: should we re-assign val1 here with the result of the operation
+        // val1 = compute_expr(op, val1, val2) OR SHOULD IT BE term_instr;
+        //      See [README.md]
+    }
+    return val1;
+}
+
+Res::Result Parser::p_factor() {
+    if (this->sym.get_kind_literal() == 0 || this->sym.get_kind_literal() == 1) {
+        return this->sym;
+    } else if (this->CheckFor(Res::Result(2, 13), true)) {
+        next(); // consume `(`
+        Res::Result res = p_expr();
+        next(); // be sure to consume the `)`
+        return res;
+    } else if (/* check for funcCall */) {
+
+    } else {
+        std::cout << "Error: factor expected: [ident || number || `(` expression `)` || funcCall], got: [" << this->sym.to_string() << "]! exiting prematurely..." << std::endl;
+        exit(EXIT_FAILURE);
+    }
+}
