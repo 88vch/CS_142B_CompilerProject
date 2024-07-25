@@ -1,4 +1,6 @@
 # **To Do;**
+**[07/25/2024]**
+true, we should return [SSA] instead of [Res::Result]
 **[07/23/2024]**
 we shouldn't be returning [Res::Result] rather [SSA]?
 **[07/22/2024]**

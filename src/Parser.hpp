@@ -36,6 +36,75 @@ public:
         }
     }
 
+    // [07/25/2024]: ToDo
+    int getOp() const {
+        switch (this->sym.get_kind_literal()) {
+            case 0: // const
+                break;
+            case 1: // ident
+                break;
+            case 2: // keyword
+                switch (this->sym.get_value_literal()) {
+                    case 0: // `+`
+                        return SymbolTable::operator_table.at("add");
+                    case 1: // `-`
+                        return SymbolTable::operator_table.at("sub");
+                    case 2: // `*`
+                        return SymbolTable::operator_table.at("mul");
+                    case 3: // `/`
+                        return SymbolTable::operator_table.at("div");
+                }
+                break;
+        }
+    }
+
+
+    SSA* CheckExistence(SSA *x, SSA *y) const {
+        SSA *ret = nullptr;
+        const int op = this->getOp();
+        for (SSA instr : this->SSA_instrs) {
+            if (instr.compare(op, x, y)) {
+                *ret = instr;
+                break;
+            }
+        }
+        return ret;
+    }
+
+    // [07/25/2024]: ToDo
+    SSA* BuildIR(SSA *x, SSA *y) {
+        SSA *ret = CheckExistence(x, y);
+        // if we don't get [nullptr] from CheckExistence(), that implies there was a previous SSA of the exact same type; so rather than creating a dupe, we can simply use the previously existing one (Copy Propagation)
+        //      Note: check that all previous instructions will DOM this SSA instr
+        if (ret) { return ret; } 
+
+
+        switch (this->sym.get_kind_literal()) {
+            case 0: // const
+                break;
+            case 1: // ident
+                break;
+            case 2: // keyword
+                switch (this->sym.get_value_literal()) {
+                    case 0: // `+`
+                        *ret = SSA(SymbolTable::operator_table.at("add"), x, y);
+                        break;
+                    case 1: // `-`
+                        *ret = SSA(SymbolTable::operator_table.at("sub"), x, y);
+                        break;
+                    case 2: // `*`
+                        *ret = SSA(SymbolTable::operator_table.at("mul"), x, y);
+                        break;
+                    case 3: // `/`
+                        *ret = SSA(SymbolTable::operator_table.at("div"), x, y);
+                        break;
+                }
+                break;
+        }
+        this->SSA_instrs.push_back(*ret);
+        return ret;
+    }
+
     BasicBlock parse(); // IR BB-representation
     void parse_generate_SSA(); // generate all SSA Instructions
 private:
@@ -62,9 +131,9 @@ private:
     void p_return();
 
     void p_relation();
-    Res::Result p_expr();
-    Res::Result p_term();
-    Res::Result p_factor();
+    SSA* p_expr();
+    SSA* p_term();
+    SSA* p_factor();
 
     bool CheckFor(Res::Result expected_token, bool optional = false) {
         if (expected_token == Res::Result(2, -1)) { return false; }

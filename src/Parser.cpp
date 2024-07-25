@@ -308,122 +308,37 @@ void Parser::p_relation() {
 
 // returns the corresponding value in [SymbolTable::symbol_table]
 // [07/24/2024]: Should always return a [kind=0] const value bc all sub-routes lead to execution of a (+, -, *, /)
-Res::Result Parser::p_expr() {
-    Res::Result val1 = p_term();
-    // Old Version [07/24/2024]: Commented Out
-    // if (this->CheckForIdentifier(val1)) {
-    //     if (blk->updated_varval_map.find(val1) != blk->updated_varval_map.end()) {
-    //         val1 = blk->updated_varval_map.at(val1);
-    //     } else {
-    //         // std::cout << "expr [sym_table id: " << val1 << "] doesn't exist! exiting prematurely..." << std::endl;
-    //         // std::cout << "\tblk's [updated_varval_map] looks like: " << std::endl;
-    //         // for (const auto& pair : blk->updated_varval_map) {
-    //         //     std::cout << "Key: " << pair.first << ", Value: " << pair.second << std::endl;
-    //         // }
-    //         // exit(EXIT_FAILURE);
-    //         return -1;
-    //     }
-    // }
+SSA* Parser::p_expr() { // Check For `+` && `-`
+    SSA *x = p_term();
 
-    // OLD Version [07/24/2024]: Commented Out
-    // // if an [OP] exists, then [termB] also exists! put it as [termA] of new [expr]!
-    // if (this->CheckForMultipleOptionals(this->expression_operations, EXPRESSION_OP_SIZE)) {
-    //     int op = this->sym;
-    //     next();
-    //     int val2 = parse_expr(blk);
-    //     if (this->CheckForIdentifier(val2)) {
-    //         // if it's not a number then it's an ident
-    //         if (blk->updated_varval_map.find(val2) != blk->updated_varval_map.end()) {
-    //             return val1 + blk->updated_varval_map.at(val2);
-    //         } else {
-    //             std::cout << "expr [sym_table id: " << val2 << "] doesn't exist! exiting prematurely..." << std::endl;
-    //             std::cout << "\tblk's [updated_varval_map] looks like: " << std::endl;
-    //             for (const auto& pair : blk->updated_varval_map) {
-    //                 std::cout << "Key: " << pair.first << ", Value: " << pair.second << std::endl;
-    //             }
-    //             exit(EXIT_FAILURE);
-    //         }
-    //     }
-
-    //     if (SymbolTable::symbol_table.at("+") == op) {
-    //         int operatorr = SymbolTable::operator_table.at("add");
-    //         this->instruction_list.at(operatorr).InsertAtHead(SSA(operatorr, {val1, val2}));
-    //         blk->instruction_list.at(operatorr).InsertAtHead(SSA(operatorr, {val1, val2}));
-            
-    //         return val1 + val2;
-    //     } else if (SymbolTable::symbol_table.at("-") == op) {
-    //         int operatorr = SymbolTable::operator_table.at("sub");
-    //         this->instruction_list.at(operatorr).InsertAtHead(SSA(operatorr, {val1, val2}));
-    //         blk->instruction_list.at(operatorr).InsertAtHead(SSA(operatorr, {val1, val2}));
-            
-    //         return val1 - val2;
-    //     }
-    // }
-    // return val1;
-
-
-    // Check For `+` && `-`
-    if (this->CheckFor(Res::Result(0, true), true) || this->CheckFor(Res::Result(1, true), true)) {
-        Res::Result op = this->sym;
+    while (this->CheckFor(Res::Result(0, true), true) || this->CheckFor(Res::Result(1, true), true)) {
         next();
-
-        Res::Result val2 = p_expr();
-
-        // Create SSA
-        SSA expr_instr;
-        switch (op.get_value_literal()) {
-            case 0: // `+`
-                // look in symbol table (?) for SSA of [val1 && val2]
-                expr_instr = SSA(1, ); // `add`; re-assignment
-                break;
-            case 1: // `-`
-                expr_instr = SSA(2, ); // `sub`; re-assignment
-                break;
-        }
-        // [Question/Suggestion]: should we re-assign val1 here with the result of the operation
-        // val1 = compute_expr(op, val1, val2) OR SHOULD IT BE expr_instr;
-        //      See [README.md]
+        SSA *y = p_expr();
+        x = BuildIR(x, y); // ToDo: Create IR Block
     }
-    return val1;
+    return x;
 }
 
-Res::Result Parser::p_term() {
-    Res::Result val1 = p_factor();
+SSA* Parser::p_term() { // Check For `*` && `/`
+    SSA *x = p_factor();
 
-    // Check For `*` && `/`
-    if (this->CheckFor(Res::Result(2, true), true) || this->CheckFor(Res::Result(3, true), true)) {
-        Res::Result op = this->sym;
+    while (this->CheckFor(Res::Result(2, true), true) || this->CheckFor(Res::Result(3, true), true)) {
         next();
-
-        Res::Result val2 = p_term();
-
-        // Create SSA
-        SSA term_instr;
-        switch (op.get_value_literal()) {
-            case 2: // `+`
-                // look in symbol table (?) for SSA of [val1 && val2]
-                term_instr = SSA(3, ); // `mul`; re-assignment
-                break;
-            case 3: // `-`
-                term_instr = SSA(4, ); // `div`; re-assignment
-                break;
-        }
-        // [Question/Suggestion]: should we re-assign val1 here with the result of the operation
-        // val1 = compute_expr(op, val1, val2) OR SHOULD IT BE term_instr;
-        //      See [README.md]
+        SSA *y = p_factor();
+        x = BuildIR(x, y); // ToDo: Create IR Block
     }
-    return val1;
+    return x;
 }
 
-Res::Result Parser::p_factor() {
-    if (this->sym.get_kind_literal() == 0 || this->sym.get_kind_literal() == 1) {
-        return this->sym;
-    } else if (this->CheckFor(Res::Result(2, 13), true)) {
+SSA* Parser::p_factor() {
+    if (this->sym.get_kind_literal() == 0 || this->sym.get_kind_literal() == 1) { // check [ident] or [number]
+        return this->sym; // [07/25/2024]: what do we return here?!?
+    } else if (this->CheckFor(Res::Result(2, 13), true)) { // check [`(` expression `)`]
         next(); // consume `(`
-        Res::Result res = p_expr();
+        SSA *res = p_expr();
         next(); // be sure to consume the `)`
         return res;
-    } else if (/* check for funcCall */) {
+    } else if (/* check for funcCall */) { // check [funcCall]
 
     } else {
         std::cout << "Error: factor expected: [ident || number || `(` expression `)` || funcCall], got: [" << this->sym.to_string() << "]! exiting prematurely..." << std::endl;

@@ -59,10 +59,10 @@ namespace Res {
         }
 
         // get the int value of the kind
-        int get_kind_literal() { return this->kind; }
+        int get_kind_literal() const { return this->kind; }
 
         // get the int value of the value
-        int get_value_literal() { return this->value; }
+        int get_value_literal() const { return this->value; }
     };
     
     inline std::vector<Res::Result> int_to_result(std::vector<int> tokenizerTokens) {
