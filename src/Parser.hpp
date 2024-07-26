@@ -40,6 +40,7 @@ public:
     int getOp() const {
         switch (this->sym.get_kind_literal()) {
             case 0: // const
+                return SymbolTable::operator_table.at("const");
                 break;
             case 1: // ident
                 break;
@@ -64,6 +65,18 @@ public:
         const int op = this->getOp();
         for (SSA instr : this->SSA_instrs) {
             if (instr.compare(op, x, y)) {
+                *ret = instr;
+                break;
+            }
+        }
+        return ret;
+    }
+
+    SSA* CheckConstExistence(int opnd) const {
+        SSA *ret = nullptr;
+        const int op = this->getOp();
+        for (SSA instr : this->SSA_instrs) {
+            if (instr.compareConst(op, opnd)) {
                 *ret = instr;
                 break;
             }

@@ -13,6 +13,8 @@ public:
     // SSA(int op, int opnd);
     // SSA(int op, int opnd1, int opnd2);
 
+
+    SSA(int op, int opnd); // [07/26/2024]: const
     // [07/25/2024]: (New) Pointers to other SSA instructions
     SSA(int op, SSA *opnd1, SSA *opnd2);
 
@@ -46,9 +48,18 @@ public:
     // std::vector<int> get_instr() { return this->instr; }
 
     bool compare(int op, SSA *x, SSA *y) {
-        if ((this->op == op) && 
+        if ((this->debug_num > 0) && (this->op == op) && 
             (this->x != nullptr && (this->x == x)) && 
             (this->y != nullptr && (this->y == y))) {
+            return true;
+        }
+        return false;
+    }
+
+    bool compareConst(int op, int opnd) {
+        if ((this->debug_num < 0) && 
+            (this->op == 0) && (this->op == op) && 
+            (this->constVal != nullptr && (*(this->constVal) == opnd))) {
             return true;
         }
         return false;
@@ -58,7 +69,7 @@ private:
     std::vector<int> instr;
     
     // [07/25/2024]: (New) Pointers to other SSA instructions
-    int debug_num, op;
+    int debug_num, op, *constVal;
     SSA *x, *y;
 
 
@@ -113,12 +124,28 @@ int SSA::curr_const_num = -1;
 //     }
 // };
 
+SSA::SSA(int op, int opnd) {
+    if (op == 0) {
+        this->debug_num = curr_const_num--;
+        this->op = op;
+        *(this->constVal) = opnd; // the [SymbolTable::symbol_table] value representing the constNum being stored
+    
+        this->x = nullptr;
+        this->y = nullptr;
+    } else {
+        std::cout << "Error: expected SSA() operation to be [0: const] got: [" << op << "]! exiting prematurely..." << std::endl;
+        exit(EXIT_FAILURE);
+    }
+}
+
 SSA::SSA(int op, SSA *opnd1, SSA *opnd2) {
     if (op > 0 && op <= 25) {
         this->debug_num = curr_instr_num++;
         this->op = op;
         this->x = opnd1;
         this->y = opnd2;
+
+        this->constVal = nullptr;
     } else {
         std::cout << "Error: expected SSA() operation to be [1, 25] got: [" << op << "]! exiting prematurely..." << std::endl;
         exit(EXIT_FAILURE);

@@ -235,17 +235,7 @@ void Parser::p_return() {
 void Parser::p_relation() {
     std::vector<int> operands;
 
-    Res::Result val1 = p_expr();
-    SSA val1_instr = SSA(0, val1.get_value_literal()); // Why is this SSA hardcoded as a const????
-    // [07/22/2024]: Done
-    // ToDo: should check for existence of constant in [this->SSA_instrs] first
-    if (val1.get_kind_literal() == 0) {
-        if (!SSA_exists(val1_instr)) {
-            this->SSA_instrs.push_back(val1_instr); // `const` val1
-        } else {
-            // ToDo: when modifying curr BB's symbol table (?) point to prev existing SSA that DOM's
-        }
-    }
+    SSA *x = p_expr();
     
     // Old Version
     // this->CheckForMultiple(this->relational_operations, RELATIONAL_OP_SIZE);
@@ -258,28 +248,11 @@ void Parser::p_relation() {
             std::cout << "Error: relational operation expected: [`<`, `>`, `<=`, `>=`, `==`], got: [" << this->sym.to_string() << "]! exiting prematurely..." << std::endl;
             exit(EXIT_FAILURE);
         }
-    int relOp = this->sym.get_value_literal();
-    next();
 
-    Res::Result val2 = p_expr();
-    SSA val2_instr = SSA(0, val2.get_value_literal()); // Why is this SSA hardcoded as a const????
-    if (val2.get_kind_literal() == 0) {
-        if (!SSA_exists(val2_instr)) {
-            // ToDo: should check for existence of constant in [this->SSA_instrs] first
-           this->SSA_instrs.push_back(val2_instr); // `const` val2
-        } else {
-            // ToDo: when modifying curr BB's symbol table (?) point to prev existing SSA that DOM's
-        }
-    }
-    
-    // [SymbolTable::operator_table `cmp`]
-    // ToDo: get [instr_num] from [cmp SSA] -> [cmp_instr_num] so that you can pass it below 
-    SSA cmp_instr = SSA(5, val1.get_value_literal(), val2.get_value_literal());
-    this->SSA_instrs.push_back(cmp_instr);
 
     // ToDo: figure this part out [branch after the comparison]
     int op;
-    switch (relOp) {
+    switch (this->sym.get_value_literal()) {
         case 8:
             op = SymbolTable::operator_table.at("bgt");
             break;
@@ -300,10 +273,20 @@ void Parser::p_relation() {
             exit(EXIT_FAILURE);
             break;
     }
+    next();
 
-    // [07/19/2024] This is definitely wrong
-    operands = {cmp_instr_num, -1}; // [-1] bc we don't know the specific instr yet
-    this->SSA_instrs.push_back(SSA(op, operands));
+    SSA *y = p_expr();
+    
+    
+    // ToDo: get [instr_num] from [cmp SSA] -> [cmp_instr_num] so that you can pass it below 
+    SSA cmp_instr = SSA(5, x, y); // [SymbolTable::operator_table `cmp`: 5]
+    this->SSA_instrs.push_back(cmp_instr);
+
+
+    // [07/26/2024]: Do we even need to do this here??? isn't this func just for the cmp relation?
+    // // [07/19/2024] This is definitely wrong
+    // operands = {cmp_instr, -1}; // [-1] bc we don't know the specific instr yet
+    // this->SSA_instrs.push_back(SSA(op, operands));
 }
 
 // returns the corresponding value in [SymbolTable::symbol_table]
@@ -332,11 +315,18 @@ SSA* Parser::p_term() { // Check For `*` && `/`
 
 SSA* Parser::p_factor() {
     if (this->sym.get_kind_literal() == 0 || this->sym.get_kind_literal() == 1) { // check [ident] or [number]
-        return this->sym; // [07/25/2024]: what do we return here?!?
+        // [07/26/2024]: return the SSA for the const value
+        // 1) check if value already exists as a const SSA
+        // 2) if exists, use and return; else, create and return new SSA const
+        SSA *res = this->CheckConstExistence(this->sym.get_value_literal());
+        if (!res) { // if dne, create and return new SSA const
+            *res = SSA(0, this->sym.get_value_literal());
+        }
+        return res; // [07/26/2024]: Revised; [07/25/2024]: what do we return here?!?
     } else if (this->CheckFor(Res::Result(2, 13), true)) { // check [`(` expression `)`]
         next(); // consume `(`
         SSA *res = p_expr();
-        next(); // be sure to consume the `)`
+        this->CheckFor(Res::Result(2, 14)); // be sure to consume the `)`
         return res;
     } else if (/* check for funcCall */) { // check [funcCall]
 
