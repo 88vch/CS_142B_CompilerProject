@@ -135,8 +135,8 @@ private:
     // Recursive Descent
     void p_start();
     void p_varDecl();
-    void p_statSeq();
-    void p_statement(); 
+    SSA* p_statSeq();
+    SSA* p_statement(); 
     void p_assignment();
     void p_funcCall();
     void p_ifStatement();

@@ -15,6 +15,8 @@ public:
 
 
     SSA(int op, int opnd); // [07/26/2024]: const
+    // [07/28/2024]: (New) Pointer to result returned from [return: 16] statement
+    SSA(int op, SSA *retVal);
     // [07/25/2024]: (New) Pointers to other SSA instructions
     SSA(int op, SSA *opnd1, SSA *opnd2);
 
@@ -134,6 +136,20 @@ SSA::SSA(int op, int opnd) {
         this->y = nullptr;
     } else {
         std::cout << "Error: expected SSA() operation to be [0: const] got: [" << op << "]! exiting prematurely..." << std::endl;
+        exit(EXIT_FAILURE);
+    }
+}
+
+SSA::SSA(int op, SSA *retVal) {
+    if (op == 16) {
+        this->debug_num = curr_instr_num++;
+        this->op = op;
+        this->x = retVal;
+
+        this->y = nullptr;
+        this->constVal = nullptr;
+    } else {
+        std::cout << "Error: expected SSA() operation to be [16] got: [" << op << "]! exiting prematurely..." << std::endl;
         exit(EXIT_FAILURE);
     }
 }

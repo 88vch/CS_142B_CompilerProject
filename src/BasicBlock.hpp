@@ -2,7 +2,6 @@
 #define BASICBLOCK_HPP
 
 #include "SymbolTable.hpp"
-// #include "AST_Node.hpp"
 #include <variant>
 #include "SSA.hpp"
 #include "LinkedList.hpp"
@@ -15,6 +14,8 @@ class BasicBlock {
 public:
     BasicBlock(std::unordered_map<int, LinkedList> curr_instr_lst) //: ssa_instructions()
     {
+        this->parent = nullptr;
+        this->parent2 = nullptr;
         this->instruction_list = curr_instr_lst;
         this->children = {};
     }

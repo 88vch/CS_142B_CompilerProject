@@ -58,18 +58,20 @@ void Parser::p_varDecl() {
     this->CheckFor(Res::Result(2, 4), true); // check for `;` token
 }
 
-void Parser::p_statSeq() {
+SSA* Parser::p_statSeq() {
     #ifdef DEBUG
         std::cout << "\t\t[Parser::parse_statSeq()]: found a statement to parse" << std::endl;
     #endif
-    p_statement(); // ends with `;` = end of statement
-    if (this->CheckFor(Res::Result(2, 4), true)) { // if [optional] next token is ';', then we still have statements
+    SSA *first = p_statement(); // ends with `;` = end of statement
+    while (this->CheckFor(Res::Result(2, 4), true)) { // if [optional] next token is ';', then we still have statements
         next();
-        p_statSeq();
+        p_statement();
     }
+    return first; // returning first [SSA_instr] in [p_statSeq()] so we know control flow
 }
 
-void Parser::p_statement() {
+SSA* Parser::p_statement() {
+    SSA *stmt = nullptr;
     // if we see any of these tokens then it means the next thing is another statement
     // - [let, call, if, while, return]: checked by [p_statSeq]
     // assume after every statement has a semicolon
@@ -94,17 +96,20 @@ void Parser::p_statement() {
     } else {
         // ToDo: no more statements left to parse!
     }
+    return stmt;
 }
 
-void Parser::p_assignment() {
+// [07/28/2024]: Return the [SSA instr] pointing to the const-assignment of the [value]
+//  - Now I'm confused: do we store & compute the literal values now? or do we return ptrs to [SSA_instr's]? 
+SSA* Parser::p_assignment() {
     // LET(TUCE GO)
     this->CheckFor(Res::Result(2, 6)); // check for `let`
 
     // IDENT: not checking for a specific since this is a [variable]
     // - validate that [variable] has been declared
     if (this->varDeclarations.find(SymbolTable::identifiers.at(this->sym.get_value())) == this->varDeclarations.end()) {
-        // assumes that we require variables to be declared (i.e. `let`) before they are defined
-        std::cout << "Error: var [" << this->sym.to_string() << "] doesn't exist! exiting prematurely..." << std::endl;
+        // [Assumption]: we require variables, x, to be declared (i.e. `let x;`) before they are defined
+        std::cout << "Error: var [" << this->sym.to_string() << "] hasn't been declared! exiting prematurely..." << std::endl;
         exit(EXIT_FAILURE);
     }
     int ident = SymbolTable::identifiers.at(this->sym.get_value());
@@ -114,17 +119,23 @@ void Parser::p_assignment() {
     this->CheckFor(Res::Result(2, 7)); // check for `<-`
 
     // EXPRESSION
-    Res::Result value = p_expr();
-    SSA new_instr = SSA(0, value.get_value_literal()); // Why is this SSA hardcoded as a const????
-    // [07/22/2024]: Done
-    // ToDo: should check for existence of constant in [this->SSA_instrs] first
-    if (value.get_kind_literal() == 0) {
-        if (!SSA_exists(new_instr)) {
-            this->SSA_instrs.push_back(new_instr); // `const` value
-        } else {
-            // ToDo: when modifying curr BB's symbol table (?) point to prev existing SSA that DOM's
-        }
-    }
+    SSA *value = p_expr();
+    // [07/28/2024]: Add [ident : value] mapping into [symbol_table], that's it.
+    //  Should not need to return any SSA value for this; will probably need more complexity when BB's are introduced
+
+
+    // SSA new_instr = SSA(0, value.get_value_literal()); // Why is this SSA hardcoded as a const????
+    // // [07/22/2024]: Done
+    // // ToDo: should check for existence of constant in [this->SSA_instrs] first
+    // if (value.get_kind_literal() == 0) {
+    //     if (!SSA_exists(new_instr)) {
+    //         this->SSA_instrs.push_back(new_instr); // `const` value
+    //     } else {
+    //         // ToDo: when modifying curr BB's symbol table (?) point to prev existing SSA that DOM's
+    //     }
+    // }
+    
+
     
     // Update the current block's [variable-value mapping] to ensure we have the most up to date info
     // - do we need to generate an [SSA] for the assignment? No; though we should create the constant (the value)
@@ -139,45 +150,45 @@ void Parser::p_assignment() {
 // ToDo: after generating the Dot & graph the first time
 void Parser::p_funcCall() {}
 
-// ToDo;
+// ToDo; [07/28/2024]: what exactly are we supposed to return???
 void Parser::p_ifStatement() {
     /*
     [07/19/2024] Thought about this:
-    ii) or we could create the SSA instr WITH the empty position,
+    ii) we could create the SSA instr WITH the empty position,
     then fill it once we see a corresponding `else`
     - I think this might be better
 
     Note: the curr instr list here DOMinates all 3 following blocks for [if-statement][then, else, && join]
     */
     // IF
+    this->CheckFor(Res::Result(2, 18)); // check `if`; Note: we only do this as a best practice and to consume the `if` token
     p_relation(); // IF: relation
 
     // THEN
     this->CheckFor(Res::Result(2, 19)); // check `then`
 
-    // previously: do something start here
-    BasicBlock *ifStat_then;
-    BasicBlock if_then = BasicBlock(blk, this->instruction_list);
-    ifStat_then = &if_then;
-    blk->children.push_back(ifStat_then);
-    // previously: do something end here
+    // // previously: do something start here
+    // BasicBlock *ifStat_then;
+    // BasicBlock if_then = BasicBlock(blk, nullptr, this->instruction_list);
+    // ifStat_then = &if_then;
+    // blk->children.push_back(ifStat_then);
+    // // previously: do something end here
 
-    p_statSeq();
+    SSA *if1 = p_statSeq(); // returns the 1st SSA instruction in the case which we jump to [case 1: if () == true]
 
     // [Optional] ELSE
-    BasicBlock *ifStat_else = nullptr; // should use some similar logic to check for existence of [else block]
-    bool else_exists = false;
+    // BasicBlock *ifStat_else = nullptr; // should use some similar logic to check for existence of [else block]
+    SSA *if2 = nullptr;
     if (this->CheckFor(Res::Result(2, 20), true)) { // check `else`
-        else_exists = true;
         next();
 
-        // previously: do something start here
-        BasicBlock if_else = BasicBlock(blk, this->instruction_list);
-        ifStat_else = &if_else;
-        blk->children.push_back(ifStat_else);
-        // previously: do something end here
+        // // previously: do something start here
+        // BasicBlock if_else = BasicBlock(blk, this->instruction_list);
+        // ifStat_else = &if_else;
+        // blk->children.push_back(ifStat_else);
+        // // previously: do something end here
 
-        p_statSeq();
+        if2 = p_statSeq(); // returns the 1st SSA instruction in the case which we jump to [case 2: if () == false]
     }
 
     // FI
@@ -185,14 +196,24 @@ void Parser::p_ifStatement() {
 
     // no need for phi since only one path! just return the [ifStat_then] block (i think)
     // if (else_exists) {} // is this the same logic as below?
-    if (ifStat_else == nullptr) { return ifStat_then; }
+    if (if2 == nullptr) { 
+        // return if1; // [07/28/2024]: might need this here(?)
+        return ifStat_then;
+    }
 
-    // phi() goes here
-    BasicBlock *join_ptr;
-    BasicBlock join = BasicBlock(ifStat_then, ifStat_else, blk->updated_varval_map, this->instruction_list);
-    join_ptr = &join;
-    ifStat_then->children.push_back(join_ptr);
-    ifStat_else->children.push_back(join_ptr);
+    // [Special Instruction]: phi() goes here
+
+    SSA phi = SSA(6, if1, if2); // gives us location of where to continue [SSA instr's] based on outcome of [p_relation()]
+    this->SSA_instrs.push_back(phi);
+    // return phi; // [07/28/2024]: might need this here(?)
+
+    // // previously: do something start here
+    // BasicBlock *join_ptr;
+    // BasicBlock join = BasicBlock(ifStat_then, ifStat_else, blk->updated_varval_map, this->instruction_list);
+    // join_ptr = &join;
+    // ifStat_then->children.push_back(join_ptr);
+    // ifStat_else->children.push_back(join_ptr);
+    // // previously: do something end here
 
     return join_ptr;
 }
@@ -200,41 +221,53 @@ void Parser::p_ifStatement() {
 // ToDo;
 void Parser::p_whileStatement() {
     // WHILE
+    this->CheckFor(Res::Result(2, 22)); // check `while`; Note: we only do this as a best practice and to consume the `while` token
     p_relation(); // WHILE: relation
 
     // DO
     this->CheckFor(Res::Result(2, 23)); // check `do`
 
-    // previously: do something start here
-    BasicBlock *while_body;
-    BasicBlock body = BasicBlock(blk, this->instruction_list);
-    while_body = &body;
-    blk->children.push_back(while_body);
-    while_body->children.push_back(blk); // technically a "child" since we loop back to it
-    // previously: do something end here
+    // // previously: do something start here
+    // BasicBlock *while_body;
+    // BasicBlock body = BasicBlock(blk, this->instruction_list);
+    // while_body = &body;
+    // blk->children.push_back(while_body);
+    // while_body->children.push_back(blk); // technically a "child" since we loop back to it
+    // // previously: do something end here
 
-    p_statSeq(); // DO: relation
+    SSA *while1 = p_statSeq(); // DO: relation
 
     // OD
     this->CheckFor(Res::Result(2, 24)); // check `od`
+
+    // return while1; // [07/28/2024]: might need this here(?)
 }
 
-// ToDo;
+// ToDo; 
+// [07/28/2024]; 
+//      Q: Should we return [SSA*] here? Why / Why-not?
+//      A: 
+// 
+//      Q: When will we use a [return] statement? 
+//      A: For User-Defined Functions
 void Parser::p_return() {
-    Res::Result v = p_expr();
+    SSA *retVal = p_expr();
 
-    // [07/19/2024] This probably needs revising
-    if (v == -1) { // no expr (optional)
-        // previously: do something here (add [return] SSA?)
-        int op = SymbolTable::operator_table.at("ret");
-        this->instruction_list.at(op).InsertAtHead(SSA(op, {v}));
-        blk->instruction_list.at(op).InsertAtHead(SSA(op, {v}));
-    }
+    SSA *ret;
+    *ret = SSA(16, retVal); // [SSA constructor] should handle checking of [retVal](nullptr)
+    // return ret; // [07/28/2024]: might need this here(?)
+
+
+    // // [07/19/2024] This probably needs revising
+    // if (value == -1) { // no expr (optional)
+    //     // previously: do something here (add [return] SSA?)
+    //     int op = SymbolTable::operator_table.at("ret");
+    //     this->instruction_list.at(op).InsertAtHead(SSA(op, {value}));
+    //     blk->instruction_list.at(op).InsertAtHead(SSA(op, {value}));
+    // }
 }
 
 void Parser::p_relation() {
-    std::vector<int> operands;
-
     SSA *x = p_expr();
     
     // Old Version
@@ -279,14 +312,11 @@ void Parser::p_relation() {
     
     
     // ToDo: get [instr_num] from [cmp SSA] -> [cmp_instr_num] so that you can pass it below 
-    SSA cmp_instr = SSA(5, x, y); // [SymbolTable::operator_table `cmp`: 5]
-    this->SSA_instrs.push_back(cmp_instr);
+    SSA *cmp_instr;
+    *cmp_instr = SSA(5, x, y); // [SymbolTable::operator_table `cmp`: 5]
+    this->SSA_instrs.push_back(*cmp_instr);
 
-
-    // [07/26/2024]: Do we even need to do this here??? isn't this func just for the cmp relation?
-    // // [07/19/2024] This is definitely wrong
-    // operands = {cmp_instr, -1}; // [-1] bc we don't know the specific instr yet
-    // this->SSA_instrs.push_back(SSA(op, operands));
+    // return cmp_instr; // [07/28/2024]: might need this here(?)
 }
 
 // returns the corresponding value in [SymbolTable::symbol_table]
