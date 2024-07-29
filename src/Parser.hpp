@@ -19,10 +19,12 @@ public:
         :source(std::move(tkns)) 
     {
         this->start = nullptr;
+        this->parent = nullptr;
+
         this->s_index = 0;
         this->source_len = tkns.size();
-        this->parent = nullptr;
         this->SSA_instrs = {};
+        
         this->sym = this->source .at(this->s_index);
     }
 
@@ -118,32 +120,38 @@ public:
         return ret;
     }
 
+    std::vector<SSA> getSSA() const { return this->SSA_instrs; }
+
     BasicBlock parse(); // IR BB-representation
     void parse_generate_SSA(); // generate all SSA Instructions
 private:
     Res::Result sym;
     std::vector<Res::Result> source;
     std::vector<SSA> SSA_instrs;
-    size_t source_len, s_index;
+    size_t s_index, source_len;
     std::unordered_map<int, LinkedList> instrList; // current instruction list (copied for each BB)
-    BasicBlock *start; // first result obj generated from this file
-    BasicBlock *parent; // most recent BasicBlock (or 2nd most [if/while])
+    
+    // BasicBlock *start; // first result obj generated from this file
+    // BasicBlock *parent; // most recent BasicBlock (or 2nd most [if/while])
+
+    SSA *start;
+    SSA *parent; // copied from above's [BasicBlock]
 
     std::unordered_set<int> varDeclarations; // the int in the symbol table
     std::unordered_set<int> funcDeclarations; // the int in the symbol table
 
     // Recursive Descent
-    void p_start();
+    SSA* p_start();
     void p_varDecl();
     SSA* p_statSeq();
     SSA* p_statement(); 
-    void p_assignment();
-    void p_funcCall();
-    void p_ifStatement();
-    void p_whileStatement();
-    void p_return();
+    SSA* p_assignment();
+    SSA* p_funcCall();
+    SSA* p_ifStatement();
+    SSA* p_whileStatement();
+    SSA* p_return();
 
-    void p_relation();
+    SSA* p_relation();
     SSA* p_expr();
     SSA* p_term();
     SSA* p_factor();

@@ -13,10 +13,11 @@ void Parser::parse_generate_SSA() {
     // concerned with first 15 operators first
     // ToDo: this is where we will use Recursive Descent [OldParser.*]
     // - [RESUME HERE]!!!!!!
+    this->start = this->p_start();
 }
 
 
-void Parser::p_start() {
+SSA* Parser::p_start() {
     this->CheckFor(Res::Result(2, 29)); // consumes `main` token
 
     if (this->CheckFor(Res::Result(2, 6), true)) { // check for `let` token
@@ -33,13 +34,15 @@ void Parser::p_start() {
 
     // check for [function start] token
 
-    this->CheckFor(Res::Result(2, 15));
+    this->CheckFor(Res::Result(2, 15)); // check for `{`
 
     // handle [statSeq] here
-    p_statSeq();
+    SSA *statSeq = p_statSeq();
 
-    this->CheckFor(Res::Result(2, 16));
-    this->CheckFor(Res::Result(2, 30));
+    this->CheckFor(Res::Result(2, 16)); // check for `}`
+    this->CheckFor(Res::Result(2, 30)); // check for `.`
+
+    return statSeq;
 }
 
 void Parser::p_varDecl() {
@@ -50,10 +53,11 @@ void Parser::p_varDecl() {
     next();
 
     // existence of a `,` indicates a next variable exists
-    if (this->CheckFor(Res::Result(2, 17), true)) { // check for `,` token
+    while (this->CheckFor(Res::Result(2, 17), true)) { // check for `,` token
         next(); // consuming the `,`
         // s->next = parse_vars();
-        p_varDecl();
+        this->varDeclarations.insert(SymbolTable::identifiers.at(this->sym.get_value()));
+        next();
     }
     this->CheckFor(Res::Result(2, 4), true); // check for `;` token
 }
@@ -62,10 +66,12 @@ SSA* Parser::p_statSeq() {
     #ifdef DEBUG
         std::cout << "\t\t[Parser::parse_statSeq()]: found a statement to parse" << std::endl;
     #endif
+    SSA *curr_stmt;
     SSA *first = p_statement(); // ends with `;` = end of statement
     while (this->CheckFor(Res::Result(2, 4), true)) { // if [optional] next token is ';', then we still have statements
         next();
-        p_statement();
+        curr_stmt = p_statement();
+        // [07/28/2024]: Should be doing something with [curr_stmt] here.
     }
     return first; // returning first [SSA_instr] in [p_statSeq()] so we know control flow
 }
@@ -74,29 +80,22 @@ SSA* Parser::p_statement() {
     SSA *stmt = nullptr;
     // if we see any of these tokens then it means the next thing is another statement
     // - [let, call, if, while, return]: checked by [p_statSeq]
-    // assume after every statement has a semicolon
-    // assume if we're in this function that means we know the next thing is a statement
+    // [Assumption]: after every statement has a semicolon
+    // [Assumption]: if we're in this function that means we know the next thing is a statement
+   
     if (this->CheckFor(Res::Result(2, 6), true)) {          // check `let`
-        p_assignment();
+        stmt = p_assignment();
     } else if (this->CheckFor(Res::Result(2, 25), true)) {  // check `call`
-        p_funcCall();
+        stmt = p_funcCall();
     } else if (this->CheckFor(Res::Result(2, 18), true)) {  // check `if`
-        p_ifStatement();
-        // need some way to check for `else`
-
-        // Old Version;
-        // BasicBlock *join = parse_ifStatement(blk);
-        // if (join->parent2 == nullptr) { // means that [ifStat_then] was returned (no else)
-        //     blk->children.push_back(join);
-        // }
+        stmt = p_ifStatement();
     } else if (this->CheckFor(Res::Result(2, 22), true)) {  // check `while` 
-        p_whileStatement();
+        stmt = p_whileStatement();
     } else if (this->CheckFor(Res::Result(2, 28), true)) {  // check `return`
-        p_return();
-    } else {
-        // ToDo: no more statements left to parse!
+        stmt = p_return();
     }
-    return stmt;
+    // ToDo: [else {}]no more statements left to parse! (Not an error, this is possible)
+    return stmt; // [07/28/2024]: Why do we return an [SSA*] here?
 }
 
 // [07/28/2024]: Return the [SSA instr] pointing to the const-assignment of the [value]
@@ -123,35 +122,30 @@ SSA* Parser::p_assignment() {
     // [07/28/2024]: Add [ident : value] mapping into [symbol_table], that's it.
     //  Should not need to return any SSA value for this; will probably need more complexity when BB's are introduced
 
-
-    // SSA new_instr = SSA(0, value.get_value_literal()); // Why is this SSA hardcoded as a const????
-    // // [07/22/2024]: Done
-    // // ToDo: should check for existence of constant in [this->SSA_instrs] first
-    // if (value.get_kind_literal() == 0) {
-    //     if (!SSA_exists(new_instr)) {
-    //         this->SSA_instrs.push_back(new_instr); // `const` value
-    //     } else {
-    //         // ToDo: when modifying curr BB's symbol table (?) point to prev existing SSA that DOM's
-    //     }
-    // }
-    
+    // [07/28/2024]: this will always be a new [SSA instr] bc it contains a path not simply a value (i.e. if the path has multiple ways to get there [think if/while-statements], the value will change depending on which route the path takes)
+    SSA *constVal;
+    *constVal = SSA(0, value);
+    this->SSA_instrs.push_back(*constVal);
+    return constVal;
 
     
     // Update the current block's [variable-value mapping] to ensure we have the most up to date info
     // - do we need to generate an [SSA] for the assignment? No; though we should create the constant (the value)
 
+    // Old Code begin;
     // if (blk->updated_varval_map.find(ident) == blk->updated_varval_map.end()) {
     //     blk->updated_varval_map.insert({ident, value});
     // } else {
     //     blk->updated_varval_map[ident] = value;
     // }
+    // Old Code end;
 }
 
 // ToDo: after generating the Dot & graph the first time
-void Parser::p_funcCall() {}
+SSA* Parser::p_funcCall() {}
 
 // ToDo; [07/28/2024]: what exactly are we supposed to return???
-void Parser::p_ifStatement() {
+SSA* Parser::p_ifStatement() {
     /*
     [07/19/2024] Thought about this:
     ii) we could create the SSA instr WITH the empty position,
@@ -162,7 +156,7 @@ void Parser::p_ifStatement() {
     */
     // IF
     this->CheckFor(Res::Result(2, 18)); // check `if`; Note: we only do this as a best practice and to consume the `if` token
-    p_relation(); // IF: relation
+    SSA *relation = p_relation(); // IF: relation
 
     // THEN
     this->CheckFor(Res::Result(2, 19)); // check `then`
@@ -194,12 +188,13 @@ void Parser::p_ifStatement() {
     // FI
     this->CheckFor(Res::Result(2, 21)); // check `fi`
 
-    // no need for phi since only one path! just return the [ifStat_then] block (i think)
-    // if (else_exists) {} // is this the same logic as below?
-    if (if2 == nullptr) { 
-        // return if1; // [07/28/2024]: might need this here(?)
-        return ifStat_then;
-    }
+    // [07/28/2024]: Are we not just returning the [SSA *relation] either way?
+    // // no need for phi since only one path! just return the [ifStat_then] block (i think)
+    // // if (else_exists) {} // is this the same logic as below?
+    // if (if2 == nullptr) { 
+    //     // return if1; // [07/28/2024]: might need this here(?)
+    //     return ifStat_then;
+    // }
 
     // [Special Instruction]: phi() goes here
 
@@ -215,14 +210,15 @@ void Parser::p_ifStatement() {
     // ifStat_else->children.push_back(join_ptr);
     // // previously: do something end here
 
-    return join_ptr;
+    // return join_ptr; // [07/28/2024]: might need this here(?)
+    return relation;
 }
 
 // ToDo;
-void Parser::p_whileStatement() {
+SSA* Parser::p_whileStatement() {
     // WHILE
     this->CheckFor(Res::Result(2, 22)); // check `while`; Note: we only do this as a best practice and to consume the `while` token
-    p_relation(); // WHILE: relation
+    SSA *relation = p_relation(); // WHILE: relation
 
     // DO
     this->CheckFor(Res::Result(2, 23)); // check `do`
@@ -241,6 +237,7 @@ void Parser::p_whileStatement() {
     this->CheckFor(Res::Result(2, 24)); // check `od`
 
     // return while1; // [07/28/2024]: might need this here(?)
+    return relation;
 }
 
 // ToDo; 
@@ -250,7 +247,7 @@ void Parser::p_whileStatement() {
 // 
 //      Q: When will we use a [return] statement? 
 //      A: For User-Defined Functions
-void Parser::p_return() {
+SSA* Parser::p_return() {
     SSA *retVal = p_expr();
 
     SSA *ret;
@@ -267,7 +264,7 @@ void Parser::p_return() {
     // }
 }
 
-void Parser::p_relation() {
+SSA* Parser::p_relation() {
     SSA *x = p_expr();
     
     // Old Version
@@ -358,7 +355,7 @@ SSA* Parser::p_factor() {
         SSA *res = p_expr();
         this->CheckFor(Res::Result(2, 14)); // be sure to consume the `)`
         return res;
-    } else if (/* check for funcCall */) { // check [funcCall]
+    } else if (0 /* stub; check for funcCall */ ) { // check [funcCall]
 
     } else {
         std::cout << "Error: factor expected: [ident || number || `(` expression `)` || funcCall], got: [" << this->sym.to_string() << "]! exiting prematurely..." << std::endl;

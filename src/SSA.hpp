@@ -21,7 +21,7 @@ public:
     SSA(int op, SSA *opnd1, SSA *opnd2);
 
 
-    int get_instr_num() { 
+    int get_instrNum() { 
         // return instr.at(0); 
         return this->debug_num;
     }
@@ -65,6 +65,25 @@ public:
             return true;
         }
         return false;
+    }
+
+    std::string opToString() const {
+        std::string res;
+
+        // [07/28/2024];
+        // Generate [operator_table] sorted by values (store as DS in [SymbolTable]?)
+        // Iterate through sorted [operator_table] or if can index the std::pair's, return the one at [this->op]
+        
+        return res;
+    }
+
+    std::string toString() const {
+        std::string x_val = (this->x) ? std::to_string(this->x->get_instrNum()) : "null";
+        std::string y_val = (this->y) ? std::to_string(this->y->get_instrNum()) : "null";
+        
+        std::string res = "[" + std::to_string(this->debug_num) + "]: " + "`" + this->opToString() + "` | " + x_val + ", " + y_val;
+
+        // [07/28/2024]; ToDo: add cases for [const] and finish this function (along with opToString())
     }
 private:
     // [Old Version]
@@ -130,7 +149,7 @@ SSA::SSA(int op, int opnd) {
     if (op == 0) {
         this->debug_num = curr_const_num--;
         this->op = op;
-        *(this->constVal) = opnd; // the [SymbolTable::symbol_table] value representing the constNum being stored
+        *(this->constVal) = opnd; // the [SymbolTable::symbol_table] value representing the constVal being stored
     
         this->x = nullptr;
         this->y = nullptr;
@@ -141,7 +160,18 @@ SSA::SSA(int op, int opnd) {
 }
 
 SSA::SSA(int op, SSA *retVal) {
-    if (op == 16) {
+    if (op == 0) {
+        // if [op == 0 == const], and [this->constVal == nullptr], we should check if [this->x == nullptr]
+        // - a constant can either be an integer literal (given by the [SymbolTable::symbol_table] value representing the constVal being stored)
+        // - OR, an [SSA instruction] where the result is deduced to be a const (i.e. const + const = const, const + ident = (potentially new) const)
+        //      Note: when I say `deduced to be a const`, I mean the SSA instruction is a (or a series of) instruction(s) that trace back to a const number
+        this->debug_num = curr_const_num--;
+        this->op = op;  
+        this->x = retVal;
+
+        this->y = nullptr;
+        this->constVal = nullptr;
+    } else if (op == 16) {
         this->debug_num = curr_instr_num++;
         this->op = op;
         this->x = retVal;

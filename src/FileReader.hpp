@@ -9,6 +9,7 @@
 #include <unordered_map>
 
 #include "Result.hpp"
+#include "SSA.hpp"
 
 #define DEBUG
 
@@ -154,6 +155,34 @@ public:
         // Write content to the file
         file << tableName << ";" << std::endl << "[KIND]: \t\t\t\t[VALUE]" << std::endl;
         for (const Res::Result &res : content) { 
+            std::string kind = res.get_kind(), value = res.get_value();
+            if ((kind).length() > 7) {
+                file << "[" << kind << "]" << ": \t\t\t[" << value << "]" << std::endl;
+            } else if ((kind).length() > 3) {
+                file << "[" << kind << "]" << ": \t\t\t\t[" << value << "]" << std::endl;
+            } else {
+                file << "[" << kind << "]" << ": \t\t\t\t\t[" << value << "]" << std::endl;
+            }
+        }
+
+        // Close the file
+        file.close();
+        return true; // Return true to indicate success
+    }
+
+    static bool write_file_contents(const std::string &out_f, const std::vector<SSA>& content, const std::string &tableName) {
+        // Open the file for writing
+        std::ofstream file(out_f);
+
+        // Check if the file was opened successfully
+        if (!file.is_open()) {
+            std::cerr << "Failed to open the file." << std::endl;
+            return false; // Return false to indicate failure
+        }
+
+        // Write content to the file
+        file << tableName << ";" << std::endl << "[KIND]: \t\t\t\t[VALUE]" << std::endl;
+        for (const SSA &res : content) { 
             std::string kind = res.get_kind(), value = res.get_value();
             if ((kind).length() > 7) {
                 file << "[" << kind << "]" << ": \t\t\t[" << value << "]" << std::endl;

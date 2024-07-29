@@ -24,7 +24,7 @@ int main() {
     std::string numbers_f = "res/_Numbers_result.txt";
     std::string tokenize_f = "res/Tokenizer_results.txt";
     std::string results_f = "res/Results_results.txt";
-    std::string AST_f = "res/AST_results.txt";
+    std::string parser1_f = "res/parser1_results.txt";
 
 
     const char *in_f = "tst/temp.ty";
@@ -73,20 +73,25 @@ int main() {
     if (res) { std::cout << "Results have successfully been written to: " << results_f << "(size=[" << results.size() << "])" << std::endl; }
     else { std::cout << "Error occured when trying to write results!" << std::endl; }
 
-    // // OLD: Lexer, NEW: Parser
-    // // Lexer lexer = Lexer(contents);
-    // // std::vector<TOKEN> tokens = lexer.lex();
-    // #ifdef DEBUG
-    //     std::cout << "[Parser]: Before constructor" << std::endl;
-    // #endif
-    // Parser parser = Parser(tokens);
-    // #ifdef DEBUG
-    //     std::cout << "[Parser]: After constructor. Before [parse()]" << std::endl;
-    // #endif
-    // parser.parse();
-    // std::cout << "done parsing" << std::endl;
-    // // node::computation *root = parser.head();
-    // // std::vector<TOKEN> tokens = parser.parse(); [should return a parse tree!]
+    // OLD: Lexer, NEW: Parser
+    // Lexer lexer = Lexer(contents);
+    // std::vector<TOKEN> tokens = lexer.lex();
+    #ifdef DEBUG
+        std::cout << "[Parser]: Before constructor" << std::endl;
+    #endif
+    Parser parser = Parser(results);
+    #ifdef DEBUG
+        std::cout << "[Parser]: After constructor. Before FIRST [parse](SSA Generation)" << std::endl;
+    #endif
+    parser.parse_generate_SSA();
+    std::cout << "done INITIALLY parsing" << std::endl;
+
+    bool res = fr.write_file_contents(parser1_f, parser.getSSA(), "Results");
+    if (res) { std::cout << "Results have successfully been written to: " << results_f << "(size=[" << results.size() << "])" << std::endl; }
+    else { std::cout << "Error occured when trying to write results!" << std::endl; }
+
+    // node::computation *root = parser.head();
+    // std::vector<TOKEN> tokens = parser.parse(); [should return a parse tree!]
 
     // std::string out_str = "Syntax;\n[TOKEN_TYPE::DIGIT]: \t[STRING]\n";
     // // // for (auto iit = tokens.begin(); iit != tokens.end(); iit++) {

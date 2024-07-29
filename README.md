@@ -1,4 +1,6 @@
 # **To Do;**
+**[07/28/2024]**
+Think we should figure out a way to ensure that (the previous [SSA] we're using) definitely DOM's the [current/new SSA] being generated
 **[07/25/2024]**
 true, we should return [SSA] instead of [Res::Result]
 **[07/23/2024]**
