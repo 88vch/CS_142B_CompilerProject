@@ -181,16 +181,9 @@ public:
         }
 
         // Write content to the file
-        file << tableName << ";" << std::endl << "[KIND]: \t\t\t\t[VALUE]" << std::endl;
-        for (const SSA &res : content) { 
-            std::string kind = res.get_kind(), value = res.get_value();
-            if ((kind).length() > 7) {
-                file << "[" << kind << "]" << ": \t\t\t[" << value << "]" << std::endl;
-            } else if ((kind).length() > 3) {
-                file << "[" << kind << "]" << ": \t\t\t\t[" << value << "]" << std::endl;
-            } else {
-                file << "[" << kind << "]" << ": \t\t\t\t\t[" << value << "]" << std::endl;
-            }
+        file << tableName << ";" << std::endl << "[DEBUG_NUM]: `OPERATOR` | [x_val], [y_val]" << std::endl;
+        for (const SSA &res : content) {
+            file << "[" << res.toString() << "]" << std::endl;
         }
 
         // Close the file
