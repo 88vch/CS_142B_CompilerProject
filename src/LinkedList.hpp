@@ -67,9 +67,10 @@ public:
         Node *curr = head;
 
         while (curr != tail) {
-            if (SSA::compare(curr->instr, instruction)) {
-                return true;
-            }
+            // Old Version; ToDo: Revise this!
+            // if (SSA::compare(curr->instr, instruction)) {
+            //     return true;
+            // }
             curr = curr->next;
         }
         return false;

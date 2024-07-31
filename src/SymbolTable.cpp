@@ -147,6 +147,37 @@ namespace SymbolTable {
         {"writeNL", 25}
     };
 
+    const std::unordered_map<int, std::string> operator_table_reversed = { // translate into operator from [operator_table]
+        {0, "const"},       // special func
+        {1, "add"},
+        {2, "sub"},
+        {3, "mul"},
+        {4, "div"},
+        {5, "cmp"},
+        {6, "phi"},         // special func
+        {7, "end"},         // special func
+        {8, "bra"},
+        {9, "bne"},
+        {10, "beq"},
+        {11, "ble"},
+        {12, "blt"},
+        {13, "bge"},
+        {14, "bgt"},
+        // user-defined functions (below): FIRST GET ABOVE WORKING
+        {15, "jsr"},
+        {16, "ret"},
+        {17, "getpar1"},
+        {18, "getpar2"},
+        {19, "getpar3"},
+        {20, "setpar1"},
+        {21, "setpar2"},
+        {22, "setpar3"},
+        // modeling built-in i/o (below):
+        {23, "read"},
+        {24, "write"},
+        {25, "writeNL"}
+    };
+
     void update_table(std::string s, std::string type) {
         int id = symbol_table.size() - 1;
         // symbol_table.emplace(s, id);

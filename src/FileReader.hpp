@@ -142,7 +142,7 @@ public:
         return true; // Return true to indicate success
     }
 
-    static bool write_file_contents(const std::string &out_f, const std::vector<Res::Result>& content, const std::string &tableName) {
+    static bool write_file_contents(const std::string &out_f, const std::vector<Result>& content, const std::string &tableName) {
         // Open the file for writing
         std::ofstream file(out_f);
 
@@ -154,7 +154,7 @@ public:
 
         // Write content to the file
         file << tableName << ";" << std::endl << "[KIND]: \t\t\t\t[VALUE]" << std::endl;
-        for (const Res::Result &res : content) { 
+        for (const Result &res : content) { 
             std::string kind = res.get_kind(), value = res.get_value();
             if ((kind).length() > 7) {
                 file << "[" << kind << "]" << ": \t\t\t[" << value << "]" << std::endl;

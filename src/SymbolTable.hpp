@@ -20,6 +20,7 @@ namespace SymbolTable {
     // extern std::unordered_map<std::string, int> symbol_table; // find() from [symbol_table]
     extern std::unordered_map<int, std::string> symbol_table; // find() from [symbol_table]
     extern const std::unordered_map<std::string, int> operator_table; // BasicBlock; translate into operator from [operator_table]
+    extern const std::unordered_map<int, std::string> operator_table_reversed;
 };
 
 // extern std::unordered_map<std::string, int> SymbolTable::symbol_table;

@@ -9,13 +9,15 @@
 #include "LinkedList.hpp"
 #include "TinyExceptions.hpp"
 
+#define DEBUG
+
 // parse(): IR through BasicBlocks
 
 // Note: all nodes will be inherited from BasicBlock
 // Note: shouldn't need keywords bc we only care about computational code
 class Parser {
 public:
-    Parser(const std::vector<Res::Result> &tkns)
+    Parser(const std::vector<Result> &tkns)
         :source(std::move(tkns)) 
     {
         this->start = nullptr;
@@ -34,7 +36,7 @@ public:
             this->sym = this->source.at(this->s_index);
             this->s_index++;
         } else {
-            this->sym = Res::Result(2, -1); // keyword: ["EOF": -1]
+            this->sym = Result(2, -1); // keyword: ["EOF": -1]
         }
     }
 
@@ -125,8 +127,8 @@ public:
     BasicBlock parse(); // IR BB-representation
     void parse_generate_SSA(); // generate all SSA Instructions
 private:
-    Res::Result sym;
-    std::vector<Res::Result> source;
+    Result sym;
+    std::vector<Result> source;
     std::vector<SSA> SSA_instrs;
     size_t s_index, source_len;
     std::unordered_map<int, LinkedList> instrList; // current instruction list (copied for each BB)
@@ -156,8 +158,8 @@ private:
     SSA* p_term();
     SSA* p_factor();
 
-    bool CheckFor(Res::Result expected_token, bool optional = false) {
-        if (expected_token == Res::Result(2, -1)) { return false; }
+    bool CheckFor(Result expected_token, bool optional = false) {
+        if (expected_token == Result(2, -1)) { return false; }
 
         if (optional) { // optional's don't get consumed
             if (this->sym != expected_token) {
@@ -175,9 +177,22 @@ private:
     }
 
     bool SSA_exists(SSA new_instr) const {
-        for (SSA instr : this->SSA_instrs) {
-            if (SSA::compare(instr, new_instr)) {
-                return true;
+        SSA *instr = nullptr;
+
+
+        if (new_instr.get_operator() == 0) { // const
+            for (SSA i : this->SSA_instrs) {
+                *instr = i;
+                if (new_instr.compareConst(instr)) {
+                    return true;
+                }
+            }
+        } else {            
+            for (SSA i : this->SSA_instrs) {
+                *instr = i;
+                if (new_instr.compare(instr)) {
+                    return true;
+                }
             }
         }
         return false;

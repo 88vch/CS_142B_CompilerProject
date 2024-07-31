@@ -9,6 +9,7 @@
 #include "src/Tokenizer.hpp"
 #include "src/Parser.hpp"
 #include "src/Result.hpp"
+#include "src/SSA.hpp"
 // #include "src/Node.hpp"
 // #include "src/Lexer.hpp"
 
@@ -24,7 +25,7 @@ int main() {
     std::string numbers_f = "res/_Numbers_result.txt";
     std::string tokenize_f = "res/Tokenizer_results.txt";
     std::string results_f = "res/Results_results.txt";
-    std::string parser1_f = "res/parser1_results.txt";
+    std::string parser1_f = "res/Parser1_results.txt";
 
 
     const char *in_f = "tst/temp.ty";
@@ -67,7 +68,7 @@ int main() {
     if (toks) { std::cout << "Results have successfully been written to: " << tokenize_f << "(size=[" << tokens.size() << "])" << std::endl; }
     else { std::cout << "Error occured when trying to write results!" << std::endl; }
 
-    std::vector<Res::Result> results = Res::int_to_result(tokens);
+    std::vector<Result> results = Result::int_to_result(tokens);
 
     bool res = fr.write_file_contents(results_f, results, "Results");
     if (res) { std::cout << "Results have successfully been written to: " << results_f << "(size=[" << results.size() << "])" << std::endl; }
@@ -84,10 +85,13 @@ int main() {
         std::cout << "[Parser]: After constructor. Before FIRST [parse](SSA Generation)" << std::endl;
     #endif
     parser.parse_generate_SSA();
-    std::cout << "done INITIALLY parsing" << std::endl;
+    #ifdef DEBUG
+        std::cout << "[Parser]: After FIRST [parse]" << std::endl;
+    #endif
 
-    bool res = fr.write_file_contents(parser1_f, parser.getSSA(), "Results");
-    if (res) { std::cout << "Results have successfully been written to: " << results_f << "(size=[" << results.size() << "])" << std::endl; }
+    std::vector<SSA> SSA_instrs = parser.getSSA();
+    bool SSA_exists = fr.write_file_contents(parser1_f, SSA_instrs, "SSA Instructions");
+    if (SSA_exists) { std::cout << "SSA Instructions have successfully been written to: " << parser1_f << "(size=[" << SSA_instrs.size() << "])" << std::endl; }
     else { std::cout << "Error occured when trying to write results!" << std::endl; }
 
     // node::computation *root = parser.head();
