@@ -27,21 +27,11 @@ public:
         this->source_len = tkns.size();
         this->SSA_instrs = {};
         
-        this->sym = this->source .at(this->s_index);
-    }
-
-    // peek & consume char
-    inline void next() {
-        if (this->s_index < this->source_len) {
-            this->sym = this->source.at(this->s_index);
-            this->s_index++;
-        } else {
-            this->sym = Result(2, -1); // keyword: ["EOF": -1]
-        }
+        next();
     }
 
     // [07/25/2024]: ToDo
-    int getOp() const {
+    inline int getOp() const {
         switch (this->sym.get_kind_literal()) {
             case 0: // const
                 return SymbolTable::operator_table.at("const");
@@ -64,7 +54,7 @@ public:
     }
 
 
-    SSA* CheckExistence(SSA *x, SSA *y) const {
+    inline SSA* CheckExistence(SSA *x, SSA *y) const {
         SSA *ret = nullptr;
         const int op = this->getOp();
         for (SSA instr : this->SSA_instrs) {
@@ -76,7 +66,7 @@ public:
         return ret;
     }
 
-    SSA* CheckConstExistence(int opnd) const {
+    inline SSA* CheckConstExistence(int opnd) const {
         SSA *ret = nullptr;
         const int op = this->getOp();
         for (SSA instr : this->SSA_instrs) {
@@ -89,7 +79,7 @@ public:
     }
 
     // [07/25/2024]: ToDo
-    SSA* BuildIR(SSA *x, SSA *y) {
+    inline SSA* BuildIR(SSA *x, SSA *y) {
         SSA *ret = CheckExistence(x, y);
         // if we don't get [nullptr] from CheckExistence(), that implies there was a previous SSA of the exact same type; so rather than creating a dupe, we can simply use the previously existing one (Copy Propagation)
         //      Note: check that all previous instructions will DOM this SSA instr
@@ -158,25 +148,63 @@ private:
     SSA* p_term();
     SSA* p_factor();
 
-    bool CheckFor(Result expected_token, bool optional = false) {
-        if (expected_token == Result(2, -1)) { return false; }
+    // peek & consume char
+    inline void next() {
+        #ifdef DEBUG
+            std::cout << "in [next(this->sym=" << this->sym.to_string_literal() << ")]" << std::endl;
+        #endif
 
-        if (optional) { // optional's don't get consumed
-            if (this->sym != expected_token) {
-                return false;
-            }
-            return true;
+
+        if (this->s_index < this->source_len) {
+            this->sym = this->source.at(this->s_index++);
         } else {
-            if (this->sym != expected_token) {
-                std::stringstream ss;
-                ss << "Expected: " << expected_token.to_string() << ". Got: " << this->sym.to_string() << "." << std::endl;
-                tinyExceptions_ns::SyntaxError(ss.str());
-            } else { next(); }
-            return true;
+            this->sym = Result(2, -1); // keyword: ["EOF": -1]
         }
+
+        #ifdef DEBUG
+            std::cout << "\tmodified [this->sym] to: " << this->sym.to_string_literal() << std::endl;
+        #endif
     }
 
-    bool SSA_exists(SSA new_instr) const {
+    inline bool CheckFor(Result expected_token, bool optional = false) {
+        #ifdef DEBUG
+            std::cout << "Checking For [expected: " << expected_token.to_string() << "], [got: " << this->sym.to_string() << "]" << std::endl;
+        #endif
+        bool retVal = false;
+        
+        // Note: there might be some logic messed up abt this (relation: [expected_token, Result(2, -1)])
+        if (!expected_token.compare(Result(2, -1))) { 
+            // #ifdef DEBUG
+            //     std::cout << "expected token != EOF token" << std::endl;
+            // #endif
+            if (optional) { // optional's don't get consumed
+                #ifdef DEBUG
+                    std::cout << "\toptional!" << std::endl;
+                #endif
+                if (this->sym.compare(expected_token)) {
+                    retVal = true;
+                }
+            } else {
+                #ifdef DEBUG
+                    std::cout << "\tnot an optional! (i.e. will consume if can)" << std::endl;
+                #endif
+                if (!this->sym.compare(expected_token)) {
+                    std::cout << "Error: CheckFor expected: [" << expected_token.to_string() << "], got: [" << this->sym.to_string() << "]! exiting prematurely..." << std::endl;
+                    exit(EXIT_FAILURE);
+                } else { 
+                    this->next(); 
+                }
+                retVal = true;
+            }
+        }
+
+        #ifdef DEBUG
+            std::cout << "\treturning [" << retVal << "]" << std::endl;
+        #endif
+        return retVal;
+    }
+
+    inline bool SSA_exists(SSA new_instr) const {
         SSA *instr = nullptr;
 
 

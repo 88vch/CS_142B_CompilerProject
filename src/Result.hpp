@@ -5,7 +5,8 @@
 #include <iostream>
 #include "SymbolTable.hpp"
 
-#undef DEBUG
+#undef DEBUG_I2R
+#define DEBUG
 
 class Result {
 public:
@@ -20,17 +21,15 @@ public:
     }
     Result() {} // why do we need this to satisfy [Parser] constructor? 
 
-    // Overload the equality operator
-    bool operator==(const Result& other) const {
-        return (this->kind == other.kind) ? true : (this->value == other.value);
-    }
-    // Overload the inequality operator
-    bool operator!=(const Result& other) const {
-        return !(*this == other);
+    bool compare(const Result &other) {
+        return (this->kind == other.kind) ? (this->value == other.value) : false;
     }
 
-    std::string to_string() const {
+    std::string to_string_literal() const {
         return "Result(" + std::to_string(this->kind) + ", " + std::to_string(this->value) + ")";
+    }
+    std::string to_string() const {
+        return "Result(" + this->get_kind() + ", " + this->get_value() + ")";
     }
     std::string get_kind() const {
         std::string res; 

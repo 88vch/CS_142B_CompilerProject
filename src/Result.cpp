@@ -5,11 +5,11 @@ std::vector<Result> Result::int_to_result(std::vector<int> tokenizerTokens) {
     std::vector<Result> resultTokens = {};
 
     for (const int &token_value : tokenizerTokens) {
-        #ifdef DEBUG
+        #ifdef DEBUG_I2R
             std::cout << "token_value: [" << token_value << "]" << std::endl; 
         #endif
         if (SymbolTable::symbol_table.find(token_value) != SymbolTable::symbol_table.end()) {
-            #ifdef DEBUG
+            #ifdef DEBUG_I2R
                 std::cout << "\t[token_value] exists in [SymbolTable::symbol_table] with value: [" << SymbolTable::symbol_table.at(token_value) << "]" << std::endl;
             #endif
             int token_kind; // ToDo: update this val once logic has been properly configured
@@ -19,7 +19,7 @@ std::vector<Result> Result::int_to_result(std::vector<int> tokenizerTokens) {
             // - first check const (i.e. num) [1) try convert string to int, 2) if successful (1), check for existence in [SymbolTable::numbers]]
             //      - identifiers & keywords both start with a char, so [std::stoi()] works!
             try {
-                #ifdef DEBUG
+                #ifdef DEBUG_I2R
                     std::cout << "\tfirst checking if [token_value] is num (i.e. const)" << std::endl;
                 #endif
                 int int_val = std::stoi(val);
@@ -29,18 +29,18 @@ std::vector<Result> Result::int_to_result(std::vector<int> tokenizerTokens) {
                 }
             } catch (...) {
                 // - then check keyword [SymbolTable::keywords -> map]
-                #ifdef DEBUG
+                #ifdef DEBUG_I2R
                     std::cout << "\tnot num; checking if [token_value] is keyword or identifier" << std::endl;
                 #endif
                 if (SymbolTable::keywords.find(val) != SymbolTable::keywords.end()) {
-                    #ifdef DEBUG
+                    #ifdef DEBUG_I2R
                         std::cout << "\t\t[token_value] is keyword" << std::endl;
                     #endif
                     token_kind = 2;
                 }
                 // - finally check identifier [SymbolTable::identifiers -> map]
                 else if (SymbolTable::identifiers.find(val) != SymbolTable::identifiers.end()) {
-                    #ifdef DEBUG
+                    #ifdef DEBUG_I2R
                         std::cout << "\t\t[token_value] is identifier" << std::endl;
                     #endif
                     token_kind = 1;

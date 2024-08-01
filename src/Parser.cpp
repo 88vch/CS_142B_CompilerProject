@@ -14,7 +14,7 @@ void Parser::parse_generate_SSA() {
     // ToDo: this is where we will use Recursive Descent [OldParser.*]
     // - [RESUME HERE]!!!!!!
     #ifdef DEBUG
-        std::cout << "\t[Parser::parse_generate_SSA()]" << std::endl;
+        std::cout << "[Parser::parse_generate_SSA()]" << std::endl;
     #endif
     this->start = this->p_start();
     #ifdef DEBUG
@@ -25,19 +25,18 @@ void Parser::parse_generate_SSA() {
 
 SSA* Parser::p_start() {
     #ifdef DEBUG
-        std::cout << "\t[Parser::p_start()]" << std::endl;
+        std::cout << "[Parser::p_start(" << this->sym.to_string() << ")]" << std::endl;
     #endif
     this->CheckFor(Result(2, 29)); // consumes `main` token
 
-    if (this->CheckFor(Result(2, 6), true)) { // check for `let` token
+    if (this->CheckFor(Result(2, 5), true)) { // check for `var` token
         #ifdef DEBUG
-            std::cout << "\t[Parser::parse()]: next token is [varDecl]" << std::endl;
+            std::cout << "[Parser::parse()]: next token is [varDecl]" << std::endl;
         #endif
         next(); // consumes `var` token
-        // s->varDecl = parse_varDecl(); // ends with `;` = end of varDecl (consume it in the func)
-        p_varDecl();
+        p_varDecl(); // ends with `;` = end of varDecl (consume it in the func)
         #ifdef DEBUG
-            std::cout << "\t[Parser::parse()]: done parsing [varDecl]'s" << std::endl;
+            std::cout << "[Parser::parse()]: done parsing [varDecl]'s" << std::endl;
         #endif
     }
 
@@ -56,7 +55,7 @@ SSA* Parser::p_start() {
 
 void Parser::p_varDecl() {
     #ifdef DEBUG
-        std::cout << "\t[Parser::p_varDecl()]: got new var: [" << this->sym.to_string() << "]" << std::endl;
+        std::cout << "[Parser::p_varDecl(" << this->sym.to_string() << ")]: got new var: [" << this->sym.to_string() << "]" << std::endl;
     #endif
     this->varDeclarations.insert(SymbolTable::identifiers.at(this->sym.get_value()));
     next();
@@ -68,12 +67,12 @@ void Parser::p_varDecl() {
         this->varDeclarations.insert(SymbolTable::identifiers.at(this->sym.get_value()));
         next();
     }
-    this->CheckFor(Result(2, 4), true); // check for `;` token
+    this->CheckFor(Result(2, 4)); // check for `;` token
 }
 
 SSA* Parser::p_statSeq() {
     #ifdef DEBUG
-        std::cout << "\t[Parser::p_statSeq()]: found a statement to parse" << std::endl;
+        std::cout << "[Parser::p_statSeq(" << this->sym.to_string() << ")]: found a statement to parse" << std::endl;
     #endif
     SSA *curr_stmt;
     SSA *first = p_statement(); // ends with `;` = end of statement
@@ -87,7 +86,7 @@ SSA* Parser::p_statSeq() {
 
 SSA* Parser::p_statement() {
     #ifdef DEBUG
-        std::cout << "\t[Parser::p_statement()]" << std::endl;
+        std::cout << "[Parser::p_statement(" << this->sym.to_string() << ")]" << std::endl;
     #endif
     SSA *stmt = nullptr;
     // if we see any of these tokens then it means the next thing is another statement
@@ -114,7 +113,7 @@ SSA* Parser::p_statement() {
 //  - Now I'm confused: do we store & compute the literal values now? or do we return ptrs to [SSA_instr's]? 
 SSA* Parser::p_assignment() {
     #ifdef DEBUG
-        std::cout << "\t[Parser::p_assignment()]" << std::endl;
+        std::cout << "[Parser::p_assignment(" << this->sym.to_string() << ")]" << std::endl;
     #endif
     // LET(TUCE GO)
     this->CheckFor(Result(2, 6)); // check for `let`
@@ -159,14 +158,14 @@ SSA* Parser::p_assignment() {
 // ToDo: after generating the Dot & graph the first time
 SSA* Parser::p_funcCall() {
     #ifdef DEBUG
-        std::cout << "\t[Parser::p_funcCall()]" << std::endl;
+        std::cout << "[Parser::p_funcCall(" << this->sym.to_string() << ")]" << std::endl;
     #endif
 }
 
 // ToDo; [07/28/2024]: what exactly are we supposed to return???
 SSA* Parser::p_ifStatement() {
     #ifdef DEBUG
-        std::cout << "\t[Parser::p_ifStatement()]" << std::endl;
+        std::cout << "[Parser::p_ifStatement(" << this->sym.to_string() << ")]" << std::endl;
     #endif
     /*
     [07/19/2024] Thought about this:
@@ -240,7 +239,7 @@ SSA* Parser::p_ifStatement() {
 // ToDo;
 SSA* Parser::p_whileStatement() {
     #ifdef DEBUG
-        std::cout << "\t[Parser::p_whileStatement()]" << std::endl;
+        std::cout << "[Parser::p_whileStatement(" << this->sym.to_string() << ")]" << std::endl;
     #endif
     // WHILE
     this->CheckFor(Result(2, 22)); // check `while`; Note: we only do this as a best practice and to consume the `while` token
@@ -276,7 +275,7 @@ SSA* Parser::p_whileStatement() {
 //      A: For User-Defined Functions
 SSA* Parser::p_return() {
     #ifdef DEBUG
-        std::cout << "\t[Parser::p_return()]" << std::endl;
+        std::cout << "[Parser::p_return(" << this->sym.to_string() << ")]" << std::endl;
     #endif
     SSA *retVal = p_expr();
 
@@ -296,7 +295,7 @@ SSA* Parser::p_return() {
 
 SSA* Parser::p_relation() {
     #ifdef DEBUG
-        std::cout << "\t[Parser::p_relation()]" << std::endl;
+        std::cout << "[Parser::p_relation(" << this->sym.to_string() << ")]" << std::endl;
     #endif
     SSA *x = p_expr();
     
@@ -359,7 +358,7 @@ SSA* Parser::p_relation() {
 // [07/24/2024]: Should always return a [kind=0] const value bc all sub-routes lead to execution of a (+, -, *, /)
 SSA* Parser::p_expr() { // Check For `+` && `-`
     #ifdef DEBUG
-        std::cout << "\t[Parser::p_expr()]" << std::endl;
+        std::cout << "[Parser::p_expr(" << this->sym.to_string() << ")]" << std::endl;
     #endif
     SSA *x = p_term();
 
@@ -373,7 +372,7 @@ SSA* Parser::p_expr() { // Check For `+` && `-`
 
 SSA* Parser::p_term() { // Check For `*` && `/`
     #ifdef DEBUG
-        std::cout << "\t[Parser::p_term()]" << std::endl;
+        std::cout << "[Parser::p_term(" << this->sym.to_string() << ")]" << std::endl;
     #endif
     SSA *x = p_factor();
 
@@ -387,7 +386,7 @@ SSA* Parser::p_term() { // Check For `*` && `/`
 
 SSA* Parser::p_factor() {   
     #ifdef DEBUG
-        std::cout << "\t[Parser::p_factor()]" << std::endl;
+        std::cout << "[Parser::p_factor(" << this->sym.to_string() << ")]" << std::endl;
     #endif
     if (this->sym.get_kind_literal() == 0 || this->sym.get_kind_literal() == 1) { // check [ident] or [number]
         // [07/26/2024]: return the SSA for the const value
