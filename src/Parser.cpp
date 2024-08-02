@@ -362,11 +362,14 @@ SSA* Parser::p_expr() { // Check For `+` && `-`
     #endif
     SSA *x = p_term();
 
-    while (this->CheckFor(Result(0, true), true) || this->CheckFor(Result(1, true), true)) {
+    while (this->CheckFor(Result(2, 0), true) || this->CheckFor(Result(2, 1), true)) {
         next();
         SSA *y = p_expr();
         x = BuildIR(x, y); // ToDo: Create IR Block
     }
+    #ifdef DEBUG
+        std::cout << "[Parser::p_expr()]: returning: " << x->toString() << std::endl;
+    #endif
     return x;
 }
 
@@ -376,11 +379,15 @@ SSA* Parser::p_term() { // Check For `*` && `/`
     #endif
     SSA *x = p_factor();
 
-    while (this->CheckFor(Result(2, true), true) || this->CheckFor(Result(3, true), true)) {
+    while (this->CheckFor(Result(2, 2), true) || this->CheckFor(Result(2, 3), true)) {
         next();
         SSA *y = p_factor();
         x = BuildIR(x, y); // ToDo: Create IR Block
     }
+    // [08/02/2024]: Segmentation Fault here (both CheckFor()'s should return false, DEBUG stmt should print (currently doesn't!))
+    #ifdef DEBUG
+        std::cout << "[Parser::p_term()]: returning: " << x->toString() << std::endl;
+    #endif
     return x;
 }
 
@@ -388,24 +395,40 @@ SSA* Parser::p_factor() {
     #ifdef DEBUG
         std::cout << "[Parser::p_factor(" << this->sym.to_string() << ")]" << std::endl;
     #endif
+    SSA *res = nullptr;
     if (this->sym.get_kind_literal() == 0 || this->sym.get_kind_literal() == 1) { // check [ident] or [number]
+        #ifdef DEBUG
+            std::cout << "\tgot [const], checking existence in [this->SSA_instrs]" << std::endl;
+        #endif
         // [07/26/2024]: return the SSA for the const value
         // 1) check if value already exists as a const SSA
         // 2) if exists, use and return; else, create and return new SSA const
-        SSA *res = this->CheckConstExistence(this->sym.get_value_literal());
-        if (!res) { // if dne, create and return new SSA const
-            *res = SSA(0, this->sym.get_value_literal());
+        res = this->CheckConstExistence();
+
+        if (res == nullptr) { // if dne, create and return new SSA const
+            int val = this->sym.get_value_literal();
+            SSA tmp = SSA(0, &val);
+            #ifdef DEBUG
+                std::cout << "\tcreated new [tmp] SSA const instr" << std::endl;
+            #endif
+            res = &tmp;
+            #ifdef DEBUG
+                std::cout << "\t[const] val dne in [this->SSA_instrs], created new SSA instruction: [" << res->toString() << "]" << std::endl;
+            #endif
         }
-        return res; // [07/26/2024]: Revised; [07/25/2024]: what do we return here?!?
     } else if (this->CheckFor(Result(2, 13), true)) { // check [`(` expression `)`]
         next(); // consume `(`
-        SSA *res = p_expr();
+        res = p_expr();
         this->CheckFor(Result(2, 14)); // be sure to consume the `)`
-        return res;
     } else if (0 /* stub; check for funcCall */ ) { // check [funcCall]
 
     } else {
         std::cout << "Error: factor expected: [ident || number || `(` expression `)` || funcCall], got: [" << this->sym.to_string() << "]! exiting prematurely..." << std::endl;
         exit(EXIT_FAILURE);
     }
+
+    #ifdef DEBUG
+        std::cout << "[Parser::p_factor()]: returning: " << res->toString() << std::endl;
+    #endif
+    return res;
 }

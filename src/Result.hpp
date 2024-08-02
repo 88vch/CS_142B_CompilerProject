@@ -54,7 +54,7 @@ public:
     // get the int value of the kind
     int get_kind_literal() const { return this->kind; }
     // get the int value of the value
-    int get_value_literal() const { return this->value; }
+    int get_value_literal() const { return std::stoi(SymbolTable::symbol_table.at(this->value)); }
     
     static std::vector<Result> int_to_result(std::vector<int> tokenizerTokens);
 private:

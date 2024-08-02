@@ -4,11 +4,16 @@
 int SSA::curr_instr_num = 1;
 int SSA::curr_const_num = -1;
 
-SSA::SSA(int op, int opnd) {
+SSA::SSA(int op, int *opnd) {
+    #ifdef DEBUG
+        std::cout << "in SSA(int op, int opnd) constructor" << std::endl;
+    #endif
+
+
     if (op == 0) {
         this->debug_num = curr_const_num--;
         this->op = op;
-        *(this->constVal) = opnd; // the [SymbolTable::symbol_table] value representing the constVal being stored
+        this->constVal = opnd; // the [SymbolTable::symbol_table] value representing the constVal being stored
     
         this->x = nullptr;
         this->y = nullptr;
@@ -16,6 +21,10 @@ SSA::SSA(int op, int opnd) {
         std::cout << "Error: expected SSA() operation to be [0: const] got: [" << op << "]! exiting prematurely..." << std::endl;
         exit(EXIT_FAILURE);
     }
+
+    #ifdef DEBUG
+        std::cout << "created SSA instruction: " << this->toString() << std::endl;
+    #endif
 }
 
 SSA::SSA(int op, SSA *retVal) {

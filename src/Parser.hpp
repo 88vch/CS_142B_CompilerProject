@@ -66,11 +66,11 @@ public:
         return ret;
     }
 
-    inline SSA* CheckConstExistence(int opnd) const {
+    inline SSA* CheckConstExistence() const {
         SSA *ret = nullptr;
         const int op = this->getOp();
         for (SSA instr : this->SSA_instrs) {
-            if (instr.compareConst(op, opnd)) {
+            if (instr.compareConst(this->sym.get_value_literal())) {
                 *ret = instr;
                 break;
             }
