@@ -138,8 +138,14 @@ SSA* Parser::p_assignment() {
 
     // [07/28/2024]: this will always be a new [SSA instr] bc it contains a path not simply a value (i.e. if the path has multiple ways to get there [think if/while-statements], the value will change depending on which route the path takes)
     SSA *constVal = nullptr;
-    *constVal = SSA(0, value);
+    SSA tmp = SSA(0, value);
+    constVal = &tmp;
     this->SSA_instrs.push_back(*constVal);
+
+    #ifdef DEBUG
+        std::cout << "\tcreated new assignment in SSA: [" << constVal->toString() << "]" << std::endl;
+    #endif
+
     return constVal;
 
     
@@ -367,9 +373,9 @@ SSA* Parser::p_expr() { // Check For `+` && `-`
         SSA *y = p_expr();
         x = BuildIR(x, y); // ToDo: Create IR Block
     }
-    #ifdef DEBUG
-        std::cout << "[Parser::p_expr()]: returning: " << x->toString() << std::endl;
-    #endif
+    // #ifdef DEBUG
+    //     std::cout << "[Parser::p_expr()]: returning: " << x->toString() << std::endl;
+    // #endif
     return x;
 }
 
@@ -379,15 +385,18 @@ SSA* Parser::p_term() { // Check For `*` && `/`
     #endif
     SSA *x = p_factor();
 
+
     while (this->CheckFor(Result(2, 2), true) || this->CheckFor(Result(2, 3), true)) {
         next();
         SSA *y = p_factor();
         x = BuildIR(x, y); // ToDo: Create IR Block
+        std::cout << "in while loop" << std::endl;
     }
     // [08/02/2024]: Segmentation Fault here (both CheckFor()'s should return false, DEBUG stmt should print (currently doesn't!))
-    #ifdef DEBUG
-        std::cout << "[Parser::p_term()]: returning: " << x->toString() << std::endl;
-    #endif
+    // #ifdef DEBUG
+    //     std::cout << "[Parser::p_term()]: returning: ";
+    //     std::cout << x->toString() << std::endl;
+    // #endif
     return x;
 }
 
@@ -416,6 +425,7 @@ SSA* Parser::p_factor() {
                 std::cout << "\t[const] val dne in [this->SSA_instrs], created new SSA instruction: [" << res->toString() << "]" << std::endl;
             #endif
         }
+        next(); // [08/05/2024]: we can consume the [const-val]?
     } else if (this->CheckFor(Result(2, 13), true)) { // check [`(` expression `)`]
         next(); // consume `(`
         res = p_expr();
