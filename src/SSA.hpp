@@ -38,7 +38,7 @@ public:
     }
 
 
-    int get_debugNum() const { 
+int get_debugNum() const { 
         // return instr.at(0); 
         return this->debug_num;
     }

@@ -139,6 +139,8 @@ SSA* Parser::p_assignment() {
 
     // EXPRESSION
     SSA *value = p_expr();
+    // [08/07/2024]: This still holds true (below); 
+    // - [ident] should correspond to [SymbolTable::symbol_table] key with the value being the [value]; stoi(value)
     // [07/28/2024]: Add [ident : value] mapping into [symbol_table], that's it.
     //  Should not need to return any SSA value for this; will probably need more complexity when BB's are introduced
 
