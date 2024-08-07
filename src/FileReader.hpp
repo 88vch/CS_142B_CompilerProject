@@ -170,7 +170,7 @@ public:
         return true; // Return true to indicate success
     }
 
-    static bool write_file_contents(const std::string &out_f, const std::vector<SSA>& content, const std::string &tableName) {
+    static bool write_file_contents(const std::string &out_f, const std::vector<SSA*>& content, const std::string &tableName) {
         // Open the file for writing
         std::ofstream file(out_f);
 
@@ -182,8 +182,8 @@ public:
 
         // Write content to the file
         file << tableName << ";" << std::endl << "[DEBUG_NUM]: `OPERATOR` | [x_val], [y_val]" << std::endl;
-        for (const SSA &res : content) {
-            file << "[" << res.toString() << "]" << std::endl;
+        for (const SSA* res : content) {
+            file << "[" << res->toString() << "]" << std::endl;
         }
 
         // Close the file

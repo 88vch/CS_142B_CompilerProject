@@ -106,6 +106,12 @@ SSA* Parser::p_statement() {
         stmt = p_return();
     }
     // ToDo: [else {}]no more statements left to parse! (Not an error, this is possible)
+    #ifdef DEBUG
+        std::cout << "\tSSA_instr's currently looks like [size=" << this->SSA_instrs.size() << "];" << std::endl;
+        for (const SSA* s : this->SSA_instrs) {
+            std::cout << "\t\t" << s->toString() << std::endl;
+        }
+    #endif
     return stmt; // [07/28/2024]: Why do we return an [SSA*] here?
 }
 
@@ -136,17 +142,27 @@ SSA* Parser::p_assignment() {
     // [07/28/2024]: Add [ident : value] mapping into [symbol_table], that's it.
     //  Should not need to return any SSA value for this; will probably need more complexity when BB's are introduced
 
-    // [07/28/2024]: this will always be a new [SSA instr] bc it contains a path not simply a value (i.e. if the path has multiple ways to get there [think if/while-statements], the value will change depending on which route the path takes)
-    SSA *constVal = nullptr;
-    SSA tmp = SSA(0, value);
-    constVal = &tmp;
-    this->SSA_instrs.push_back(*constVal);
 
+    // [08/07/2024]: wtf was i trying to say down there???
     #ifdef DEBUG
-        std::cout << "\tcreated new assignment in SSA: [" << constVal->toString() << "]" << std::endl;
+        std::cout << "value addr: " << &value << "; value toString(): " << value->toString() << std::endl;
     #endif
+    this->SSA_instrs.push_back(value);
+    #ifdef DEBUG
+        std::cout << "[Parser::p_assignment()]: returning " << value->toString() << std::endl;
+    #endif
+    return value;
+    // [07/28/2024]: this will always be a new [SSA instr] bc it contains a path not simply a value (i.e. if the path has multiple ways to get there [think if/while-statements], the value will change depending on which route the path takes)
+    // SSA *constVal = nullptr;
+    // SSA tmp = SSA(0, value);
+    // constVal = &tmp;
+    // this->SSA_instrs.push_back(constVal);
 
-    return constVal;
+    // #ifdef DEBUG
+    //     std::cout << "\tcreated new assignment in SSA: [" << constVal->toString() << "]" << std::endl;
+    // #endif
+
+    // return constVal;
 
     
     // Update the current block's [variable-value mapping] to ensure we have the most up to date info
@@ -226,7 +242,7 @@ SSA* Parser::p_ifStatement() {
 
     // [Special Instruction]: phi() goes here
 
-    SSA phi = SSA(6, if1, if2); // gives us location of where to continue [SSA instr's] based on outcome of [p_relation()]
+    SSA *phi = new SSA(6, if1, if2); // gives us location of where to continue [SSA instr's] based on outcome of [p_relation()]
     this->SSA_instrs.push_back(phi);
     // return phi; // [07/28/2024]: might need this here(?)
 
@@ -263,7 +279,7 @@ SSA* Parser::p_whileStatement() {
     // // previously: do something end here
 
     SSA *while1 = p_statSeq(); // DO: relation
-    this->SSA_instrs.push_back(*while1);
+    this->SSA_instrs.push_back(while1);
 
     // OD
     this->CheckFor(Result(2, 24)); // check `od`
@@ -317,7 +333,15 @@ SSA* Parser::p_relation() {
             exit(EXIT_FAILURE);
         }
 
-
+    #ifdef DEBUG
+        std::cout << "\toperator exists" << std::endl;
+        std::cout << "this->sym" << this->sym.to_string() << std::endl;
+        std::cout << "bgt: " << SymbolTable::operator_table.at("bgt") << std::endl;
+        std::cout << "blt: " << SymbolTable::operator_table.at("blt") << std::endl;
+        std::cout << "beq: " << SymbolTable::operator_table.at("beq") << std::endl;
+        std::cout << "bge: " << SymbolTable::operator_table.at("bge") << std::endl;
+        std::cout << "ble: " << SymbolTable::operator_table.at("ble") << std::endl;
+    #endif
     // ToDo: figure this part out [branch after the comparison]
     // [07/31/2024]: What do we do here
     int op;
@@ -342,20 +366,24 @@ SSA* Parser::p_relation() {
             exit(EXIT_FAILURE);
             break;
     }
-    next();
 
+    #ifdef DEBUG
+        std::cout << "\tgot op: " << op << std::endl;
+    #endif
+
+    next();
     SSA *y = p_expr();
     
     
     // ToDo: get [instr_num] from [cmp SSA] -> [cmp_instr_num] so that you can pass it below 
     SSA *cmp_instr = nullptr;
-    *cmp_instr = SSA(5, x, y); // [SymbolTable::operator_table `cmp`: 5]
-    this->SSA_instrs.push_back(*cmp_instr);
+    cmp_instr = new SSA(5, x, y); // [SymbolTable::operator_table `cmp`: 5]
+    this->SSA_instrs.push_back(cmp_instr);
 
     // return cmp_instr; // [07/28/2024]: might need this here(?)
     SSA *jmp_instr = nullptr;
-    *jmp_instr = SSA(op, cmp_instr, nullptr); // [nullptr bc we don't know where to jump to yet]
-    this->SSA_instrs.push_back(*jmp_instr);
+    jmp_instr = new SSA(op, cmp_instr, nullptr); // [nullptr bc we don't know where to jump to yet]
+    this->SSA_instrs.push_back(jmp_instr);
     
     return jmp_instr;
 }
@@ -373,9 +401,9 @@ SSA* Parser::p_expr() { // Check For `+` && `-`
         SSA *y = p_expr();
         x = BuildIR(x, y); // ToDo: Create IR Block
     }
-    // #ifdef DEBUG
-    //     std::cout << "[Parser::p_expr()]: returning: " << x->toString() << std::endl;
-    // #endif
+    #ifdef DEBUG
+        std::cout << "[Parser::p_expr()]: returning: " << x->toString() << std::endl;
+    #endif
     return x;
 }
 
@@ -393,10 +421,10 @@ SSA* Parser::p_term() { // Check For `*` && `/`
         std::cout << "in while loop" << std::endl;
     }
     // [08/02/2024]: Segmentation Fault here (both CheckFor()'s should return false, DEBUG stmt should print (currently doesn't!))
-    // #ifdef DEBUG
-    //     std::cout << "[Parser::p_term()]: returning: ";
-    //     std::cout << x->toString() << std::endl;
-    // #endif
+    #ifdef DEBUG
+        std::cout << "[Parser::p_term()]: returning: ";
+        std::cout << x->toString() << std::endl;
+    #endif
     return x;
 }
 
@@ -411,18 +439,17 @@ SSA* Parser::p_factor() {
         #endif
         // [07/26/2024]: return the SSA for the const value
         // 1) check if value already exists as a const SSA
-        // 2) if exists, use and return; else, create and return new SSA const
+        // 2) if exists, use and return; else, create and return new-SSA const
         res = this->CheckConstExistence();
 
-        if (res == nullptr) { // if dne, create and return new SSA const
-            int val = this->sym.get_value_literal();
-            SSA tmp = SSA(0, &val);
+        if (res == nullptr) { // if dne, create and return new-SSA const
+            // int val = this->sym.get_value_literal();
             #ifdef DEBUG
                 std::cout << "\tcreated new [tmp] SSA const instr" << std::endl;
             #endif
-            res = &tmp;
+            res = new SSA(0, this->sym.get_value_literal());
             #ifdef DEBUG
-                std::cout << "\t[const] val dne in [this->SSA_instrs], created new SSA instruction: [" << res->toString() << "]" << std::endl;
+                std::cout << "\t[const] val dne in [this->SSA_instrs], created new-SSA instruction: [" << res->toString() << "]" << std::endl;
             #endif
         }
         next(); // [08/05/2024]: we can consume the [const-val]?

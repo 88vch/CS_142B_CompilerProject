@@ -52,9 +52,17 @@ public:
     }
 
     // get the int value of the kind
-    int get_kind_literal() const { return this->kind; }
+    inline int get_kind_literal() const { return this->kind; }
     // get the int value of the value
-    int get_value_literal() const { return std::stoi(SymbolTable::symbol_table.at(this->value)); }
+    inline int get_value_literal() const { 
+        if (this->kind == 0) {
+            return std::stoi(SymbolTable::symbol_table.at(this->value)); 
+        } else if (this->kind == 1) {
+            return SymbolTable::symbol_table.at(this->value);
+        } else { // for keyword (idk if this is right but for now...?)
+            return this->value;
+        }
+    }
     
     static std::vector<Result> int_to_result(std::vector<int> tokenizerTokens);
 private:

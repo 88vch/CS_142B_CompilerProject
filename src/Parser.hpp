@@ -57,9 +57,9 @@ public:
     inline SSA* CheckExistence(SSA *x, SSA *y) const {
         SSA *ret = nullptr;
         const int op = this->getOp();
-        for (SSA instr : this->SSA_instrs) {
-            if (instr.compare(op, x, y)) {
-                *ret = instr;
+        for (SSA* instr : this->SSA_instrs) {
+            if (instr->compare(op, x, y)) {
+                ret = instr;
                 break;
             }
         }
@@ -67,11 +67,16 @@ public:
     }
 
     inline SSA* CheckConstExistence() const {
+        #ifdef DEBUG
+            std::cout << "\tcomparing value: [" << this->sym.get_value_literal() << "]" << std::endl;
+        #endif
         SSA *ret = nullptr;
-        const int op = this->getOp();
-        for (SSA instr : this->SSA_instrs) {
-            if (instr.compareConst(this->sym.get_value_literal())) {
-                *ret = instr;
+        for (SSA* instr : this->SSA_instrs) {
+            #ifdef DEBUG
+                std::cout << "\tthis instr: [" << instr->toString() << "]" << std::endl;
+            #endif
+            if (instr->compareConst(this->sym.get_value_literal())) {
+                ret = instr;
                 break;
             }
         }
@@ -108,18 +113,18 @@ public:
                 }
                 break;
         }
-        this->SSA_instrs.push_back(*ret);
+        this->SSA_instrs.push_back(ret);
         return ret;
     }
 
-    std::vector<SSA> getSSA() const { return this->SSA_instrs; }
+    std::vector<SSA*> getSSA() const { return this->SSA_instrs; }
 
     BasicBlock parse(); // IR BB-representation
     void parse_generate_SSA(); // generate all SSA Instructions
 private:
     Result sym;
     std::vector<Result> source;
-    std::vector<SSA> SSA_instrs;
+    std::vector<SSA*> SSA_instrs;
     size_t s_index, source_len;
     std::unordered_map<int, LinkedList> instrList; // current instruction list (copied for each BB)
     
@@ -209,15 +214,15 @@ private:
 
 
         if (new_instr.get_operator() == 0) { // const
-            for (SSA i : this->SSA_instrs) {
-                *instr = i;
+            for (SSA* i : this->SSA_instrs) {
+                instr = i;
                 if (new_instr.compareConst(instr)) {
                     return true;
                 }
             }
         } else {            
-            for (SSA i : this->SSA_instrs) {
-                *instr = i;
+            for (SSA* i : this->SSA_instrs) {
+                instr = i;
                 if (new_instr.compare(instr)) {
                     return true;
                 }

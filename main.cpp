@@ -89,7 +89,7 @@ int main() {
         std::cout << "[Parser]: After FIRST [parse]" << std::endl;
     #endif
 
-    std::vector<SSA> SSA_instrs = parser.getSSA();
+    std::vector<SSA*> SSA_instrs = parser.getSSA();
     bool SSA_exists = fr.write_file_contents(parser1_f, SSA_instrs, "SSA Instructions");
     if (SSA_exists) { std::cout << "SSA Instructions have successfully been written to: " << parser1_f << "(size=[" << SSA_instrs.size() << "])" << std::endl; }
     else { std::cout << "Error occured when trying to write results!" << std::endl; }

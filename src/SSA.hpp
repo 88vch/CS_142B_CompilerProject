@@ -9,26 +9,52 @@
 // format: [#instruction_no: debugging] [operation::operator_table] [operand(s)]
 class SSA {
 public:
-    SSA(int op, int *opnd); // [07/26/2024]: const
+    SSA(int op, int opnd); // [07/26/2024]: const
     SSA(int op, SSA *retVal); // [07/28/2024]: (New) Pointer to result returned from [return: 16] statement
     SSA(int op, SSA *opnd1, SSA *opnd2); // [07/25/2024]: (New) Pointers to other SSA instructions
 
+    ~SSA();
+    // Copy constructor
+    SSA(const SSA& other) : op(other.op), debug_num(other.debug_num) {
+        if (other.constVal) { this->constVal = new int(*(other.get_constVal())); }
+        if (other.get_operand1()) { this->x = new SSA(*(other.get_operand1())); }
+        if (other.get_operand2()) { this->y = new SSA(*(other.get_operand2())); }
+    }
 
-    int get_instrNum() { 
+    // Assignment operator
+    SSA& operator=(const SSA& other) {
+        if (this != &other) {
+            if (this->constVal) { delete this->constVal; } // Free existing resource
+            if (*(other.get_constVal())) {
+                this->constVal = new int(*(other.get_constVal())); // Allocate and copy resource
+            }
+            delete this->x;
+            delete this->y;
+            this->x = other.get_operand1();
+            this->y = other.get_operand2();
+            this->debug_num = other.get_debugNum();
+        }
+        return *this;
+    }
+
+
+    int get_debugNum() const { 
         // return instr.at(0); 
         return this->debug_num;
     }
-    int get_operator() { 
+    int get_operator() const { 
         // return instr.at(1); 
         return this->op;
     }
-    int get_constVal() const {
-        return *(this->constVal);
+    int* get_constVal() const {
+        if (this->constVal) {
+            return this->constVal;
+        } else { return nullptr; }
     }
-    SSA* get_operand1() {
+    SSA* get_operand1() const {
         return (this->x) ? this->x : nullptr;
     }
-    SSA* get_operand2() {
+    SSA* get_operand2() const {
         return (this->y) ? this->y : nullptr;
     }
 
@@ -60,7 +86,7 @@ public:
         if ((this->debug_num < 0) && 
             (this->op == 0) && (this->op == s->get_operator()) && 
             (
-                (this->constVal != nullptr && (*(this->constVal) == s->get_constVal())) || 
+                (this->constVal != nullptr && (*(this->constVal) == *(s->get_constVal()))) || 
                 (this->x != nullptr && (this->x == s->get_operand1()))
             )) {
             return true;
@@ -73,8 +99,8 @@ public:
     }
 
     std::string toString() const {
-        std::string x_val = (this->x) ? "[SSA]: " + std::to_string(this->x->get_instrNum()) : "[SSA]: null";
-        std::string y_val = (this->y) ? "[SSA]: " + std::to_string(this->y->get_instrNum()) : "[SSA]: null";
+        std::string x_val = (this->x) ? "[SSA]: " + std::to_string(this->x->get_debugNum()) : "[SSA]: null";
+        std::string y_val = (this->y) ? "[SSA]: " + std::to_string(this->y->get_debugNum()) : "[SSA]: null";
         
         // [07/28/2024]; ToDo: add cases for [const] and finish this function (along with opToString())
         std::string res = "[" + std::to_string(this->debug_num) + "]: " + "`" + this->opToString() + "` | ";
