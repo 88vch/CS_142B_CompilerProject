@@ -26,6 +26,7 @@ public:
         this->s_index = 0;
         this->source_len = tkns.size();
         this->SSA_instrs = {};
+        this->varVals = {};
         
         next();
     }
@@ -125,6 +126,7 @@ private:
     Result sym;
     std::vector<Result> source;
     std::vector<SSA*> SSA_instrs;
+    std::unordered_map<std::string, SSA*> varVals;
     size_t s_index, source_len;
     std::unordered_map<int, LinkedList> instrList; // current instruction list (copied for each BB)
     

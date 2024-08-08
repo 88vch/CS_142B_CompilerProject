@@ -78,7 +78,14 @@ SSA* Parser::p_statSeq() {
     SSA *first = p_statement(); // ends with `;` = end of statement
     while (this->CheckFor(Result(2, 4), true)) { // if [optional] next token is ';', then we still have statements
         next();
-        curr_stmt = p_statement();
+        if ((first->isWhile) || 
+            (curr_stmt != nullptr && curr_stmt->isWhile)) {
+            SSA *tmp = curr_stmt;
+            curr_stmt = p_statement();
+            tmp->set_operand2(curr_stmt); // [08/08/2024]: update [jmp_instr] if previous statement was [while_statement()]
+        } else {
+            curr_stmt = p_statement();
+        }
         // [07/28/2024]: Should be doing something with [curr_stmt] here.
     }
     return first; // returning first [SSA_instr] in [p_statSeq()] so we know control flow
@@ -131,7 +138,7 @@ SSA* Parser::p_assignment() {
         std::cout << "Error: var [" << this->sym.to_string() << "] hasn't been declared! exiting prematurely..." << std::endl;
         exit(EXIT_FAILURE);
     }
-    int ident = SymbolTable::identifiers.at(this->sym.get_value());
+    int ident = SymbolTable::identifiers.at(this->sym.get_value()); // unused for now
     next();
 
     // ASSIGNMENT
@@ -141,12 +148,14 @@ SSA* Parser::p_assignment() {
     SSA *value = p_expr();
     // [08/07/2024]: This still holds true (below); 
     // - [ident] should correspond to [SymbolTable::symbol_table] key with the value being the [value]; stoi(value)
+    // - Should not need to return any SSA value for this; will probably need more complexity when BB's are introduced
     // [07/28/2024]: Add [ident : value] mapping into [symbol_table], that's it.
-    //  Should not need to return any SSA value for this; will probably need more complexity when BB's are introduced
+    this->varVals.insert({SymbolTable::symbol_table.at(ident), value});
 
 
-    // [08/07/2024]: wtf was i trying to say down there???
+    // [08/07/2024]: Revised; wtf was i trying to say down there???
     #ifdef DEBUG
+        std::cout << "inserted new var-val mapping: {" << SymbolTable::symbol_table.at(ident) << ", " << value->toString() << "}" << std::endl;
         std::cout << "value addr: " << &value << "; value toString(): " << value->toString() << std::endl;
     #endif
     this->SSA_instrs.push_back(value);
@@ -159,17 +168,12 @@ SSA* Parser::p_assignment() {
     // SSA tmp = SSA(0, value);
     // constVal = &tmp;
     // this->SSA_instrs.push_back(constVal);
-
     // #ifdef DEBUG
     //     std::cout << "\tcreated new assignment in SSA: [" << constVal->toString() << "]" << std::endl;
     // #endif
-
     // return constVal;
 
     
-    // Update the current block's [variable-value mapping] to ensure we have the most up to date info
-    // - do we need to generate an [SSA] for the assignment? No; though we should create the constant (the value)
-
     // Old Code begin;
     // if (blk->updated_varval_map.find(ident) == blk->updated_varval_map.end()) {
     //     blk->updated_varval_map.insert({ident, value});
@@ -235,18 +239,18 @@ SSA* Parser::p_ifStatement() {
     this->CheckFor(Result(2, 21)); // check `fi`
 
     // [07/28/2024]: Are we not just returning the [SSA *relation] either way?
-    // // no need for phi since only one path! just return the [ifStat_then] block (i think)
-    // // if (else_exists) {} // is this the same logic as below?
-    // if (if2 == nullptr) { 
-    //     // return if1; // [07/28/2024]: might need this here(?)
-    //     return ifStat_then;
-    // }
+    // no need for phi since only one path! just return the [ifStat_then] block (i think)
+    // if (else_exists) {} // is this the same logic as below?
+    if (if2 == nullptr) { 
+        // [07/28/2024]: might need this here(?)
+        return if1; // [08/08/2024]: Good call; yes we should
+    }
 
     // [Special Instruction]: phi() goes here
 
-    SSA *phi = new SSA(6, if1, if2); // gives us location of where to continue [SSA instr's] based on outcome of [p_relation()]
-    this->SSA_instrs.push_back(phi);
-    // return phi; // [07/28/2024]: might need this here(?)
+    SSA *phi_instr = new SSA(6, if1, if2); // gives us location of where to continue [SSA instr's] based on outcome of [p_relation()]
+    this->SSA_instrs.push_back(phi_instr);
+    // return phi_instr; // [07/28/2024]: might need this here(?)
 
     // // previously: do something start here
     // BasicBlock *join_ptr;
@@ -257,7 +261,8 @@ SSA* Parser::p_ifStatement() {
     // // previously: do something end here
 
     // return join_ptr; // [07/28/2024]: might need this here(?)
-    return jmp_instr; // [07/31/2024]: For now don't know what to do abt this (or if this is even right)
+    // [07/31/2024]: For now don't know what to do abt this (or if this is even right)
+    return phi_instr; // [08/08/2024]: For now this is good
 }
 
 // ToDo;
@@ -268,6 +273,7 @@ SSA* Parser::p_whileStatement() {
     // WHILE
     this->CheckFor(Result(2, 22)); // check `while`; Note: we only do this as a best practice and to consume the `while` token
     SSA *jmp_instr = p_relation(); // WHILE: relation
+    jmp_instr->isWhile = true;
 
     // DO
     this->CheckFor(Result(2, 23)); // check `do`
@@ -287,7 +293,8 @@ SSA* Parser::p_whileStatement() {
     this->CheckFor(Result(2, 24)); // check `od`
 
     // return while1; // [07/28/2024]: might need this here(?)
-    return jmp_instr; // [07/31/2024]: js matching [p_ifStatement()], for now don't know what to do abt this
+    // [07/31/2024]: js matching [p_ifStatement()], for now don't know what to do abt this
+    return jmp_instr; // [08/08/2024]: This is good here; [jmp_instr] was pushed-back before returing from [p_relation()]
 }
 
 // ToDo; 
@@ -335,15 +342,6 @@ SSA* Parser::p_relation() {
             exit(EXIT_FAILURE);
         }
 
-    #ifdef DEBUG
-        std::cout << "\toperator exists" << std::endl;
-        std::cout << "this->sym" << this->sym.to_string() << std::endl;
-        std::cout << "bgt: " << SymbolTable::operator_table.at("bgt") << std::endl;
-        std::cout << "blt: " << SymbolTable::operator_table.at("blt") << std::endl;
-        std::cout << "beq: " << SymbolTable::operator_table.at("beq") << std::endl;
-        std::cout << "bge: " << SymbolTable::operator_table.at("bge") << std::endl;
-        std::cout << "ble: " << SymbolTable::operator_table.at("ble") << std::endl;
-    #endif
     // ToDo: figure this part out [branch after the comparison]
     // [07/31/2024]: What do we do here
     int op;
@@ -435,7 +433,7 @@ SSA* Parser::p_factor() {
         std::cout << "[Parser::p_factor(" << this->sym.to_string() << ")]" << std::endl;
     #endif
     SSA *res = nullptr;
-    if (this->sym.get_kind_literal() == 0 || this->sym.get_kind_literal() == 1) { // check [ident] or [number]
+    if (this->sym.get_kind_literal() == 0) { // check [const]
         #ifdef DEBUG
             std::cout << "\tgot [const], checking existence in [this->SSA_instrs]" << std::endl;
         #endif
@@ -455,6 +453,13 @@ SSA* Parser::p_factor() {
             #endif
         }
         next(); // [08/05/2024]: we can consume the [const-val]?
+    } else if (this->sym.get_kind_literal() == 1) { // check [ident]
+        if (this->varVals.find(this->sym.get_value()) == this->varVals.end()) {
+            std::cout << "Error: p_factor(ident) expected a defined variable (in [varVals]), got: [" << this->sym.to_string() << "]! exiting prematurely..." << std::endl;
+            exit(EXIT_FAILURE);
+        }
+        res = this->varVals.at(this->sym.get_value());
+        next(); // [08/08/2024]: must consume the [ident]?
     } else if (this->CheckFor(Result(2, 13), true)) { // check [`(` expression `)`]
         next(); // consume `(`
         res = p_expr();

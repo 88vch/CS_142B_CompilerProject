@@ -9,6 +9,8 @@
 // format: [#instruction_no: debugging] [operation::operator_table] [operand(s)]
 class SSA {
 public:
+    bool isWhile;
+    
     SSA(int op, int opnd); // [07/26/2024]: const
     SSA(int op, SSA *retVal); // [07/28/2024]: (New) Pointer to result returned from [return: 16] statement
     SSA(int op, SSA *opnd1, SSA *opnd2); // [07/25/2024]: (New) Pointers to other SSA instructions
@@ -103,7 +105,9 @@ int get_debugNum() const {
         std::string y_val = (this->y) ? "[SSA]: " + std::to_string(this->y->get_debugNum()) : "[SSA]: null";
         
         // [07/28/2024]; ToDo: add cases for [const] and finish this function (along with opToString())
-        std::string res = "[" + std::to_string(this->debug_num) + "]: " + "`" + this->opToString() + "` | ";
+        std::string res = "[" + std::to_string(this->debug_num) + "]: \t`" + this->opToString() + "`";
+        std::string op = this->opToString();
+        res += "\t | ";
         if (this->op == 0) {
             if (this->constVal) {
                 res += "[CONST]: " + std::to_string(*(this->constVal));
@@ -111,7 +115,7 @@ int get_debugNum() const {
                 res += "[CONST SSA]: " + x_val;
             }
         } else {
-            res += x_val + ", " + y_val;
+            res += x_val + ", \t\t" + y_val;
         }
         return res;
     }
@@ -126,7 +130,7 @@ int get_debugNum() const {
     }
 private:
     // [Old Version]
-    std::vector<int> instr;
+    // std::vector<int> instr;
     
     // [07/25/2024]: (New) Pointers to other SSA instructions
     int debug_num, op, *constVal;

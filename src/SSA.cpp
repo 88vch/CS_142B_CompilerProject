@@ -11,6 +11,7 @@ SSA::~SSA() {
 }
 
 SSA::SSA(int op, int opnd) {
+    this->isWhile = false;
     #ifdef DEBUG
         std::cout << "in SSA(int op, int opnd) constructor" << std::endl;
     #endif
@@ -34,6 +35,7 @@ SSA::SSA(int op, int opnd) {
 }
 
 SSA::SSA(int op, SSA *retVal) {
+    this->isWhile = false;
     if (op == 0) {
         // if [op == 0 == const], and [this->constVal == nullptr], we should check if [this->x == nullptr]
         // - a constant can either be an integer literal (given by the [SymbolTable::symbol_table] value representing the constVal being stored)
@@ -59,6 +61,7 @@ SSA::SSA(int op, SSA *retVal) {
 }
 
 SSA::SSA(int op, SSA *opnd1, SSA *opnd2) {
+    this->isWhile = false;
     if (op > 0 && op <= 25) {
         this->debug_num = curr_instr_num++;
         this->op = op;

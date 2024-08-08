@@ -181,7 +181,7 @@ public:
         }
 
         // Write content to the file
-        file << tableName << ";" << std::endl << "[DEBUG_NUM]: `OPERATOR` | [x_val], [y_val]" << std::endl;
+        file << tableName << ";" << std::endl << "[NUM]: \t`OP`\t | [x_val], \t\t[y_val]" << std::endl;
         for (const SSA* res : content) {
             file << "[" << res->toString() << "]" << std::endl;
         }

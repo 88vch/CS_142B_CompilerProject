@@ -58,7 +58,8 @@ public:
         if (this->kind == 0) {
             return std::stoi(SymbolTable::symbol_table.at(this->value)); 
         } else if (this->kind == 1) {
-            return SymbolTable::symbol_table.at(this->value);
+            // return SymbolTable::symbol_table.at(this->value);
+            return this->value;
         } else { // for keyword (idk if this is right but for now...?)
             return this->value;
         }
