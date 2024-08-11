@@ -88,6 +88,9 @@ SSA* Parser::p_statSeq() {
         }
         // [07/28/2024]: Should be doing something with [curr_stmt] here.
     }
+    #ifdef DEBUG
+        std::cout << "[Parser::p_statSeq()] returning: " << first->toString() << std::endl;
+    #endif
     return first; // returning first [SSA_instr] in [p_statSeq()] so we know control flow
 }
 
@@ -158,7 +161,7 @@ SSA* Parser::p_assignment() {
         std::cout << "inserted new var-val mapping: {" << SymbolTable::symbol_table.at(ident) << ", " << value->toString() << "}" << std::endl;
         std::cout << "value addr: " << &value << "; value toString(): " << value->toString() << std::endl;
     #endif
-    this->SSA_instrs.push_back(value);
+    // this->SSA_instrs.push_back(value);
     #ifdef DEBUG
         std::cout << "[Parser::p_assignment()]: returning " << value->toString() << std::endl;
     #endif
@@ -274,6 +277,7 @@ SSA* Parser::p_whileStatement() {
     this->CheckFor(Result(2, 22)); // check `while`; Note: we only do this as a best practice and to consume the `while` token
     SSA *jmp_instr = p_relation(); // WHILE: relation
     jmp_instr->isWhile = true;
+    this->SSA_instrs.push_back(jmp_instr);
 
     // DO
     this->CheckFor(Result(2, 23)); // check `do`
@@ -287,7 +291,10 @@ SSA* Parser::p_whileStatement() {
     // // previously: do something end here
 
     SSA *while1 = p_statSeq(); // DO: relation
-    this->SSA_instrs.push_back(while1);
+    // this->SSA_instrs.push_back(while1); // returns first statement from statSeq in while
+    #ifdef DEBUG
+        std::cout << "[Parser::p_whileStatement()] pushes back: " << while1->toString() << std::endl;
+    #endif
 
     // OD
     this->CheckFor(Result(2, 24)); // check `od`
@@ -347,19 +354,19 @@ SSA* Parser::p_relation() {
     int op;
     switch (this->sym.get_value_literal()) {
         case 8:
-            op = SymbolTable::operator_table.at("bgt");
+            op = SymbolTable::operator_table.at("ble"); // `bgt` opposite
             break;
         case 9:
-            op = SymbolTable::operator_table.at("blt");
+            op = SymbolTable::operator_table.at("bge"); // `blt` opposite
             break;
         case 10:
-            op = SymbolTable::operator_table.at("beq");
+            op = SymbolTable::operator_table.at("bne"); // `beq` opposite
             break;
         case 11:
-            op = SymbolTable::operator_table.at("bge");
+            op = SymbolTable::operator_table.at("blt"); // `bge` opposite
             break;
         case 12:
-            op = SymbolTable::operator_table.at("ble");
+            op = SymbolTable::operator_table.at("bgt"); // `ble` opposite
             break;
         default:
             std::cout << "Error: relational operation expected: [`<`, `>`, `<=`, `>=`, `==`], got: [" << this->sym.to_string() << "]! exiting prematurely..." << std::endl;
@@ -380,10 +387,18 @@ SSA* Parser::p_relation() {
     cmp_instr = new SSA(5, x, y); // [SymbolTable::operator_table `cmp`: 5]
     this->SSA_instrs.push_back(cmp_instr);
 
+    #ifdef DEBUG
+        std::cout << "created cmp_instr: " << cmp_instr->toString() << std::endl;
+    #endif
+
     // return cmp_instr; // [07/28/2024]: might need this here(?)
     SSA *jmp_instr = nullptr;
     jmp_instr = new SSA(op, cmp_instr, nullptr); // [nullptr bc we don't know where to jump to yet]
     this->SSA_instrs.push_back(jmp_instr);
+
+    #ifdef DEBUG
+        std::cout << "returning jmp_instr: " << jmp_instr->toString() << std::endl;
+    #endif
     
     return jmp_instr;
 }
@@ -448,6 +463,7 @@ SSA* Parser::p_factor() {
                 std::cout << "\tcreated new [tmp] SSA const instr" << std::endl;
             #endif
             res = new SSA(0, this->sym.get_value_literal());
+            this->SSA_instrs.push_back(res);
             #ifdef DEBUG
                 std::cout << "\t[const] val dne in [this->SSA_instrs], created new-SSA instruction: [" << res->toString() << "]" << std::endl;
             #endif

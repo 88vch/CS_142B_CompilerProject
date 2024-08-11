@@ -8,7 +8,7 @@ let a1 <- 8;
 
 while 12345 == a2 do
     if 3 == a2 then 
-        let a2 <- 8
+        let a2 <- 9
     else 
         let a2 <- 5;
     fi 
