@@ -191,6 +191,33 @@ public:
         return true; // Return true to indicate success
     }
 
+    static bool write_file_contents(const std::string &out_f, const std::unordered_map<std::string, SSA*>& content, const std::string &tableName) {
+        // Open the file for writing
+        std::ofstream file(out_f);
+
+        // Check if the file was opened successfully
+        if (!file.is_open()) {
+            std::cerr << "Failed to open the file." << std::endl;
+            return false; // Return false to indicate failure
+        }
+
+        // Write content to the file
+        file << tableName << ";" << std::endl << "[KEYWORD/TERMINAL Literal]: \t[SymbolTable INT_VAL]" << std::endl;
+        for (const auto &pair : content) { 
+            if ((pair.first).length() > 7) {
+                file << "[" << pair.first << "]" << ": \t\t\t\t\t[" << pair.second->toString() << "]" << std::endl;
+            } else if ((pair.first).length() > 3) {
+                file << "[" << pair.first << "]" << ": \t\t\t\t\t\t[" << pair.second->toString() << "]" << std::endl;
+            } else {
+                file << "[" << pair.first << "]" << ": \t\t\t\t\t\t\t[" << pair.second->toString() << "]" << std::endl;
+            }
+        }
+
+        // Close the file
+        file.close();
+        return true; // Return true to indicate success
+    }
+
 
 private:
     const char *file_name;

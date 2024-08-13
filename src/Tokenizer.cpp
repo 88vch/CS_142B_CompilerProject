@@ -81,6 +81,30 @@ int Tokenizer::GetNext() {
                 next();
                 this->token = SymbolTable::keywords.at(str);
                 return this->token;
+            case '{':
+                next();
+                this->token = SymbolTable::keywords.at(str);
+                return this->token;
+            case '}':
+                next();
+                this->token = SymbolTable::keywords.at(str);
+                return this->token;
+            case '(':
+                next();
+                this->token = SymbolTable::keywords.at(str);
+                return this->token;
+            case ')':
+                next();
+                this->token = SymbolTable::keywords.at(str);
+                return this->token;
+            case ';':
+                next();
+                this->token = SymbolTable::keywords.at(str);
+                return this->token;
+            case '.':
+                next();
+                this->token = SymbolTable::keywords.at(str);
+                return this->token;
             case '0':
                 number();
                 return this->token;

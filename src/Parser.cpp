@@ -80,13 +80,25 @@ SSA* Parser::p_statSeq() {
         next();
         if ((first->isWhile) || 
             (curr_stmt != nullptr && curr_stmt->isWhile)) {
+            #ifdef DEBUG
+                std::cout << "in while stmt!" << std::endl;
+            #endif
             SSA *tmp = curr_stmt;
             curr_stmt = p_statement();
             tmp->set_operand2(curr_stmt); // [08/08/2024]: update [jmp_instr] if previous statement was [while_statement()]
         } else {
             curr_stmt = p_statement();
+            if (curr_stmt == nullptr) { // [curr_stmt] = nullptr indicates that this was the last stmt and it js had a `;` too (last stmt `;` is optional)
+                #ifdef DEBUG
+                    std::cout << "curr_stmt returned nullptr!" << std::endl;
+                #endif
+                break;
+            }
         }
         // [07/28/2024]: Should be doing something with [curr_stmt] here.
+        #ifdef DEBUG
+            std::cout << "[curr_stmt] returned: " << curr_stmt->toString() << std::endl;
+        #endif
     }
     #ifdef DEBUG
         std::cout << "[Parser::p_statSeq()] returning: " << first->toString() << std::endl;
@@ -117,6 +129,11 @@ SSA* Parser::p_statement() {
     }
     // ToDo: [else {}]no more statements left to parse! (Not an error, this is possible)
     #ifdef DEBUG
+        if (stmt == nullptr) { 
+            std::cout << "stmt == nullptr" << std::endl;
+        } else {
+            std::cout << "stmt != nullptr; stmt = " << stmt->toString() << std::endl;
+        }
         std::cout << "\tSSA_instr's currently looks like [size=" << this->SSA_instrs.size() << "];" << std::endl;
         for (const SSA* s : this->SSA_instrs) {
             std::cout << "\t\t" << s->toString() << std::endl;
@@ -277,7 +294,7 @@ SSA* Parser::p_whileStatement() {
     this->CheckFor(Result(2, 22)); // check `while`; Note: we only do this as a best practice and to consume the `while` token
     SSA *jmp_instr = p_relation(); // WHILE: relation
     jmp_instr->isWhile = true;
-    this->SSA_instrs.push_back(jmp_instr);
+    // this->SSA_instrs.push_back(jmp_instr);
 
     // DO
     this->CheckFor(Result(2, 23)); // check `do`

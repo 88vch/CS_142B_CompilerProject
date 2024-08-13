@@ -26,9 +26,10 @@ int main() {
     std::string tokenize_f = "res/Tokenizer_results.txt";
     std::string results_f = "res/Results_results.txt";
     std::string parser1_f = "res/Parser1_results.txt";
+    std::string varVal_f = "res/VarVal_results.txt";
 
 
-    const char *in_f = "tst/temp.ty";
+    const char *in_f = "tst/just_add.ty";
     const std::string out_f = "res/Lexer_results.txt";
 
     FileReader fr = FileReader(in_f);
@@ -92,6 +93,11 @@ int main() {
     std::vector<SSA*> SSA_instrs = parser.getSSA();
     bool SSA_exists = fr.write_file_contents(parser1_f, SSA_instrs, "SSA Instructions");
     if (SSA_exists) { std::cout << "SSA Instructions have successfully been written to: " << parser1_f << "(size=[" << SSA_instrs.size() << "])" << std::endl; }
+    else { std::cout << "Error occured when trying to write results!" << std::endl; }
+
+    std::unordered_map<std::string, SSA*> varVals = parser.getVarVal();
+    bool vv = fr.write_file_contents(varVal_f, varVals, "Var-Val");
+    if (st) { std::cout << "Results have successfully been written to: " << varVal_f << "(size=[" << varVals.size() << "])" << std::endl; }
     else { std::cout << "Error occured when trying to write results!" << std::endl; }
 
     // node::computation *root = parser.head();

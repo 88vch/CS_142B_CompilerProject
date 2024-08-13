@@ -85,40 +85,59 @@ public:
     }
 
     // [07/25/2024]: ToDo
-    inline SSA* BuildIR(SSA *x, SSA *y) {
-        SSA *ret = CheckExistence(x, y);
+    inline SSA* BuildIR(int op, SSA *x, SSA *y) {
+        #ifdef DEBUG
+            std::cout << "\t[Parser::BuildIR(this->sym=" << this->sym.to_string() << ")]: SSA x = " << x->toString() << ", SSA y = " << y->toString() << std::endl;
+        #endif
+        SSA *ret = CheckExistence(x, y); // [08/12/2024]: Note we might have to include the `op` here to check diff types (i.e. `+` vs `*`)
         // if we don't get [nullptr] from CheckExistence(), that implies there was a previous SSA of the exact same type; so rather than creating a dupe, we can simply use the previously existing one (Copy Propagation)
         //      Note: check that all previous instructions will DOM this SSA instr
         if (ret) { return ret; } 
 
-
-        switch (this->sym.get_kind_literal()) {
-            case 0: // const
-                break;
-            case 1: // ident
-                break;
-            case 2: // keyword
-                switch (this->sym.get_value_literal()) {
-                    case 0: // `+`
-                        *ret = SSA(SymbolTable::operator_table.at("add"), x, y);
-                        break;
-                    case 1: // `-`
-                        *ret = SSA(SymbolTable::operator_table.at("sub"), x, y);
-                        break;
-                    case 2: // `*`
-                        *ret = SSA(SymbolTable::operator_table.at("mul"), x, y);
-                        break;
-                    case 3: // `/`
-                        *ret = SSA(SymbolTable::operator_table.at("div"), x, y);
-                        break;
-                }
-                break;
-        }
+        // assume op represents the keyword on the [SymbolTable::symbol_table]
+        switch (op) {
+                case 0: // `+`
+                    *ret = SSA(SymbolTable::operator_table.at("add"), x, y);
+                    break;
+                case 1: // `-`
+                    *ret = SSA(SymbolTable::operator_table.at("sub"), x, y);
+                    break;
+                case 2: // `*`
+                    *ret = SSA(SymbolTable::operator_table.at("mul"), x, y);
+                    break;
+                case 3: // `/`
+                    *ret = SSA(SymbolTable::operator_table.at("div"), x, y);
+                    break;
+            }
+        // switch (this->sym.get_kind_literal()) {
+        //     case 0: // const
+        //         break;
+        //     case 1: // ident
+        //         break;
+        //     case 2: // keyword
+        //         switch (this->sym.get_value_literal()) {
+        //             case 0: // `+`
+        //                 *ret = SSA(SymbolTable::operator_table.at("add"), x, y);
+        //                 break;
+        //             case 1: // `-`
+        //                 *ret = SSA(SymbolTable::operator_table.at("sub"), x, y);
+        //                 break;
+        //             case 2: // `*`
+        //                 *ret = SSA(SymbolTable::operator_table.at("mul"), x, y);
+        //                 break;
+        //             case 3: // `/`
+        //                 *ret = SSA(SymbolTable::operator_table.at("div"), x, y);
+        //                 break;
+        //         }
+        //         break;
+        // }
         this->SSA_instrs.push_back(ret);
         return ret;
     }
 
     std::vector<SSA*> getSSA() const { return this->SSA_instrs; }
+
+    std::unordered_map<std::string, SSA*> getVarVal() const { return this->varVals; }
 
     BasicBlock parse(); // IR BB-representation
     void parse_generate_SSA(); // generate all SSA Instructions

@@ -124,7 +124,7 @@ int get_debugNum() const {
         if (this->y == nullptr) {
             this->y = s;
         } else {
-            std::cout << "Error: SSA setting [operand2] expected [operand2] to be [nullptr]!, got: [" << this->y << "]! exiting prematurely..." << std::endl;
+            std::cout << "Error: SSA setting [operand2] expected [operand2] to be [nullptr]!, got: [" << this->y->toString() << "]! exiting prematurely..." << std::endl;
             exit(EXIT_FAILURE);
         }
     }
