@@ -12,7 +12,7 @@ std::vector<Result> Result::int_to_result(std::vector<int> tokenizerTokens) {
             #ifdef DEBUG_I2R
                 std::cout << "\t[token_value] exists in [SymbolTable::symbol_table] with value: [" << SymbolTable::symbol_table.at(token_value) << "]" << std::endl;
             #endif
-            int token_kind; // ToDo: update this val once logic has been properly configured
+            int token_kind = -1; // ToDo: update this val once logic has been properly configured
             // std::string val = SymbolTable::symbol_table.at(token_value);
             #define val SymbolTable::symbol_table.at(token_value)
             // ToDo: determine if [current token] is [const, identifier, or keyword]

@@ -29,7 +29,7 @@ int main() {
     std::string varVal_f = "res/VarVal_results.txt";
 
 
-    const char *in_f = "tst/just_add.ty";
+    const char *in_f = "tst/temp.ty";
     const std::string out_f = "res/Lexer_results.txt";
 
     FileReader fr = FileReader(in_f);

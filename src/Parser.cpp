@@ -429,9 +429,10 @@ SSA* Parser::p_expr() { // Check For `+` && `-`
     SSA *x = p_term();
 
     while (this->CheckFor(Result(2, 0), true) || this->CheckFor(Result(2, 1), true)) {
+        int op = this->sym.get_value_literal();
         next();
         SSA *y = p_expr();
-        x = BuildIR(x, y); // ToDo: Create IR Block
+        x = BuildIR(op, x, y); // ToDo: Create IR Block
     }
     #ifdef DEBUG
         std::cout << "[Parser::p_expr()]: returning: " << x->toString() << std::endl;
@@ -447,9 +448,10 @@ SSA* Parser::p_term() { // Check For `*` && `/`
 
 
     while (this->CheckFor(Result(2, 2), true) || this->CheckFor(Result(2, 3), true)) {
+        int op = this->sym.get_value_literal();
         next();
         SSA *y = p_factor();
-        x = BuildIR(x, y); // ToDo: Create IR Block
+        x = BuildIR(op, x, y); // ToDo: Create IR Block
         std::cout << "in while loop" << std::endl;
     }
     // [08/02/2024]: Segmentation Fault here (both CheckFor()'s should return false, DEBUG stmt should print (currently doesn't!))

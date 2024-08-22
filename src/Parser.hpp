@@ -33,6 +33,9 @@ public:
 
     // [07/25/2024]: ToDo
     inline int getOp() const {
+        #ifdef DEBUG
+            std::cout << "\t[Parser::getOp()]; this->sym.kind=" << this->sym.get_kind_literal() << ", this->sym.value=" << this->sym.get_value_literal() << std::endl;
+        #endif
         switch (this->sym.get_kind_literal()) {
             case 0: // const
                 return SymbolTable::operator_table.at("const");
@@ -52,21 +55,36 @@ public:
                 }
                 break;
         }
+        return -1; // stub
     }
 
 
-    inline SSA* CheckExistence(SSA *x, SSA *y) const {
+    inline SSA* CheckExistence(const int op, SSA *x, SSA *y) const {
+        #ifdef DEBUG
+            std::cout << "\t[Parser::CheckExistence(op=[" << op << "], x=" << x->toString() << ",y=" << y->toString() << "), this->SSA_instrs.size()=" << this->SSA_instrs.size() << "]" << std::endl;
+        #endif
         SSA *ret = nullptr;
-        const int op = this->getOp();
+        
         for (SSA* instr : this->SSA_instrs) {
+            #ifdef DEBUG
+                std::cout << "\t\tcomparing instr=[" << instr->toString() << "]" << std::endl;
+            #endif
             if (instr->compare(op, x, y)) {
                 ret = instr;
                 break;
             }
         }
+        #ifdef DEBUG
+            if (ret != nullptr) {
+                std::cout << "\t\treturning: [" << ret->toString() << "]" << std::endl;
+            } else { 
+                std::cout << "\t\treturning: nullptr!" <<std::endl;
+            }
+        #endif
         return ret;
     }
 
+    // [08/22/2024]: might need to revise (like CheckExistence()) to include op and curr sym's values
     inline SSA* CheckConstExistence() const {
         #ifdef DEBUG
             std::cout << "\tcomparing value: [" << this->sym.get_value_literal() << "]" << std::endl;
@@ -87,26 +105,40 @@ public:
     // [07/25/2024]: ToDo
     inline SSA* BuildIR(int op, SSA *x, SSA *y) {
         #ifdef DEBUG
-            std::cout << "\t[Parser::BuildIR(this->sym=" << this->sym.to_string() << ")]: SSA x = " << x->toString() << ", SSA y = " << y->toString() << std::endl;
+            std::cout << "\t[Parser::BuildIR(op=" << op << ", this->sym=" << this->sym.to_string() << ")]: SSA x = " << x->toString() << ", SSA y = " << y->toString() << std::endl;
         #endif
-        SSA *ret = CheckExistence(x, y); // [08/12/2024]: Note we might have to include the `op` here to check diff types (i.e. `+` vs `*`)
+        
+        // [08/22/2024]: yes we should
+        // [08/12/2024]: Note we might have to include the `op` here to check diff types (i.e. `+` vs `*`)
+        SSA *ret = CheckExistence(op, x, y); 
+        
         // if we don't get [nullptr] from CheckExistence(), that implies there was a previous SSA of the exact same type; so rather than creating a dupe, we can simply use the previously existing one (Copy Propagation)
         //      Note: check that all previous instructions will DOM this SSA instr
         if (ret) { return ret; } 
+        #ifdef DEBUG
+            std::cout << "\tdidn't find an existing match! must create!" << std::endl;
+        #endif
+
 
         // assume op represents the keyword on the [SymbolTable::symbol_table]
         switch (op) {
                 case 0: // `+`
-                    *ret = SSA(SymbolTable::operator_table.at("add"), x, y);
+                    #ifdef DEBUG
+                        std::cout << "\t\tcase 0 (+): " << std::endl;
+                    #endif
+                    ret = new SSA(SymbolTable::operator_table.at("add"), x, y);
+                    #ifdef DEBUG
+                        std::cout << "\t\tgot ret: " << ret->toString() << std::endl;
+                    #endif
                     break;
                 case 1: // `-`
-                    *ret = SSA(SymbolTable::operator_table.at("sub"), x, y);
+                    ret = new SSA(SymbolTable::operator_table.at("sub"), x, y);
                     break;
                 case 2: // `*`
-                    *ret = SSA(SymbolTable::operator_table.at("mul"), x, y);
+                    ret = new SSA(SymbolTable::operator_table.at("mul"), x, y);
                     break;
                 case 3: // `/`
-                    *ret = SSA(SymbolTable::operator_table.at("div"), x, y);
+                    ret = new SSA(SymbolTable::operator_table.at("div"), x, y);
                     break;
             }
         // switch (this->sym.get_kind_literal()) {
@@ -131,6 +163,9 @@ public:
         //         }
         //         break;
         // }
+        #ifdef DEBUG
+            std::cout << "\t\treturning: [" << ret->toString() << "]" << std::endl;
+        #endif
         this->SSA_instrs.push_back(ret);
         return ret;
     }
