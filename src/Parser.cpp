@@ -208,6 +208,20 @@ SSA* Parser::p_funcCall() {
     #ifdef DEBUG
         std::cout << "[Parser::p_funcCall(" << this->sym.to_string() << ")]" << std::endl;
     #endif
+
+    // check for `call`
+    if (this->CheckFor(Result(2, 25), true)) {
+        // check UDF's that return void
+        Func f(this->sym.get_value());
+        if (f.name == "InputNum") {
+            // ToDo; [08/27/2024]: What's expected behavior? repeatedly ping until received a num? or exit fail if not num?
+        } else if (f.name == "OutputNum") {}
+    } else {
+        // check UDF's that return a num (or char?) 
+        // this->CheckFor(); // [08/27/2024]: Something like this?...
+    }
+
+
 }
 
 // ToDo; [07/28/2024]: what exactly are we supposed to return???

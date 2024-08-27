@@ -11,6 +11,25 @@
 
 #define DEBUG
 
+// [08/27/2024]: Simple Func Struct
+struct Func {
+    Func(std::string function) {
+        std::string n = "";
+
+        int split_idx = 0;
+        for (char c : function) {
+            if (std::isalpha(c)) {
+                n += c;
+                split_idx++;
+            } else { break; }
+        }
+        function = function.substr(split_idx);
+    }
+
+    std::string name;
+    // [08/27/2024]: How to handle args?
+};
+
 // parse(): IR through BasicBlocks
 
 // Note: all nodes will be inherited from BasicBlock
