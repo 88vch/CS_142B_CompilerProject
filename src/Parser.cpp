@@ -170,8 +170,8 @@ SSA* Parser::p_assignment() {
     // - [ident] should correspond to [SymbolTable::symbol_table] key with the value being the [value]; stoi(value)
     // - Should not need to return any SSA value for this; will probably need more complexity when BB's are introduced
     // [07/28/2024]: Add [ident : value] mapping into [symbol_table], that's it.
-    this->varVals.insert({SymbolTable::symbol_table.at(ident), value});
-
+    this->varVals.insert_or_assign(SymbolTable::symbol_table.at(ident), value);
+    this->printVVs();
 
     // [08/07/2024]: Revised; wtf was i trying to say down there???
     #ifdef DEBUG
@@ -429,9 +429,10 @@ SSA* Parser::p_expr() { // Check For `+` && `-`
     SSA *x = p_term();
 
     while (this->CheckFor(Result(2, 0), true) || this->CheckFor(Result(2, 1), true)) {
+        int op = this->sym.get_value_literal(); // [08/30/2024]: Grab the [op] before we go [next()]
         next();
         SSA *y = p_expr();
-        x = BuildIR(x, y); // ToDo: Create IR Block
+        x = BuildIR(op, x, y); // ToDo: Create IR Block
     }
     #ifdef DEBUG
         std::cout << "[Parser::p_expr()]: returning: " << x->toString() << std::endl;
@@ -447,9 +448,10 @@ SSA* Parser::p_term() { // Check For `*` && `/`
 
 
     while (this->CheckFor(Result(2, 2), true) || this->CheckFor(Result(2, 3), true)) {
+        int op = this->sym.get_value_literal(); // [08/30/2024]: Grab the [op] before we go [next()]
         next();
         SSA *y = p_factor();
-        x = BuildIR(x, y); // ToDo: Create IR Block
+        x = BuildIR(op, x, y); // ToDo: Create IR Block
         std::cout << "in while loop" << std::endl;
     }
     // [08/02/2024]: Segmentation Fault here (both CheckFor()'s should return false, DEBUG stmt should print (currently doesn't!))

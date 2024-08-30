@@ -55,21 +55,38 @@ public:
     }
 
 
-    inline SSA* CheckExistence(SSA *x, SSA *y) const {
+    inline SSA* CheckExistence(int op, SSA *x, SSA *y) const {
+        #ifdef DEBUG
+            std::cout << "\t[Parser::CheckExistence(op=" << op << ", this->SSA_instrs].size() = " << this->SSA_instrs.size() << ")]" << std::endl;
+        #endif
         SSA *ret = nullptr;
-        const int op = this->getOp();
         for (SSA* instr : this->SSA_instrs) {
+            #ifdef DEBUG
+                std::cout << "\tcomparing our instr against [this->SSA_instrs]: " << instr->toString() << std::endl;
+            #endif
             if (instr->compare(op, x, y)) {
+                #ifdef DEBUG
+                    std::cout << "\t\tgot true!!!" << std::endl;
+                #endif
                 ret = instr;
                 break;
             }
+            #ifdef DEBUG
+                std::cout << "\t\tgot false" << std::endl;
+            #endif
         }
+        #ifdef DEBUG
+            std::cout << "\treturning ret: ";
+            if (ret == nullptr) { std::cout << "nullptr!" << std::endl; }
+            else { std::cout << ret->toString() << std::endl; }
+        #endif
         return ret;
     }
 
     inline SSA* CheckConstExistence() const {
         #ifdef DEBUG
-            std::cout << "\tcomparing value: [" << this->sym.get_value_literal() << "]" << std::endl;
+            // std::cout << "\t[Parser::CheckExistence(op=" << op << "), this->sym.get_value_literal()=" << this->sym.get_value_literal() << "]" << std::endl;
+            std::cout << "\tcomparing value: [" << this->sym.get_value_literal() << "], [this->SSA_instrs].size() =" << this->SSA_instrs.size() << std::endl;
         #endif
         SSA *ret = nullptr;
         for (SSA* instr : this->SSA_instrs) {
@@ -87,50 +104,39 @@ public:
     // [07/25/2024]: ToDo
     inline SSA* BuildIR(int op, SSA *x, SSA *y) {
         #ifdef DEBUG
-            std::cout << "\t[Parser::BuildIR(this->sym=" << this->sym.to_string() << ")]: SSA x = " << x->toString() << ", SSA y = " << y->toString() << std::endl;
+            std::cout << "\t[Parser::BuildIR(op=" << op << ", this->sym=" << this->sym.to_string() << ")]: SSA x = " << x->toString() << ", SSA y = " << y->toString() << std::endl;
         #endif
-        SSA *ret = CheckExistence(x, y); // [08/12/2024]: Note we might have to include the `op` here to check diff types (i.e. `+` vs `*`)
+        SSA *ret = CheckExistence(op, x, y); // [08/12/2024]: Note we might have to include the `op` here to check diff types (i.e. `+` vs `*`)
         // if we don't get [nullptr] from CheckExistence(), that implies there was a previous SSA of the exact same type; so rather than creating a dupe, we can simply use the previously existing one (Copy Propagation)
         //      Note: check that all previous instructions will DOM this SSA instr
-        if (ret) { return ret; } 
+        #ifdef DEBUG
+            std::cout << "\treturn value from [this->CheckExistence]: ";
+        #endif
+        if (ret) { 
+            #ifdef DEBUG
+                std::cout << ret->toString() << std::endl;
+            #endif
+            return ret; 
+        }
+        #ifdef DEBUG
+            std::cout << "nullptr!" << std::endl;
+        #endif
 
         // assume op represents the keyword on the [SymbolTable::symbol_table]
         switch (op) {
                 case 0: // `+`
-                    *ret = SSA(SymbolTable::operator_table.at("add"), x, y);
+                    ret = new SSA(SymbolTable::operator_table.at("add"), x, y);
                     break;
                 case 1: // `-`
-                    *ret = SSA(SymbolTable::operator_table.at("sub"), x, y);
+                    ret = new SSA(SymbolTable::operator_table.at("sub"), x, y);
                     break;
                 case 2: // `*`
-                    *ret = SSA(SymbolTable::operator_table.at("mul"), x, y);
+                    ret = new SSA(SymbolTable::operator_table.at("mul"), x, y);
                     break;
                 case 3: // `/`
-                    *ret = SSA(SymbolTable::operator_table.at("div"), x, y);
+                    ret = new SSA(SymbolTable::operator_table.at("div"), x, y);
                     break;
             }
-        // switch (this->sym.get_kind_literal()) {
-        //     case 0: // const
-        //         break;
-        //     case 1: // ident
-        //         break;
-        //     case 2: // keyword
-        //         switch (this->sym.get_value_literal()) {
-        //             case 0: // `+`
-        //                 *ret = SSA(SymbolTable::operator_table.at("add"), x, y);
-        //                 break;
-        //             case 1: // `-`
-        //                 *ret = SSA(SymbolTable::operator_table.at("sub"), x, y);
-        //                 break;
-        //             case 2: // `*`
-        //                 *ret = SSA(SymbolTable::operator_table.at("mul"), x, y);
-        //                 break;
-        //             case 3: // `/`
-        //                 *ret = SSA(SymbolTable::operator_table.at("div"), x, y);
-        //                 break;
-        //         }
-        //         break;
-        // }
         this->SSA_instrs.push_back(ret);
         return ret;
     }
@@ -250,6 +256,12 @@ private:
             }
         }
         return false;
+    }
+
+    inline void printVVs() { // print varVals
+        for (const auto &p : this->varVals) {
+            std::cout << p.first << ": " << p.second->toString() << std::endl;
+        }
     }
 };
 
