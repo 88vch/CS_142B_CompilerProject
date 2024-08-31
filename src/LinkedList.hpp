@@ -63,15 +63,18 @@ public:
         length++;
     }
 
-    bool contains(SSA instruction) {
+    bool contains(SSA *instruction) const {
         Node *curr = head;
 
         while (curr != tail) {
-            // Old Version; ToDo: Revise this!
+            // ToDo: Revise this! [Old Version]; 
             // if (SSA::compare(curr->instr, instruction)) {
             //     return true;
             // }
             curr = curr->next;
+            if (curr->instr.compare(instruction)) {
+                return true;
+            }
         }
         return false;
     }

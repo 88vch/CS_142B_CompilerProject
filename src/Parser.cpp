@@ -205,23 +205,59 @@ SSA* Parser::p_assignment() {
 
 // ToDo: after generating the Dot & graph the first time
 SSA* Parser::p_funcCall() {
+    SSA *res = nullptr;
     #ifdef DEBUG
         std::cout << "[Parser::p_funcCall(" << this->sym.to_string() << ")]" << std::endl;
     #endif
 
     // check for `call`
     if (this->CheckFor(Result(2, 25), true)) {
+        next(); 
+
+        #ifdef DEBUG
+            for (int i = 0; i < 2; i++) {
+                std::cout << this->sym.to_string() << std::endl;
+                next();
+            }
+            std::cout << "testing [funcCall]" << std::endl;
+            exit(EXIT_SUCCESS);
+        #endif
+
         // check UDF's that return void
         Func f(this->sym.get_value());
+        #ifdef DEBUG
+            std::cout << "\tcreated func f: [" << f.toString() << "]" << std::endl;
+        #endif
         if (f.name == "InputNum") {
-            // ToDo; [08/27/2024]: What's expected behavior? repeatedly ping until received a num? or exit fail if not num?
-        } else if (f.name == "OutputNum") {}
+            int in;
+            std::cin >> in;
+            // ToDo; 
+            // [08/27/2024]: What's expected behavior? repeatedly ping until received a num? or exit fail if not num?
+            // [08/31/2024]: Check if [const SSA] of constVal [in] already exists, (if not then create it)
+            // 1) check if value already exists as a const SSA
+            // 2) if exists, use and return; else, create and return new-SSA const
+            res = this->CheckConstExistence(in);
+
+            if (res == nullptr) { // if dne, create and return new-SSA const
+                // int val = this->sym.get_value_literal();
+                #ifdef DEBUG
+                    std::cout << "\t[Parser::funcCall()] created new [tmp] SSA const instr" << std::endl;
+                #endif
+                res = new SSA(0, this->sym.get_value_literal());
+                this->SSA_instrs.push_back(res);
+                #ifdef DEBUG
+                    std::cout << "\t[const] val dne in [this->SSA_instrs], created new-SSA instruction: [" << res->toString() << "]" << std::endl;
+                #endif
+            }
+            next(); // [08/05/2024]: we can consume the [const-val]?
+        } else if (f.name == "OutputNum") {
+            // ToDo: handle args for this to work
+        }
     } else {
         // check UDF's that return a num (or char?) 
         // this->CheckFor(); // [08/27/2024]: Something like this?...
     }
-
-
+    return res; // [08/31]2024]: stub (?)
 }
 
 // ToDo; [07/28/2024]: what exactly are we supposed to return???
@@ -360,6 +396,8 @@ SSA* Parser::p_return() {
     //     this->instruction_list.at(op).InsertAtHead(SSA(op, {value}));
     //     blk->instruction_list.at(op).InsertAtHead(SSA(op, {value}));
     // }
+
+    return ret; // [08/31/2024]: compilation stub
 }
 
 SSA* Parser::p_relation() {
@@ -443,11 +481,7 @@ SSA* Parser::p_expr() { // Check For `+` && `-`
     SSA *x = p_term();
 
     while (this->CheckFor(Result(2, 0), true) || this->CheckFor(Result(2, 1), true)) {
-<<<<<<< HEAD
         int op = this->sym.get_value_literal(); // [08/30/2024]: Grab the [op] before we go [next()]
-=======
-        int op = this->sym.get_value_literal();
->>>>>>> 231b66634e0f3fba28d8a10056f6d1d9e6d5a223
         next();
         SSA *y = p_expr();
         x = BuildIR(op, x, y); // ToDo: Create IR Block
@@ -466,11 +500,7 @@ SSA* Parser::p_term() { // Check For `*` && `/`
 
 
     while (this->CheckFor(Result(2, 2), true) || this->CheckFor(Result(2, 3), true)) {
-<<<<<<< HEAD
         int op = this->sym.get_value_literal(); // [08/30/2024]: Grab the [op] before we go [next()]
-=======
-        int op = this->sym.get_value_literal();
->>>>>>> 231b66634e0f3fba28d8a10056f6d1d9e6d5a223
         next();
         SSA *y = p_factor();
         x = BuildIR(op, x, y); // ToDo: Create IR Block
@@ -501,7 +531,7 @@ SSA* Parser::p_factor() {
         if (res == nullptr) { // if dne, create and return new-SSA const
             // int val = this->sym.get_value_literal();
             #ifdef DEBUG
-                std::cout << "\tcreated new [tmp] SSA const instr" << std::endl;
+                std::cout << "\t[Parser::p_factor()] created new [tmp] SSA const instr" << std::endl;
             #endif
             res = new SSA(0, this->sym.get_value_literal());
             this->SSA_instrs.push_back(res);

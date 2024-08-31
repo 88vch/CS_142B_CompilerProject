@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <sstream>
+#include <cstring>
 #include "Result.hpp"
 #include "BasicBlock.hpp"
 #include "SSA.hpp"
@@ -12,22 +13,56 @@
 #define DEBUG
 
 // [08/27/2024]: Simple Func Struct
+// [08/31/2024]: Welp, the good news is that this constructor works
+// - the bad news is that our [Tokenizer] creates the function tokens like this: [`FunctionName`, `(`, `arg1`, `arg2`, `arg3`, `)`]
+// - WHICH MEANS, we probably don't need most of this stuff here (except name), but we can reuse this stuff in the [Parser.cpp] funcCall() and next()
 struct Func {
     Func(std::string function) {
-        std::string n = "";
-
+        #ifdef DEBUG
+            std::cout << "[Parser::Func(function=" << function << ")] in constructor" << std::endl;
+        #endif
         int split_idx = 0;
         for (char c : function) {
             if (std::isalpha(c)) {
-                n += c;
                 split_idx++;
             } else { break; }
         }
-        function = function.substr(split_idx);
+        #ifdef DEBUG
+            std::cout << "function=[" << function << "]" << std::endl;
+        #endif
+        this->name = function.substr(0, split_idx);
+        function = function.substr(split_idx, function.size() - this->name.size());
+    
+        #ifdef DEBUG
+            std::cout << "split_idx=[" << split_idx << "], this->name=[" << this->name << "], function: [" << function << "]" << std::endl;
+        #endif
+
+        if (function[0] != '(') {
+            exit(EXIT_FAILURE); // error; expected arg-start-token `(`
+        }
+
+        const char *delim = ", ";
+        this->args = {};
+        function = function.substr(1, function.size() - 2);
+
+        char *token = strtok(&function[0], delim);
+        // Keep tokenizing the string until strtok returns NULL
+        while (token != nullptr) {
+            std::cout << "Token: " << token << std::endl;
+            this->args.push_back(token);
+
+            // Get the next token
+            token = strtok(nullptr, delim);
+        }
     }
 
     std::string name;
+    std::vector<std::string> args;
     // [08/27/2024]: How to handle args?
+
+    const std::string toString() const {
+        return this->name; // [08/31/2024]: Add args when we have them for later
+    } 
 };
 
 // parse(): IR through BasicBlocks
@@ -110,17 +145,25 @@ public:
     }
 
     // [08/22/2024]: might need to revise (like CheckExistence()) to include op and curr sym's values
-    inline SSA* CheckConstExistence() const {
-        #ifdef DEBUG
-            // std::cout << "\t[Parser::CheckExistence(op=" << op << "), this->sym.get_value_literal()=" << this->sym.get_value_literal() << "]" << std::endl;
-            std::cout << "\tcomparing value: [" << this->sym.get_value_literal() << "], [this->SSA_instrs].size() =" << this->SSA_instrs.size() << std::endl;
-        #endif
+    inline SSA* CheckConstExistence(int val = -1) const {
+        int comparisonVal;
+        if (val == -1) {
+            comparisonVal = this->sym.get_value_literal();
+            #ifdef DEBUG
+                // std::cout << "\t[Parser::CheckExistence(op=" << op << "), this->sym.get_value_literal()=" << this->sym.get_value_literal() << "]" << std::endl;
+                std::cout << "\tcomparing value: [" << comparisonVal << "], [this->SSA_instrs].size() =" << this->SSA_instrs.size() << std::endl;
+            #endif
+        } else {
+            comparisonVal = val;
+        }
+
+
         SSA *ret = nullptr;
         for (SSA* instr : this->SSA_instrs) {
             #ifdef DEBUG
                 std::cout << "\tthis instr: [" << instr->toString() << "]" << std::endl;
             #endif
-            if (instr->compareConst(this->sym.get_value_literal())) {
+            if (instr->compareConst(comparisonVal)) {
                 ret = instr;
                 break;
             }
