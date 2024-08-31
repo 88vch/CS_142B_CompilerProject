@@ -61,9 +61,22 @@ int get_debugNum() const {
     }
 
     bool compare(int op, SSA *x, SSA *y) const {
-        if ((this->debug_num > 0) && (this->op == op) && 
-            (this->x != nullptr && (this->x == x)) && 
-            (this->y != nullptr && (this->y == y))) {
+        #ifdef DEBUG
+            std::cout << "\t[SSA::compare(op=" << op << ")]; this->op=" << this->op << ", this->x=";
+            if (this->x) {
+                std::cout << this->x->toString() << ", this->y=";
+            } else {
+                std::cout << "nullptr, this->y=";
+            }
+            if (this->y) {
+                std::cout << this->y->toString() << std::endl;
+            } else {
+                std::cout << "nullptr" << std::endl;
+            }
+        #endif
+        if ((this->debug_num < 0) || (this->x == nullptr) || (this->y == nullptr)) { return false; }
+
+        if ((this->op == op) && (this->x == x) && (this->y == y)) {
             return true;
         }
         return false;
@@ -133,7 +146,7 @@ private:
     // std::vector<int> instr;
     
     // [07/25/2024]: (New) Pointers to other SSA instructions
-    int debug_num, op, *constVal;
+    int op, debug_num, *constVal;
     SSA *x, *y;
 
 

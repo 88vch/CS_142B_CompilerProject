@@ -11,6 +11,25 @@
 
 #define DEBUG
 
+// [08/27/2024]: Simple Func Struct
+struct Func {
+    Func(std::string function) {
+        std::string n = "";
+
+        int split_idx = 0;
+        for (char c : function) {
+            if (std::isalpha(c)) {
+                n += c;
+                split_idx++;
+            } else { break; }
+        }
+        function = function.substr(split_idx);
+    }
+
+    std::string name;
+    // [08/27/2024]: How to handle args?
+};
+
 // parse(): IR through BasicBlocks
 
 // Note: all nodes will be inherited from BasicBlock
@@ -33,6 +52,9 @@ public:
 
     // [07/25/2024]: ToDo
     inline int getOp() const {
+        #ifdef DEBUG
+            std::cout << "\t[Parser::getOp()]; this->sym.kind=" << this->sym.get_kind_literal() << ", this->sym.value=" << this->sym.get_value_literal() << std::endl;
+        #endif
         switch (this->sym.get_kind_literal()) {
             case 0: // const
                 return SymbolTable::operator_table.at("const");
@@ -52,17 +74,19 @@ public:
                 }
                 break;
         }
+        return -1; // stub
     }
 
 
-    inline SSA* CheckExistence(int op, SSA *x, SSA *y) const {
+    inline SSA* CheckExistence(const int op, SSA *x, SSA *y) const {
         #ifdef DEBUG
-            std::cout << "\t[Parser::CheckExistence(op=" << op << ", this->SSA_instrs].size() = " << this->SSA_instrs.size() << ")]" << std::endl;
+            std::cout << "\t[Parser::CheckExistence(op=[" << op << "], x=" << x->toString() << ",y=" << y->toString() << "), this->SSA_instrs.size()=" << this->SSA_instrs.size() << "]" << std::endl;
         #endif
         SSA *ret = nullptr;
+        
         for (SSA* instr : this->SSA_instrs) {
             #ifdef DEBUG
-                std::cout << "\tcomparing our instr against [this->SSA_instrs]: " << instr->toString() << std::endl;
+                std::cout << "\t\tcomparing instr=[" << instr->toString() << "]" << std::endl;
             #endif
             if (instr->compare(op, x, y)) {
                 #ifdef DEBUG
@@ -76,13 +100,16 @@ public:
             #endif
         }
         #ifdef DEBUG
-            std::cout << "\treturning ret: ";
-            if (ret == nullptr) { std::cout << "nullptr!" << std::endl; }
-            else { std::cout << ret->toString() << std::endl; }
+            if (ret != nullptr) {
+                std::cout << "\t\treturning: [" << ret->toString() << "]" << std::endl;
+            } else { 
+                std::cout << "\t\treturning: nullptr!" <<std::endl;
+            }
         #endif
         return ret;
     }
 
+    // [08/22/2024]: might need to revise (like CheckExistence()) to include op and curr sym's values
     inline SSA* CheckConstExistence() const {
         #ifdef DEBUG
             // std::cout << "\t[Parser::CheckExistence(op=" << op << "), this->sym.get_value_literal()=" << this->sym.get_value_literal() << "]" << std::endl;
@@ -125,7 +152,14 @@ public:
         // assume op represents the keyword on the [SymbolTable::symbol_table]
         switch (op) {
                 case 0: // `+`
+                    // ret = new SSA(SymbolTable::operator_table.at("add"), x, y);
+                    #ifdef DEBUG
+                        std::cout << "\t\tcase 0 (+): " << std::endl;
+                    #endif
                     ret = new SSA(SymbolTable::operator_table.at("add"), x, y);
+                    #ifdef DEBUG
+                        std::cout << "\t\tgot ret: " << ret->toString() << std::endl;
+                    #endif
                     break;
                 case 1: // `-`
                     ret = new SSA(SymbolTable::operator_table.at("sub"), x, y);
@@ -259,6 +293,7 @@ private:
     }
 
     inline void printVVs() { // print varVals
+        std::cout << "printing [this->varVals]:" << std::endl;
         for (const auto &p : this->varVals) {
             std::cout << p.first << ": " << p.second->toString() << std::endl;
         }

@@ -208,6 +208,20 @@ SSA* Parser::p_funcCall() {
     #ifdef DEBUG
         std::cout << "[Parser::p_funcCall(" << this->sym.to_string() << ")]" << std::endl;
     #endif
+
+    // check for `call`
+    if (this->CheckFor(Result(2, 25), true)) {
+        // check UDF's that return void
+        Func f(this->sym.get_value());
+        if (f.name == "InputNum") {
+            // ToDo; [08/27/2024]: What's expected behavior? repeatedly ping until received a num? or exit fail if not num?
+        } else if (f.name == "OutputNum") {}
+    } else {
+        // check UDF's that return a num (or char?) 
+        // this->CheckFor(); // [08/27/2024]: Something like this?...
+    }
+
+
 }
 
 // ToDo; [07/28/2024]: what exactly are we supposed to return???
@@ -429,7 +443,11 @@ SSA* Parser::p_expr() { // Check For `+` && `-`
     SSA *x = p_term();
 
     while (this->CheckFor(Result(2, 0), true) || this->CheckFor(Result(2, 1), true)) {
+<<<<<<< HEAD
         int op = this->sym.get_value_literal(); // [08/30/2024]: Grab the [op] before we go [next()]
+=======
+        int op = this->sym.get_value_literal();
+>>>>>>> 231b66634e0f3fba28d8a10056f6d1d9e6d5a223
         next();
         SSA *y = p_expr();
         x = BuildIR(op, x, y); // ToDo: Create IR Block
@@ -448,7 +466,11 @@ SSA* Parser::p_term() { // Check For `*` && `/`
 
 
     while (this->CheckFor(Result(2, 2), true) || this->CheckFor(Result(2, 3), true)) {
+<<<<<<< HEAD
         int op = this->sym.get_value_literal(); // [08/30/2024]: Grab the [op] before we go [next()]
+=======
+        int op = this->sym.get_value_literal();
+>>>>>>> 231b66634e0f3fba28d8a10056f6d1d9e6d5a223
         next();
         SSA *y = p_factor();
         x = BuildIR(op, x, y); // ToDo: Create IR Block

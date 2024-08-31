@@ -217,10 +217,11 @@ namespace SymbolTable {
         // for (size_t i = 0; i < identifiers.size(); i++) {
         //     std::cout << "[" << i << "]" << ": \t\t\t[" << identifiers.at(i) << "]" << std::endl;
         // }
-        int i = 0;
+        
+        // int i = 0;
         for (const auto &c : identifiers) {
             std::cout << "[" << c.first << "]" << ": \t\t\t[" << c.second << "]" << std::endl;
-            i++;
+            // i++;
         }
     }
 
@@ -230,10 +231,10 @@ namespace SymbolTable {
         //     std::cout << "[" << i << "]" << ": \t\t\t[" << numbers.at(i) << "]" << std::endl;
         // }
 
-        int i = 0;
+        // int i = 0;
         for (const auto &c : numbers) {
             std::cout << "[" << c.first << "]" << ": \t\t\t[" << c.second << "]" << std::endl;
-            i++;
+            // i++;
         }
     }
 };
