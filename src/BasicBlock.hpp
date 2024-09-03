@@ -12,21 +12,26 @@
 
 class BasicBlock {
 public:
-    BasicBlock(std::unordered_map<int, LinkedList> curr_instr_lst) //: ssa_instructions()
+    BasicBlock() // [09/02/2024]: Note - took away ssa_instructions[curr_instr_list]
     {
         this->parent = nullptr;
         this->parent2 = nullptr;
-        this->instruction_list = curr_instr_lst;
+        this->instruction_list = {};
         this->children = {};
     }
     // special block: [join]; need phi function here
-    BasicBlock(BasicBlock *p1, BasicBlock *p2, std::unordered_map<int, int> DOM_vv_map, std::unordered_map<int, LinkedList> curr_instr_lst)
+    BasicBlock(BasicBlock *p1, BasicBlock *p2, std::unordered_map<int, int> DOM_vv_map)
     {
         this->parent = p1;
         this->parent2 = p2;
         this->updated_varval_map = DOM_vv_map;
-        this->instruction_list = curr_instr_lst;
+        this->instruction_list = {};
         this->children = {};
+    }
+
+    void setInstructionList(const std::unordered_map<int, LinkedList> &curr_instr_lst) {
+        // [09/02/2024]: VALIDATE that this makes a shallow copy (we only care abt the values, since we're going to continue to modify this [curr_instr_list])
+        this->instruction_list = curr_instr_lst;
     }
 
     BasicBlock *parent, *parent2;

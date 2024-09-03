@@ -89,14 +89,18 @@ public:
     Parser(const std::vector<Result> &tkns)
         :source(std::move(tkns)) 
     {
-        this->start = nullptr;
-        this->parent = nullptr;
+        this->SSA_start = nullptr;
+        this->SSA_parent = nullptr;
 
         this->s_index = 0;
         this->source_len = tkns.size();
         this->SSA_instrs = {};
         this->varVals = {};
         
+        this->BB0 = new BasicBlock();
+        this->BB_start = nullptr;
+        this->BB_parent = this->BB0;
+
         next();
     }
 
@@ -244,15 +248,21 @@ private:
     Result sym;
     std::vector<Result> source;
     std::vector<SSA*> SSA_instrs;
-    std::unordered_map<std::string, SSA*> varVals;
+
+    // [09/02/2024]: Do we need to optimize this? (i.e. <int, int> that is a table lookup probably in [SymbolTable]?)
+    // - Note: we probably should
+    std::unordered_map<std::string, SSA*> varVals; 
     size_t s_index, source_len;
+
+    // [09/02/2024]: Does this need to include the `const` SSA's? I don't think it should bc the const instr's only belong to BB0 (special)
     std::unordered_map<int, LinkedList> instrList; // current instruction list (copied for each BB)
     
-    // BasicBlock *start; // first result obj generated from this file
-    // BasicBlock *parent; // most recent BasicBlock (or 2nd most [if/while])
+    BasicBlock *BB0; // [09/02/2024]: special BB always generated at the start. Contains const SSA instrs
+    BasicBlock *BB_start; // first result obj generated from this file
+    BasicBlock *BB_parent; // most recent BasicBlock (or 2nd most [if/while])
 
-    SSA *start;
-    SSA *parent; // copied from above's [BasicBlock]
+    SSA *SSA_start;
+    SSA *SSA_parent; // copied from above's [BasicBlock]
 
     std::unordered_set<int> varDeclarations; // the int in the symbol table
     std::unordered_set<int> funcDeclarations; // the int in the symbol table

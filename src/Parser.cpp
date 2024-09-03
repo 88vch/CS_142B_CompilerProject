@@ -16,7 +16,7 @@ void Parser::parse_generate_SSA() {
     #ifdef DEBUG
         std::cout << "[Parser::parse_generate_SSA()]" << std::endl;
     #endif
-    this->start = this->p_start();
+    this->SSA_start = this->p_start();
     #ifdef DEBUG
         std::cout << "Done InITIALLY Parsing, got [" << this->SSA_instrs.size() << "] SSA Instructions" << std::endl;
     #endif
