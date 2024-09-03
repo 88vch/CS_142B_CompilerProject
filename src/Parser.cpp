@@ -1,7 +1,9 @@
 #include "Parser.hpp"
 
-// Recursive Descent LL(1) Parsing to generate BB IR-representation
-// - assume we've generated all SSA Instructions & Have done error checking
+// Top-Down Recursive Descent LL(1) Parsing to generate BB IR-representation
+// [0ld Version]: assumes we've generated all SSA Instructions & Have done error checking
+// [09/03/2024]: Unable to pre-generate all SSA Instructions (bc some branch locations may be unknown still)
+// - need BasicBlock's (IR) to get a better idea of control-flow (-> CFG's)
 BasicBlock Parser::parse() {
     BasicBlock r(this->instrList);
     return r; // Stub
@@ -230,11 +232,7 @@ SSA* Parser::p_funcCall() {
             std::cout << "\tcreated func f: [" << f.getName() << "]" << std::endl;
         #endif
         if (f.name == "InputNum") {
-            // optional parenthesis for functions without arguments
-            if (this->CheckFor(Result(2, 13), true)) { // check for `(`
-                next();
-                this->CheckFor(Result(2, 14)); // check for `)`
-            }
+            this->CheckFor_udf_optional_paren();
 
             int in;
             std::cout << "Please enter a number: ";
@@ -293,9 +291,12 @@ SSA* Parser::p_funcCall() {
             }
             res = this->varVals.at(num);
             std::cout << res->toString() << std::endl;
+        } else if (f.name == "OutputNewLine") {
+            this->CheckFor_udf_optional_paren();
+            std::cout << std::endl; // new line (?)
         } else {
             // [09/02/2024]: User-Defined Function (?)
-            // check for optional `(`: indicates whether a function may/will have arguments or not
+            // check for optional `(`: determine whether a UD-function may/will have arguments or not
             if (this->CheckFor(Result(2, 13), true)) {    
                 while (this->CheckFor(Result(2, 14), true) == false) { // while the next token is NOT `)`
                     #ifdef DEBUG

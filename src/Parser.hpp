@@ -238,7 +238,7 @@ public:
 
     std::unordered_map<std::string, SSA*> getVarVal() const { return this->varVals; }
 
-    BasicBlock parse(); // IR BB-representation
+    BasicBlock parse(); // IR BB-representation 
     void parse_generate_SSA(); // generate all SSA Instructions
 private:
     Result sym;
@@ -328,6 +328,15 @@ private:
             std::cout << "\treturning [" << retVal << "]" << std::endl;
         #endif
         return retVal;
+    }
+
+    // [09/03/2024]: Consumes if exists else does nothing
+    inline void CheckFor_udf_optional_paren() {
+        // optional parenthesis for functions without arguments
+        if (this->CheckFor(Result(2, 13), true)) { // check for `(`
+            next();
+            this->CheckFor(Result(2, 14)); // check for `)`
+        }
     }
 
     inline bool SSA_exists(SSA new_instr) const {
