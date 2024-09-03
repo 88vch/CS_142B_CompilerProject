@@ -230,8 +230,11 @@ SSA* Parser::p_funcCall() {
             std::cout << "\tcreated func f: [" << f.getName() << "]" << std::endl;
         #endif
         if (f.name == "InputNum") {
-            this->CheckFor(Result(2, 13)); // check for `(`
-            this->CheckFor(Result(2, 14)); // check for `)`
+            // optional parenthesis for functions without arguments
+            if (this->CheckFor(Result(2, 13), true)) { // check for `(`
+                next();
+                this->CheckFor(Result(2, 14)); // check for `)`
+            }
 
             int in;
             std::cout << "Please enter a number: ";
@@ -292,17 +295,18 @@ SSA* Parser::p_funcCall() {
             std::cout << res->toString() << std::endl;
         } else {
             // [09/02/2024]: User-Defined Function (?)
-            this->CheckFor(Result(2, 13)); // check for `(`
-            while (this->CheckFor(Result(2, 14), true) == false) { // while the next token is NOT `)`
-                #ifdef DEBUG
-                    std::cout << "iterating through args, token looks like: [" << this->sym.to_string() << ", " << this->sym.to_string_literal() << "]" << std::endl;
-                #endif
-                f.args.push_back(this->sym.to_string());
-                next();
-            }
-            this->CheckFor(Result(2, 14)); // check for `)`; sanity...irl could just call [next()]
-
-            // [09/02/2024]: ToDo - call the function with the arguments
+            // check for optional `(`: indicates whether a function may/will have arguments or not
+            if (this->CheckFor(Result(2, 13), true)) {    
+                while (this->CheckFor(Result(2, 14), true) == false) { // while the next token is NOT `)`
+                    #ifdef DEBUG
+                        std::cout << "iterating through args, token looks like: [" << this->sym.to_string() << ", " << this->sym.to_string_literal() << "]" << std::endl;
+                    #endif
+                    f.args.push_back(this->sym.to_string());
+                    next();
+                }
+                this->CheckFor(Result(2, 14)); // check for `)`; sanity...irl could just call [next()]
+            } 
+            // [09/02/2024]: ToDo - call the function with the arguments (if they exist)
         }
     } else {
         // check UDF's that return a num (or char?) 
