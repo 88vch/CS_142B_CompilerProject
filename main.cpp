@@ -17,8 +17,7 @@
 
 // class SymbolTable; // forward declaration (?)
 
-// input file: [tst/temp.ty]
-// input file: [tst/Lexer_results.txt]
+#define in_f "tst/add_input_num.ty"
 int main() {
     std::string symbolTable_f = "res/_SymbolTable_result.txt";
     std::string identifiers_f = "res/_Identifiers_result.txt";
@@ -29,7 +28,6 @@ int main() {
     std::string varVal_f = "res/VarVal_results.txt";
 
 
-    const char *in_f = "tst/triple_add.ty";
     const std::string out_f = "res/Lexer_results.txt";
 
     FileReader fr = FileReader(in_f);

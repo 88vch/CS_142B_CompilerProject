@@ -17,51 +17,66 @@
 // - the bad news is that our [Tokenizer] creates the function tokens like this: [`FunctionName`, `(`, `arg1`, `arg2`, `arg3`, `)`]
 // - WHICH MEANS, we probably don't need most of this stuff here (except name), but we can reuse this stuff in the [Parser.cpp] funcCall() and next()
 struct Func {
-    Func(std::string function) {
+    Func(std::string functionName) {
         #ifdef DEBUG
-            std::cout << "[Parser::Func(function=" << function << ")] in constructor" << std::endl;
+            std::cout << "[Parser::Func(functionName=" << functionName << ")] in constructor" << std::endl;
         #endif
-        int split_idx = 0;
-        for (char c : function) {
-            if (std::isalpha(c)) {
-                split_idx++;
-            } else { break; }
-        }
-        #ifdef DEBUG
-            std::cout << "function=[" << function << "]" << std::endl;
-        #endif
-        this->name = function.substr(0, split_idx);
-        function = function.substr(split_idx, function.size() - this->name.size());
-    
-        #ifdef DEBUG
-            std::cout << "split_idx=[" << split_idx << "], this->name=[" << this->name << "], function: [" << function << "]" << std::endl;
-        #endif
-
-        if (function[0] != '(') {
-            exit(EXIT_FAILURE); // error; expected arg-start-token `(`
-        }
-
-        const char *delim = ", ";
         this->args = {};
-        function = function.substr(1, function.size() - 2);
+        this->name = functionName;
 
-        char *token = strtok(&function[0], delim);
-        // Keep tokenizing the string until strtok returns NULL
-        while (token != nullptr) {
-            std::cout << "Token: " << token << std::endl;
-            this->args.push_back(token);
 
-            // Get the next token
-            token = strtok(nullptr, delim);
-        }
+        // int split_idx = 0;
+        // for (char c : functionName) {
+        //     if (std::isalpha(c)) {
+        //         split_idx++;
+        //     } else { break; }
+        // }
+        // #ifdef DEBUG
+        //     std::cout << "functionName=[" << functionName << "]" << std::endl;
+        // #endif
+        // this->name = functionName.substr(0, split_idx);
+        // functionName = functionName.substr(split_idx, functionName.size() - this->name.size());
+    
+        // #ifdef DEBUG
+        //     std::cout << "split_idx=[" << split_idx << "], this->name=[" << this->name << "], functionName: [" << functionName << "]" << std::endl;
+        // #endif
+
+        // if (functionName[0] != '(') {
+        //     exit(EXIT_FAILURE); // error; expected arg-start-token `(`
+        // }
+
+        // const char *delim = ", ";
+        // this->args = {};
+        // functionName = functionName.substr(1, functionName.size() - 2);
+
+        // char *token = strtok(&functionName[0], delim);
+        // // Keep tokenizing the string until strtok returns NULL
+        // while (token != nullptr) {
+        //     std::cout << "Token: " << token << std::endl;
+        //     this->args.push_back(token);
+
+        //     // Get the next token
+        //     token = strtok(nullptr, delim);
+        // }
     }
 
     std::string name;
     std::vector<std::string> args;
     // [08/27/2024]: How to handle args?
 
+    const std::string getName() const {
+        return this->name;
+    }
+
     const std::string toString() const {
-        return this->name; // [08/31/2024]: Add args when we have them for later
+        std::string ret = this->name + "(";
+        
+        for (const auto &arg : this->args) {
+            ret += arg + ", ";
+        }
+        ret = ret.substr(0, ret.size() - 3);
+        ret += ")"; // [08/31/2024]: Add args when we have them for later
+        return ret;
     } 
 };
 
@@ -187,10 +202,11 @@ public:
                 std::cout << ret->toString() << std::endl;
             #endif
             return ret; 
+        } else {
+            #ifdef DEBUG
+                std::cout << "nullptr!" << std::endl;
+            #endif
         }
-        #ifdef DEBUG
-            std::cout << "nullptr!" << std::endl;
-        #endif
 
         // assume op represents the keyword on the [SymbolTable::symbol_table]
         switch (op) {
@@ -275,6 +291,7 @@ private:
         #endif
     }
 
+    // consumes [non-optional's]
     inline bool CheckFor(Result expected_token, bool optional = false) {
         #ifdef DEBUG
             std::cout << "Checking For [expected: " << expected_token.to_string() << "], [got: " << this->sym.to_string() << "]" << std::endl;
@@ -336,9 +353,9 @@ private:
     }
 
     inline void printVVs() { // print varVals
-        std::cout << "printing [this->varVals]:" << std::endl;
+        std::cout << "printing [this->varVals(size=" << this->varVals.size() << ")]:" << std::endl;
         for (const auto &p : this->varVals) {
-            std::cout << p.first << ": " << p.second->toString() << std::endl;
+            std::cout << "[" << p.first << "], [" << p.second->toString() << "]" << std::endl;
         }
     }
 };
