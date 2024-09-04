@@ -6,7 +6,10 @@
 // - need BasicBlock's (IR) to get a better idea of control-flow (-> CFG's)
 BasicBlock Parser::parse() {
     this->BB0 = new BasicBlock();
-    this->BB_start = new BasicBlock();
+    this->BB_start = this->p2_start();
+
+    this->BB0->child = this->BB_start;
+    this->BB_start->parent = this->BB0;
     
     
     return this->BB0; // stub
@@ -27,6 +30,36 @@ void Parser::parse_generate_SSA() {
     #endif
 }
 
+
+BasicBlock* Parser::p2_start() {
+    #ifdef DEBUG
+        std::cout << "[Parser::p2_start(" << this->sym.to_string() << ")]" << std::endl;
+    #endif
+    this->CheckFor(Result(2, 29)); // consumes `main` token
+
+    if (this->CheckFor(Result(2, 5), true)) { // check for `var` token
+        #ifdef DEBUG
+            std::cout << "[Parser::parse()]: next token is [varDecl]" << std::endl;
+        #endif
+        next(); // consumes `var` token
+        p2_varDecl(); // ends with `;` = end of varDecl (consume it in the func)
+        #ifdef DEBUG
+            std::cout << "[Parser::parse()]: done parsing [varDecl]'s" << std::endl;
+        #endif
+    }
+
+    // check for [function start] token
+
+    this->CheckFor(Result(2, 15)); // check for `{`
+
+    // handle [statSeq] here
+    BasicBlock *statSeq = p2_statSeq();
+
+    this->CheckFor(Result(2, 16)); // check for `}`
+    this->CheckFor(Result(2, 30)); // check for `.`
+
+    return statSeq;
+}
 
 SSA* Parser::p_start() {
     #ifdef DEBUG

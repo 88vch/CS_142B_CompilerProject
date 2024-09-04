@@ -18,7 +18,7 @@ public:
         this->parent = nullptr;
         this->parent2 = nullptr;
         this->instruction_list = {};
-        this->child1 = nullptr;
+        this->child = nullptr;
         this->child2 = nullptr;
     }
     // special block: [join]; need phi function here
@@ -28,7 +28,7 @@ public:
         this->parent2 = p2;
         this->updated_varval_map = DOM_vv_map;
         this->instruction_list = {};
-        this->child1 = nullptr;
+        this->child = nullptr;
         this->child2 = nullptr;
     }
 
@@ -38,7 +38,7 @@ public:
     }
 
     BasicBlock *parent, *parent2;
-    BasicBlock *child1, *child2;
+    BasicBlock *child, *child2;
     std::unordered_map<int, int> updated_varval_map; // [variable (sym_table val) : value]
     // an ssa instruction: std::vector<int>
     // [#: debugging] [operation] [operand(s)]

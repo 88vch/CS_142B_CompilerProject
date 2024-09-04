@@ -267,6 +267,22 @@ private:
     std::unordered_set<int> varDeclarations; // the int in the symbol table
     std::unordered_set<int> funcDeclarations; // the int in the symbol table
 
+    // [09/04/2024]: ToDo - transition into BasicBlocks
+    BasicBlock* p2_start();
+    void p2_varDecl();
+    BasicBlock* p2_statSeq();
+    BasicBlock* p2_statement(); 
+    BasicBlock* p2_assignment();
+    BasicBlock* p2_funcCall();
+    BasicBlock* p2_ifStatement();
+    BasicBlock* p2_whileStatement();
+    BasicBlock* p2_return();
+
+    BasicBlock* p2_relation();
+    BasicBlock* p2_expr();
+    BasicBlock* p2_term();
+    BasicBlock* p2_factor();
+
     // Recursive Descent
     SSA* p_start();
     void p_varDecl();
