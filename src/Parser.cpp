@@ -5,8 +5,11 @@
 // [09/03/2024]: Unable to pre-generate all SSA Instructions (bc some branch locations may be unknown still)
 // - need BasicBlock's (IR) to get a better idea of control-flow (-> CFG's)
 BasicBlock Parser::parse() {
-    BasicBlock r(this->instrList);
-    return r; // Stub
+    this->BB0 = new BasicBlock();
+    this->BB_start = new BasicBlock();
+    
+    
+    return this->BB0; // stub
 }
 
 

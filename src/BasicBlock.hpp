@@ -12,12 +12,14 @@
 
 class BasicBlock {
 public:
-    BasicBlock() // [09/02/2024]: Note - took away ssa_instructions[curr_instr_list]
+    // [09/03/2024]: How do we determine whether we have the special [const BB0] or not?
+    BasicBlock(bool isConst = false) // [09/02/2024]: Note - took away ssa_instructions[curr_instr_list]
     {
         this->parent = nullptr;
         this->parent2 = nullptr;
         this->instruction_list = {};
-        this->children = {};
+        this->child1 = nullptr;
+        this->child2 = nullptr;
     }
     // special block: [join]; need phi function here
     BasicBlock(BasicBlock *p1, BasicBlock *p2, std::unordered_map<int, int> DOM_vv_map)
@@ -26,7 +28,8 @@ public:
         this->parent2 = p2;
         this->updated_varval_map = DOM_vv_map;
         this->instruction_list = {};
-        this->children = {};
+        this->child1 = nullptr;
+        this->child2 = nullptr;
     }
 
     void setInstructionList(const std::unordered_map<int, LinkedList> &curr_instr_lst) {
@@ -35,7 +38,7 @@ public:
     }
 
     BasicBlock *parent, *parent2;
-    std::vector<BasicBlock *> children;
+    BasicBlock *child1, *child2;
     std::unordered_map<int, int> updated_varval_map; // [variable (sym_table val) : value]
     // an ssa instruction: std::vector<int>
     // [#: debugging] [operation] [operand(s)]
