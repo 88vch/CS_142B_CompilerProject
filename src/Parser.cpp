@@ -48,11 +48,9 @@ BasicBlock* Parser::p2_start() {
         #endif
     }
 
-    // check for [function start] token
-
+    // [09/05/2024]: ToDo - check for [function start] token
     this->CheckFor(Result(2, 15)); // check for `{`
 
-    // handle [statSeq] here
     BasicBlock *statSeq = p2_statSeq();
 
     this->CheckFor(Result(2, 16)); // check for `}`
@@ -111,6 +109,43 @@ void Parser::p_varDecl() {
 SSA* Parser::p_statSeq() {
     #ifdef DEBUG
         std::cout << "[Parser::p_statSeq(" << this->sym.to_string() << ")]: found a statement to parse" << std::endl;
+    #endif
+    SSA *curr_stmt;
+    SSA *first = p_statement(); // ends with `;` = end of statement
+    while (this->CheckFor(Result(2, 4), true)) { // if [optional] next token is ';', then we still have statements
+        next();
+        if ((first->isWhile) || 
+            (curr_stmt != nullptr && curr_stmt->isWhile)) {
+            #ifdef DEBUG
+                std::cout << "in while stmt!" << std::endl;
+            #endif
+            SSA *tmp = curr_stmt;
+            curr_stmt = p_statement();
+            tmp->set_operand2(curr_stmt); // [08/08/2024]: update [jmp_instr] if previous statement was [while_statement()]
+        } else {
+            curr_stmt = p_statement();
+            if (curr_stmt == nullptr) { // [curr_stmt] = nullptr indicates that this was the last stmt and it js had a `;` too (last stmt `;` is optional)
+                #ifdef DEBUG
+                    std::cout << "curr_stmt returned nullptr!" << std::endl;
+                #endif
+                break;
+            }
+        }
+        // [07/28/2024]: Should be doing something with [curr_stmt] here.
+        #ifdef DEBUG
+            std::cout << "[curr_stmt] returned: " << curr_stmt->toString() << std::endl;
+        #endif
+    }
+    #ifdef DEBUG
+        std::cout << "[Parser::p_statSeq()] returning: " << first->toString() << std::endl;
+    #endif
+    return first; // returning first [SSA_instr] in [p_statSeq()] so we know control flow
+}
+
+// [09/05/2024]: ToDo - resume here (after SSA_linked_list)!
+BasicBlock* Parser::p2_statSeq() {
+    #ifdef DEBUG
+        std::cout << "[Parser::p2_statSeq(" << this->sym.to_string() << ")]: found a statement to parse" << std::endl;
     #endif
     SSA *curr_stmt;
     SSA *first = p_statement(); // ends with `;` = end of statement

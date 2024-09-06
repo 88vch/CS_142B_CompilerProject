@@ -97,6 +97,7 @@ public:
         this->SSA_instrs = {};
         this->varVals = {};
         
+        this->curr = nullptr;
         this->BB0 = new BasicBlock();
         this->BB_start = nullptr;
         this->BB_parent = this->BB0;
@@ -255,9 +256,12 @@ private:
     size_t s_index, source_len;
 
     // [09/02/2024]: Does this need to include the `const` SSA's? I don't think it should bc the const instr's only belong to BB0 (special)
-    std::unordered_map<int, LinkedList> instrList; // current instruction list (copied for each BB)
+    // current instruction list (copied for each BB)
+    // [09/05/2024]: key=[SymbolTable::operator_table] values corresponding to specific SSA-instrs
+    std::unordered_map<int, LinkedList> instrList; 
     
-    BasicBlock *BB0; // [09/02/2024]: special BB always generated at the start. Contains const SSA instrs
+    BasicBlock *curr;
+    BasicBlock *BB0; // [09/02/2024]: special BB always generated at the start. Contains const SSA-instrs
     BasicBlock *BB_start; // first result obj generated from this file
     BasicBlock *BB_parent; // most recent BasicBlock (or 2nd most [if/while])
 
