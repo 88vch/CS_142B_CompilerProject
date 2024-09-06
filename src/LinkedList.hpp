@@ -30,8 +30,8 @@ public:
         }
     }
 
-    void InsertAtHead(SSA instruction) {
-        Node* newNode = new Node(instruction);
+    void InsertAtHead(SSA *instruction) {
+        Node* newNode = new Node(*instruction);
 
         // If the list is empty, make the new node as the head
         if (head == nullptr) {
@@ -39,7 +39,7 @@ public:
             tail = newNode;
             return;
         } else {
-            // Otherwise, insert the new node after the current tail
+            // Otherwise, insert the new node after the current head
             head->prev = newNode;
             head->prev->next = head;
             head = newNode;
@@ -47,8 +47,8 @@ public:
         length++;
     }
 
-    void InsertAtTail(SSA instruction) {
-        Node* newNode = new Node(instruction);
+    void InsertAtTail(SSA *instruction) {
+        Node* newNode = new Node(*instruction);
 
         // If the list is empty, make the new node as the head
         if (head == nullptr) {
@@ -58,6 +58,7 @@ public:
         } else {
             // Otherwise, insert the new node after the current tail
             tail->next = newNode;
+            tail->next->prev = tail;
             tail = newNode;
         }
         length++;
@@ -77,6 +78,17 @@ public:
             }
         }
         return false;
+    }
+
+    void printList() const {
+        Node *curr = this->head;
+        while (curr) {
+            if (curr != head && curr != tail) {
+                std::cout << ", " << std::endl;
+            }
+            curr->instr.toString();
+            curr = curr->next;
+        }
     }
 
 private:

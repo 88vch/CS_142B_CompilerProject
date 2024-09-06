@@ -42,7 +42,7 @@ BasicBlock* Parser::p2_start() {
             std::cout << "[Parser::parse()]: next token is [varDecl]" << std::endl;
         #endif
         next(); // consumes `var` token
-        p2_varDecl(); // ends with `;` = end of varDecl (consume it in the func)
+        // p2_varDecl(); // ends with `;` = end of varDecl (consume it in the func)
         #ifdef DEBUG
             std::cout << "[Parser::parse()]: done parsing [varDecl]'s" << std::endl;
         #endif
@@ -143,41 +143,41 @@ SSA* Parser::p_statSeq() {
 }
 
 // [09/05/2024]: ToDo - resume here (after SSA_linked_list)!
-BasicBlock* Parser::p2_statSeq() {
-    #ifdef DEBUG
-        std::cout << "[Parser::p2_statSeq(" << this->sym.to_string() << ")]: found a statement to parse" << std::endl;
-    #endif
-    SSA *curr_stmt;
-    SSA *first = p_statement(); // ends with `;` = end of statement
-    while (this->CheckFor(Result(2, 4), true)) { // if [optional] next token is ';', then we still have statements
-        next();
-        if ((first->isWhile) || 
-            (curr_stmt != nullptr && curr_stmt->isWhile)) {
-            #ifdef DEBUG
-                std::cout << "in while stmt!" << std::endl;
-            #endif
-            SSA *tmp = curr_stmt;
-            curr_stmt = p_statement();
-            tmp->set_operand2(curr_stmt); // [08/08/2024]: update [jmp_instr] if previous statement was [while_statement()]
-        } else {
-            curr_stmt = p_statement();
-            if (curr_stmt == nullptr) { // [curr_stmt] = nullptr indicates that this was the last stmt and it js had a `;` too (last stmt `;` is optional)
-                #ifdef DEBUG
-                    std::cout << "curr_stmt returned nullptr!" << std::endl;
-                #endif
-                break;
-            }
-        }
-        // [07/28/2024]: Should be doing something with [curr_stmt] here.
-        #ifdef DEBUG
-            std::cout << "[curr_stmt] returned: " << curr_stmt->toString() << std::endl;
-        #endif
-    }
-    #ifdef DEBUG
-        std::cout << "[Parser::p_statSeq()] returning: " << first->toString() << std::endl;
-    #endif
-    return first; // returning first [SSA_instr] in [p_statSeq()] so we know control flow
-}
+// BasicBlock* Parser::p2_statSeq() {
+//     #ifdef DEBUG
+//         std::cout << "[Parser::p2_statSeq(" << this->sym.to_string() << ")]: found a statement to parse" << std::endl;
+//     #endif
+//     SSA *curr_stmt;
+//     SSA *first = p_statement(); // ends with `;` = end of statement
+//     while (this->CheckFor(Result(2, 4), true)) { // if [optional] next token is ';', then we still have statements
+//         next();
+//         if ((first->isWhile) || 
+//             (curr_stmt != nullptr && curr_stmt->isWhile)) {
+//             #ifdef DEBUG
+//                 std::cout << "in while stmt!" << std::endl;
+//             #endif
+//             SSA *tmp = curr_stmt;
+//             curr_stmt = p_statement();
+//             tmp->set_operand2(curr_stmt); // [08/08/2024]: update [jmp_instr] if previous statement was [while_statement()]
+//         } else {
+//             curr_stmt = p_statement();
+//             if (curr_stmt == nullptr) { // [curr_stmt] = nullptr indicates that this was the last stmt and it js had a `;` too (last stmt `;` is optional)
+//                 #ifdef DEBUG
+//                     std::cout << "curr_stmt returned nullptr!" << std::endl;
+//                 #endif
+//                 break;
+//             }
+//         }
+//         // [07/28/2024]: Should be doing something with [curr_stmt] here.
+//         #ifdef DEBUG
+//             std::cout << "[curr_stmt] returned: " << curr_stmt->toString() << std::endl;
+//         #endif
+//     }
+//     #ifdef DEBUG
+//         std::cout << "[Parser::p_statSeq()] returning: " << first->toString() << std::endl;
+//     #endif
+//     return first; // returning first [SSA_instr] in [p_statSeq()] so we know control flow
+// }
 
 SSA* Parser::p_statement() {
     #ifdef DEBUG
@@ -326,6 +326,7 @@ SSA* Parser::p_funcCall() {
                 #endif
                 res = new SSA(0, in);
                 this->SSA_instrs.push_back(res);
+                this->addSSA(res);
                 #ifdef DEBUG
                     std::cout << "\t[const] val dne in [this->SSA_instrs], created new-SSA instruction: [" << res->toString() << "]" << std::endl;
                 #endif
@@ -448,6 +449,7 @@ SSA* Parser::p_ifStatement() {
 
     SSA *phi_instr = new SSA(6, if1, if2); // gives us location of where to continue [SSA instr's] based on outcome of [p_relation()]
     this->SSA_instrs.push_back(phi_instr);
+    this->addSSA(phi_instr);
     // return phi_instr; // [07/28/2024]: might need this here(?)
 
     // // previously: do something start here
@@ -512,8 +514,9 @@ SSA* Parser::p_return() {
     #endif
     SSA *retVal = p_expr();
 
-    SSA *ret = nullptr;
-    *ret = SSA(16, retVal); // [SSA constructor] should handle checking of [retVal](nullptr)
+    SSA *ret = new SSA(16, retVal); // [SSA constructor] should handle checking of [retVal](nullptr)
+    this->SSA_instrs.push_back(ret);
+    this->addSSA(ret);
     // return ret; // [07/28/2024]: might need this here(?)
 
 
@@ -580,18 +583,18 @@ SSA* Parser::p_relation() {
     
     
     // ToDo: get [instr_num] from [cmp SSA] -> [cmp_instr_num] so that you can pass it below 
-    SSA *cmp_instr = nullptr;
-    cmp_instr = new SSA(5, x, y); // [SymbolTable::operator_table `cmp`: 5]
+    SSA *cmp_instr = new SSA(5, x, y); // [SymbolTable::operator_table `cmp`: 5]
     this->SSA_instrs.push_back(cmp_instr);
+    this->addSSA(cmp_instr);
 
     #ifdef DEBUG
         std::cout << "created cmp_instr: " << cmp_instr->toString() << std::endl;
     #endif
 
     // return cmp_instr; // [07/28/2024]: might need this here(?)
-    SSA *jmp_instr = nullptr;
-    jmp_instr = new SSA(op, cmp_instr, nullptr); // [nullptr bc we don't know where to jump to yet]
+    SSA *jmp_instr = new SSA(op, cmp_instr, nullptr); // [nullptr bc we don't know where to jump to yet]
     this->SSA_instrs.push_back(jmp_instr);
+    this->addSSA(jmp_instr);
 
     #ifdef DEBUG
         std::cout << "returning jmp_instr: " << jmp_instr->toString() << std::endl;
@@ -663,6 +666,7 @@ SSA* Parser::p_factor() {
             #endif
             res = new SSA(0, this->sym.get_value_literal());
             this->SSA_instrs.push_back(res);
+            this->addSSA(res);
             #ifdef DEBUG
                 std::cout << "\t[const] val dne in [this->SSA_instrs], created new-SSA instruction: [" << res->toString() << "]" << std::endl;
             #endif

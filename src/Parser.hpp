@@ -102,7 +102,19 @@ public:
         this->BB_start = nullptr;
         this->BB_parent = this->BB0;
 
+        for (unsigned int i = 1; i < SymbolTable::operator_table.size() - 1; i++) {
+            this->instrList.insert({i, new LinkedList()});
+        }
+
         next();
+    }
+
+    ~Parser() {
+        delete this->BB0;
+        
+        for (unsigned int i = 1; i < this->instrList.size() - 1; i++) {
+            delete this->instrList.at(i);
+        }
     }
 
     // [07/25/2024]: ToDo
@@ -239,9 +251,25 @@ public:
         return ret;
     }
 
+    inline void addSSA(SSA *instr) {
+        LinkedList *SSA_LL = this->instrList.at(instr->get_operator());
+        if (SSA_LL->contains(instr) == false) {
+            SSA_LL->InsertAtTail(instr);
+        }
+    }
+
     std::vector<SSA*> getSSA() const { return this->SSA_instrs; }
 
     std::unordered_map<std::string, SSA*> getVarVal() const { return this->varVals; }
+
+    void printInstrList() const {
+        std::cout << "[instrA]: instrA1, instrA2, instrA3, ..." << std::endl;
+        for (unsigned int i = 1; i < SymbolTable::operator_table.size() - 1; i++) {
+            std::cout << "[" << SymbolTable::operator_table_reversed.at(i) << "]: ";
+            this->instrList.at(i)->printList();
+            std::cout << std::endl;
+        } 
+    }
 
     BasicBlock parse(); // IR BB-representation 
     void parse_generate_SSA(); // generate all SSA Instructions
@@ -258,7 +286,7 @@ private:
     // [09/02/2024]: Does this need to include the `const` SSA's? I don't think it should bc the const instr's only belong to BB0 (special)
     // current instruction list (copied for each BB)
     // [09/05/2024]: key=[SymbolTable::operator_table] values corresponding to specific SSA-instrs
-    std::unordered_map<int, LinkedList> instrList; 
+    std::unordered_map<int, LinkedList*> instrList; 
     
     BasicBlock *curr;
     BasicBlock *BB0; // [09/02/2024]: special BB always generated at the start. Contains const SSA-instrs

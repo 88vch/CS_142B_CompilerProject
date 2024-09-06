@@ -5,9 +5,15 @@ int SSA::curr_instr_num = 1;
 int SSA::curr_const_num = -1;
 
 SSA::~SSA() {
-    if (this->constVal) {
-        delete this->constVal;
+    if (this->op == 0) {
+        curr_const_num++;
+    } else {
+        curr_instr_num--;
     }
+    
+    if (this->constVal) { delete this->constVal; }
+    if (this->x) { delete this->x; }
+    if (this->y) { delete this->y; }
 }
 
 SSA::SSA(int op, int opnd) {
