@@ -20,6 +20,11 @@ public:
         : length(0) , head(nullptr), tail(nullptr)
     {
     }
+
+    // [09/09/2024]: Note - might be good to also create a function that prints the linked list
+    LinkedList(std::vector<SSA*> SSA_instrs) {
+        // [09/09/2024]: iterate through vector and insert each SSA one by one
+    }
     
     ~LinkedList() {
         Node *current = head;
