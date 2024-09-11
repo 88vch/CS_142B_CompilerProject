@@ -79,7 +79,7 @@ int main() {
     #ifdef DEBUG
         std::cout << "[Parser]: Before constructor" << std::endl;
     #endif
-    Parser parser = Parser(results);
+    Parser parser(results);
     #ifdef DEBUG
         std::cout << "[Parser]: After constructor. Before FIRST [parse](SSA Generation)" << std::endl;
     #endif
@@ -97,6 +97,9 @@ int main() {
     bool vv = fr.write_file_contents(varVal_f, varVals, "Var-Val");
     if (st) { std::cout << "Results have successfully been written to: " << varVal_f << "(size=[" << varVals.size() << "])" << std::endl; }
     else { std::cout << "Error occured when trying to write results!" << std::endl; }
+
+    LinkedList ll(SSA_instrs);
+    ll.printList();
 
     // node::computation *root = parser.head();
     // std::vector<TOKEN> tokens = parser.parse(); [should return a parse tree!]

@@ -252,9 +252,24 @@ public:
     }
 
     inline void addSSA(SSA *instr) {
-        LinkedList *SSA_LL = this->instrList.at(instr->get_operator());
-        if (SSA_LL->contains(instr) == false) {
-            SSA_LL->InsertAtTail(instr);
+        #ifdef DEBUG
+            std::cout << "\t[Parser::addSSA(instr=" << instr->toString() << ")]" << std::endl;
+        #endif
+        if (instr->get_operator() == 0) {
+            #ifdef DEBUG
+                std::cout << "\tinstr op == 0 (const)" << std::endl;
+            #endif
+            // [09/11/2024]: what do we do with const vars?
+            // - add to BB0
+            this->BB0->instrs.push_back(instr);
+        } else {
+            #ifdef DEBUG
+                std::cout << "\tinstr op == " << instr->get_operator() << std::endl;
+            #endif
+            LinkedList *SSA_LL = this->instrList.at(instr->get_operator());
+            if (SSA_LL->contains(instr) == false) {
+                SSA_LL->InsertAtTail(instr);
+            }
         }
     }
 
@@ -276,7 +291,7 @@ public:
 private:
     Result sym;
     std::vector<Result> source;
-    std::vector<SSA*> SSA_instrs;
+    std::vector<SSA*> SSA_instrs; // [09/11/2024]: this is pretty much js for our testing/reference purposes now
 
     // [09/02/2024]: Do we need to optimize this? (i.e. <int, int> that is a table lookup probably in [SymbolTable]?)
     // - Note: we probably should

@@ -5,12 +5,12 @@
 
 class Node {
 public:
-    SSA instr;
+    SSA *instr;
     Node *next;
     Node *prev;
 
     // Constructor
-    Node(const SSA& instruction) : instr(instruction), next(nullptr), prev(nullptr) {}
+    Node(SSA *instruction) : instr(instruction), next(nullptr), prev(nullptr) {}
 
 };
     
@@ -20,23 +20,19 @@ public:
         : length(0) , head(nullptr), tail(nullptr)
     {
     }
-
-    // [09/09/2024]: Note - might be good to also create a function that prints the linked list
-    LinkedList(std::vector<SSA*> SSA_instrs) {
-        // [09/09/2024]: iterate through vector and insert each SSA one by one
-    }
     
     ~LinkedList() {
         Node *current = head;
         while (current != nullptr) {
             Node *temp = current;
             current = current->next;
+            delete temp->instr;
             delete temp;
         }
     }
 
     void InsertAtHead(SSA *instruction) {
-        Node* newNode = new Node(*instruction);
+        Node* newNode = new Node(instruction);
 
         // If the list is empty, make the new node as the head
         if (head == nullptr) {
@@ -53,17 +49,23 @@ public:
     }
 
     void InsertAtTail(SSA *instruction) {
-        Node* newNode = new Node(*instruction);
+        #ifdef DEBUG
+            std::cout << "inserting new SSA (" << instruction->toString() << ") at tail" << std::endl;
+        #endif
+        Node* newNode = new Node(instruction);
 
         // If the list is empty, make the new node as the head
         if (head == nullptr) {
+            #ifdef DEBUG
+                std::cout << "list is empty" << std::endl;
+            #endif
             head = newNode;
             tail = newNode;
             return;
         } else {
             // Otherwise, insert the new node after the current tail
             tail->next = newNode;
-            tail->next->prev = tail;
+            newNode->prev = tail;
             tail = newNode;
         }
         length++;
@@ -78,7 +80,7 @@ public:
             //     return true;
             // }
             curr = curr->next;
-            if (curr->instr.compare(instruction)) {
+            if (curr->instr->compare(instruction)) {
                 return true;
             }
         }
@@ -91,9 +93,23 @@ public:
             if (curr != head && curr != tail) {
                 std::cout << ", " << std::endl;
             }
-            curr->instr.toString();
+            curr->instr->toString();
             curr = curr->next;
         }
+    }
+
+    // [09/09/2024]: Note - might be good to also create a function that prints the linked list
+    void addVector(std::vector<SSA*> SSA_instrs) {
+        #ifdef DEBUG
+            std::cout << "LinkedList::addVector()" << std::endl;
+        #endif
+        // [09/09/2024]: iterate through vector and insert each SSA one by one
+        for (SSA *instr : SSA_instrs) {
+            this->InsertAtTail(instr);
+        }
+        #ifdef DEBUG
+            std::cout << "done adding vector<SSA*> into LL" << std::endl;
+        #endif
     }
 
 private:

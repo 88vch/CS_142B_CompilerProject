@@ -42,7 +42,7 @@ public:
     std::unordered_map<int, int> updated_varval_map; // [variable (sym_table val) : value]
     // an ssa instruction: std::vector<int>
     // [#: debugging] [operation] [operand(s)]
-    std::vector<SSA> ssa_instructions; // not really used
+    std::vector<SSA*> instrs;
     std::unordered_map<int, LinkedList> instruction_list; 
 };
 
