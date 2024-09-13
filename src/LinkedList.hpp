@@ -3,6 +3,8 @@
 
 #include "SSA.hpp"
 
+#define DEBUG
+
 class Node {
 public:
     SSA *instr;
@@ -10,8 +12,7 @@ public:
     Node *prev;
 
     // Constructor
-    Node(SSA *instruction) : instr(instruction), next(nullptr), prev(nullptr) {}
-
+    Node() : instr(nullptr), next(nullptr), prev(nullptr) {}
 };
     
 class LinkedList {
@@ -22,17 +23,32 @@ public:
     }
     
     ~LinkedList() {
+        #ifdef DEBUG
+            std::cout << "\tin ~LinkedList()" << std::endl;
+        #endif
+
         Node *current = head;
         while (current != nullptr) {
             Node *temp = current;
             current = current->next;
-            delete temp->instr;
-            delete temp;
+            
+            if (temp) {
+                if (temp->instr) {
+                    delete temp->instr;
+                }
+                delete temp;
+                temp = nullptr;
+            }
         }
+
+        #ifdef DEBUG
+            std::cout << "\tdone ~LinkedList()" << std::endl;
+        #endif
     }
 
     void InsertAtHead(SSA *instruction) {
-        Node* newNode = new Node(instruction);
+        Node* newNode = new Node();
+        newNode->instr = instruction;
 
         // If the list is empty, make the new node as the head
         if (head == nullptr) {
@@ -52,13 +68,11 @@ public:
         #ifdef DEBUG
             std::cout << "inserting new SSA (" << instruction->toString() << ") at tail" << std::endl;
         #endif
-        Node* newNode = new Node(instruction);
+        Node* newNode = new Node();
+        newNode->instr = instruction;
 
         // If the list is empty, make the new node as the head
         if (head == nullptr) {
-            #ifdef DEBUG
-                std::cout << "list is empty" << std::endl;
-            #endif
             head = newNode;
             tail = newNode;
             return;
@@ -69,6 +83,9 @@ public:
             tail = newNode;
         }
         length++;
+        #ifdef DEBUG
+            std::cout << "\tLength is now: " << length << std::endl;
+        #endif
     }
 
     bool contains(SSA *instruction) const {
@@ -89,13 +106,21 @@ public:
 
     void printList() const {
         Node *curr = this->head;
+        #ifdef DEBUG
+            std::cout << "in LinkedList::printList()" << std::endl;
+        #endif
+
         while (curr) {
-            if (curr != head && curr != tail) {
+            std::cout << curr->instr->toString();
+            if (curr != tail) {
                 std::cout << ", " << std::endl;
             }
-            curr->instr->toString();
             curr = curr->next;
         }
+        std::cout << std::endl;
+        #ifdef DEBUG
+            std::cout << "Printed LinkedList" << std::endl;
+        #endif
     }
 
     // [09/09/2024]: Note - might be good to also create a function that prints the linked list

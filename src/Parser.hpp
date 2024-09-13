@@ -113,6 +113,9 @@ public:
         delete this->BB0;
         
         for (unsigned int i = 1; i < this->instrList.size() - 1; i++) {
+            #ifdef DEBUG
+                std::cout << "deleting linked list [" << SymbolTable::operator_table_reversed.at(i) << "];" << std::endl;
+            #endif
             delete this->instrList.at(i);
         }
     }
