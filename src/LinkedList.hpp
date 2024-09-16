@@ -34,7 +34,11 @@ public:
             
             if (temp) {
                 if (temp->instr) {
+                    #ifdef DEBUG
+                        std::cout << "temp instr exists: " << temp->instr->toString() << std::endl;
+                    #endif
                     delete temp->instr;
+                    temp->instr = nullptr;
                 }
                 delete temp;
                 temp = nullptr;

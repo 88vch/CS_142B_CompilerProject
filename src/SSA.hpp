@@ -49,9 +49,7 @@ public:
         return this->op;
     }
     int* get_constVal() const {
-        if (this->constVal) {
-            return this->constVal;
-        } else { return nullptr; }
+        return this->constVal;
     }
     SSA* get_operand1() const {
         return (this->x) ? this->x : nullptr;

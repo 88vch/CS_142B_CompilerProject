@@ -12,8 +12,9 @@ SSA::~SSA() {
     }
     
     if (this->constVal) { delete this->constVal; }
-    if (this->x) { delete this->x; }
-    if (this->y) { delete this->y; }
+    // delete sub-ssa's if they're not [const]
+    if (this->x && (this->x->get_constVal() == nullptr)) { delete this->x; }
+    if (this->y && (this->y->get_constVal() == nullptr)) { delete this->y; }
 }
 
 SSA::SSA(int op, int opnd) {
