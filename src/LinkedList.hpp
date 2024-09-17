@@ -13,6 +13,15 @@ public:
 
     // Constructor
     Node() : instr(nullptr), next(nullptr), prev(nullptr) {}
+
+    ~Node() { 
+        if (this->instr) {
+            delete this->instr; 
+            this->instr = nullptr; 
+        }
+        // this->instr = nullptr;
+        this->next = nullptr; this->prev = nullptr; 
+    }
 };
     
 class LinkedList {
@@ -28,23 +37,19 @@ public:
         #endif
 
         Node *current = head;
-        while (current != nullptr) {
+        while (current) {
             Node *temp = current;
             current = current->next;
             
-            if (temp) {
-                if (temp->instr) {
-                    #ifdef DEBUG
-                        std::cout << "temp instr exists: " << temp->instr->toString() << std::endl;
-                    #endif
-                    delete temp->instr;
-                    temp->instr = nullptr;
-                }
-                delete temp;
-                temp = nullptr;
-            }
+            delete temp;
+            temp = nullptr;
         }
 
+        // if (head) { delete head; }
+        head = nullptr;
+        // if (tail) { delete tail; }
+        tail = nullptr;
+        
         #ifdef DEBUG
             std::cout << "\tdone ~LinkedList()" << std::endl;
         #endif
@@ -110,9 +115,9 @@ public:
 
     void printList() const {
         Node *curr = this->head;
-        #ifdef DEBUG
-            std::cout << "in LinkedList::printList()" << std::endl;
-        #endif
+        // #ifdef DEBUG
+        //     std::cout << "LinkedList::printList()" << std::endl;
+        // #endif
 
         while (curr) {
             std::cout << curr->instr->toString();
@@ -122,9 +127,9 @@ public:
             curr = curr->next;
         }
         std::cout << std::endl;
-        #ifdef DEBUG
-            std::cout << "Printed LinkedList" << std::endl;
-        #endif
+        // #ifdef DEBUG
+        //     std::cout << "Printed LinkedList" << std::endl;
+        // #endif
     }
 
     // [09/09/2024]: Note - might be good to also create a function that prints the linked list

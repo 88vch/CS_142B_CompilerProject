@@ -98,13 +98,25 @@ int main() {
     if (st) { std::cout << "Results have successfully been written to: " << varVal_f << "(size=[" << varVals.size() << "])" << std::endl; }
     else { std::cout << "Error occured when trying to write results!" << std::endl; }
 
-    LinkedList *ll = new LinkedList();
-    ll->addVector(SSA_instrs);
-    ll->printList();
+    // LinkedList *ll = new LinkedList();
+    // ll->addVector(SSA_instrs);
+    // ll->printList();
+
+    parser.printInstrList();
 
     #ifdef DEBUG
-        std::cout << "done printing List" << std::endl;
+        std::cout << "done printing LinkedList" << std::endl;
     #endif
+
+    // delete ll;
+    // ll = nullptr;
+
+
+
+
+
+
+
 
     // node::computation *root = parser.head();
     // std::vector<TOKEN> tokens = parser.parse(); [should return a parse tree!]

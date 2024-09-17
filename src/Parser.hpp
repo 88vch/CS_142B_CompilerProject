@@ -117,7 +117,11 @@ public:
                 std::cout << "deleting linked list [" << SymbolTable::operator_table_reversed.at(i) << "];" << std::endl;
             #endif
             delete this->instrList.at(i);
+            this->instrList.insert(std::pair<int, LinkedList*>(i, nullptr));
         }
+        #ifdef DEBUG
+            std::cout << "Done ~Parser()!!!" << std::endl;
+        #endif
     }
 
     // [07/25/2024]: ToDo
@@ -281,11 +285,10 @@ public:
     std::unordered_map<std::string, SSA*> getVarVal() const { return this->varVals; }
 
     void printInstrList() const {
-        std::cout << "[instrA]: instrA1, instrA2, instrA3, ..." << std::endl;
+        std::cout << "[instrA]:\n\tinstrA1, instrA2, instrA3, ..." << std::endl;
         for (unsigned int i = 1; i < SymbolTable::operator_table.size() - 1; i++) {
-            std::cout << "[" << SymbolTable::operator_table_reversed.at(i) << "]: ";
+            std::cout << "[" << SymbolTable::operator_table_reversed.at(i) << "]: " << std::endl << "\t";
             this->instrList.at(i)->printList();
-            std::cout << std::endl;
         } 
     }
 

@@ -5,6 +5,10 @@ int SSA::curr_instr_num = 1;
 int SSA::curr_const_num = -1;
 
 SSA::~SSA() {
+    #ifdef DEBUG
+        std::cout << "SSA to-delete: " << this->toString() << std::endl;
+    #endif
+
     if (this->op == 0) {
         curr_const_num++;
     } else {
@@ -12,9 +16,10 @@ SSA::~SSA() {
     }
     
     if (this->constVal) { delete this->constVal; }
-    // delete sub-ssa's if they're not [const]
-    if (this->x && (this->x->get_constVal() == nullptr)) { delete this->x; }
-    if (this->y && (this->y->get_constVal() == nullptr)) { delete this->y; }
+    // [09/17/2024]: Maybe we don't need to do this and just delete individually
+    // [Old Version]: delete sub-ssa's if they're not [const]
+    // if (this->x && (this->x->get_constVal() == nullptr)) { delete this->x; }
+    // if (this->y && (this->y->get_constVal() == nullptr)) { delete this->y; }
 }
 
 SSA::SSA(int op, int opnd) {

@@ -6,7 +6,7 @@
 #include "SymbolTable.hpp"
 
 #undef DEBUG_I2R
-#define DEBUG
+#undef DEBUG
 
 class Result {
 public:
