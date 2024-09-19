@@ -110,12 +110,15 @@ public:
     }
 
     ~Parser() {
+        #ifdef DEBUG
+            std::cout << "Start ~Parser()" << std::endl;
+        #endif
         delete this->BB0;
         
         for (unsigned int i = 1; i < this->instrList.size() - 1; i++) {
-            #ifdef DEBUG
-                std::cout << "deleting linked list [" << SymbolTable::operator_table_reversed.at(i) << "];" << std::endl;
-            #endif
+            // #ifdef DEBUG
+            //     std::cout << "deleting linked list [" << SymbolTable::operator_table_reversed.at(i) << "];" << std::endl;
+            // #endif
             delete this->instrList.at(i);
             this->instrList.insert(std::pair<int, LinkedList*>(i, nullptr));
         }
@@ -158,21 +161,48 @@ public:
         #endif
         SSA *ret = nullptr;
         
-        for (SSA* instr : this->SSA_instrs) {
+        if (this->instrList.find(0) == this->instrList.end()) {
+            return nullptr;
+        }
+
+        // [09/19/2024]: Replaced Below (previous=this->SSA_instrs; current=this->instrList)
+        Node *curr = this->instrList.at(0)->head;
+        while (curr) {
             #ifdef DEBUG
-                std::cout << "\t\tcomparing instr=[" << instr->toString() << "]" << std::endl;
+                std::cout << "\t\tcomparing instr=[" << curr->instr->toString() << "]" << std::endl;
             #endif
-            if (instr->compare(op, x, y)) {
+            if (curr->instr->compare(op, x, y)) {
                 #ifdef DEBUG
                     std::cout << "\t\tgot true!!!" << std::endl;
                 #endif
-                ret = instr;
+                ret = curr->instr;
                 break;
+            } else {
+                #ifdef DEBUG
+                    std::cout << "\t\tgot false" << std::endl;
+                #endif
             }
-            #ifdef DEBUG
-                std::cout << "\t\tgot false" << std::endl;
-            #endif
+            curr = curr->next;
         }
+        
+        // for (SSA* instr : this->SSA_instrs) {
+        //     #ifdef DEBUG
+        //         std::cout << "\t\tcomparing instr=[" << instr->toString() << "]" << std::endl;
+        //     #endif
+        //     if (instr->compare(op, x, y)) {
+        //         #ifdef DEBUG
+        //             std::cout << "\t\tgot true!!!" << std::endl;
+        //         #endif
+        //         ret = instr;
+        //         break;
+        //     } else {
+        //         #ifdef DEBUG
+        //             std::cout << "\t\tgot false" << std::endl;
+        //         #endif
+        //     }
+        // }
+
+
         #ifdef DEBUG
             if (ret != nullptr) {
                 std::cout << "\t\treturning: [" << ret->toString() << "]" << std::endl;
@@ -195,25 +225,42 @@ public:
         } else {
             comparisonVal = val;
         }
-
-
         SSA *ret = nullptr;
-        for (SSA* instr : this->SSA_instrs) {
+
+        if (this->instrList.find(0) == this->instrList.end()) {
+            return nullptr;
+        }
+
+        // [09/19/2024]: Replaced Below (previous=this->SSA_instrs; current=this->instrList)
+        Node *curr = this->instrList.at(0)->head;
+        while (curr) {
             #ifdef DEBUG
-                std::cout << "\tthis instr: [" << instr->toString() << "]" << std::endl;
+                std::cout << "\tthis instr: [" << curr->instr->toString() << "]" << std::endl;
             #endif
-            if (instr->compareConst(comparisonVal)) {
-                ret = instr;
+            if (curr->instr->compareConst(comparisonVal)) {
+                ret = curr->instr;
                 break;
             }
+            curr = curr->next;
         }
+
+        // for (SSA* instr : this->SSA_instrs) {
+        //     #ifdef DEBUG
+        //         std::cout << "\tthis instr: [" << instr->toString() << "]" << std::endl;
+        //     #endif
+        //     if (instr->compareConst(comparisonVal)) {
+        //         ret = instr;
+        //         break;
+        //     }
+        // }
+
         return ret;
     }
 
     // [07/25/2024]: ToDo
     inline SSA* BuildIR(int op, SSA *x, SSA *y) {
         #ifdef DEBUG
-            std::cout << "\t[Parser::BuildIR(op=" << op << ", this->sym=" << this->sym.to_string() << ")]: SSA x = " << x->toString() << ", SSA y = " << y->toString() << std::endl;
+            std::cout << "\t[Parser::BuildIR(op=" << op << ", this->sym=" << SymbolTable::symbol_table.at(op) << ")]: SSA x = " << x->toString() << ", SSA y = " << y->toString() << std::endl;
         #endif
         SSA *ret = CheckExistence(op, x, y); // [08/12/2024]: Note we might have to include the `op` here to check diff types (i.e. `+` vs `*`)
         // if we don't get [nullptr] from CheckExistence(), that implies there was a previous SSA of the exact same type; so rather than creating a dupe, we can simply use the previously existing one (Copy Propagation)
@@ -290,6 +337,26 @@ public:
             std::cout << "[" << SymbolTable::operator_table_reversed.at(i) << "]: " << std::endl << "\t";
             this->instrList.at(i)->printList();
         } 
+    }
+
+    std::string instrListToString() const {
+        std::string lst = "[instrA]:\n\tinstrA1, instrA2, instrA3, ...\n";
+        for (unsigned int i = 1; i < SymbolTable::operator_table.size() - 1; i++) {
+            lst += "[" + SymbolTable::operator_table_reversed.at(i) + "]: \n\t" + this->instrList.at(i)->listToString();
+        }
+        return lst;
+    }
+
+    int getInstrListSize() const {
+        int size = 0;
+
+        for (const auto &pair : this->instrList) {
+            // #ifdef DEBUG
+            //     std::cout << "got op [" << pair.first << "] == " << SymbolTable::operator_table_reversed.at(pair.first) << "; with size=" << pair.second->length << std::endl;
+            // #endif
+            size += pair.second->length;
+        }
+        return size;
     }
 
     BasicBlock parse(); // IR BB-representation 

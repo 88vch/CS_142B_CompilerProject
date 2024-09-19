@@ -26,6 +26,7 @@ int main() {
     std::string results_f = "res/Results_results.txt";
     std::string parser1_f = "res/Parser1_results.txt";
     std::string varVal_f = "res/VarVal_results.txt";
+    std::string linkedList_f = "res/LinkedList_results.txt";
 
 
     const std::string out_f = "res/Lexer_results.txt";
@@ -97,19 +98,10 @@ int main() {
     bool vv = fr.write_file_contents(varVal_f, varVals, "Var-Val");
     if (st) { std::cout << "Results have successfully been written to: " << varVal_f << "(size=[" << varVals.size() << "])" << std::endl; }
     else { std::cout << "Error occured when trying to write results!" << std::endl; }
-
-    // LinkedList *ll = new LinkedList();
-    // ll->addVector(SSA_instrs);
-    // ll->printList();
-
-    parser.printInstrList();
-
-    #ifdef DEBUG
-        std::cout << "done printing LinkedList" << std::endl;
-    #endif
-
-    // delete ll;
-    // ll = nullptr;
+    
+    bool ll = fr.write_file_contents(linkedList_f, parser.instrListToString(), "LinkedList");
+    if (ll) { std::cout << "Results have successfully been written to: " << linkedList_f << "(size=[" << parser.getInstrListSize() << "])" << std::endl; }
+    else { std::cout << "Error occured when trying to write results!" << std::endl; }
 
 
 

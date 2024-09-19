@@ -26,15 +26,18 @@ public:
     
 class LinkedList {
 public:
+    int length;
+    Node *head, *tail;
+    
     LinkedList() 
         : length(0) , head(nullptr), tail(nullptr)
     {
     }
     
     ~LinkedList() {
-        #ifdef DEBUG
-            std::cout << "\tin ~LinkedList()" << std::endl;
-        #endif
+        // #ifdef DEBUG
+        //     std::cout << "\tin ~LinkedList()" << std::endl;
+        // #endif
 
         Node *current = head;
         while (current) {
@@ -50,9 +53,9 @@ public:
         // if (tail) { delete tail; }
         tail = nullptr;
         
-        #ifdef DEBUG
-            std::cout << "\tdone ~LinkedList()" << std::endl;
-        #endif
+        // #ifdef DEBUG
+        //     std::cout << "\tdone ~LinkedList()" << std::endl;
+        // #endif
     }
 
     void InsertAtHead(SSA *instruction) {
@@ -63,7 +66,6 @@ public:
         if (head == nullptr) {
             head = newNode;
             tail = newNode;
-            return;
         } else {
             // Otherwise, insert the new node after the current head
             head->prev = newNode;
@@ -84,7 +86,6 @@ public:
         if (head == nullptr) {
             head = newNode;
             tail = newNode;
-            return;
         } else {
             // Otherwise, insert the new node after the current tail
             tail->next = newNode;
@@ -92,9 +93,6 @@ public:
             tail = newNode;
         }
         length++;
-        #ifdef DEBUG
-            std::cout << "\tLength is now: " << length << std::endl;
-        #endif
     }
 
     bool contains(SSA *instruction) const {
@@ -122,7 +120,7 @@ public:
         while (curr) {
             std::cout << curr->instr->toString();
             if (curr != tail) {
-                std::cout << ", " << std::endl;
+                std::cout << ", " << std::endl << "\t";
             }
             curr = curr->next;
         }
@@ -130,6 +128,21 @@ public:
         // #ifdef DEBUG
         //     std::cout << "Printed LinkedList" << std::endl;
         // #endif
+    }
+
+    std::string listToString() const {
+        std::string lst = "";
+        Node *curr = this->head;
+
+        while (curr) {
+            lst += curr->instr->toString();
+            if (curr != tail) {
+                lst += ", \n\t";
+            }
+            curr = curr->next;
+        }
+        lst += "\n";
+        return lst;
     }
 
     // [09/09/2024]: Note - might be good to also create a function that prints the linked list
@@ -145,10 +158,6 @@ public:
             std::cout << "done adding vector<SSA*> into LL" << std::endl;
         #endif
     }
-
-private:
-    int length;
-    Node *head, *tail;
 };
 
 #endif

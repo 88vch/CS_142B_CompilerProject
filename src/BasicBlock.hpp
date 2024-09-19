@@ -32,6 +32,16 @@ public:
         this->child2 = nullptr;
     }
 
+    ~BasicBlock() {
+        #ifdef DEBUG
+            std::cout << "in ~BasicBlock(this->instrList.size=" << this->instruction_list.size() << ")" << std::endl;
+        #endif
+
+        for (SSA* instr : this->instrs) {
+            delete instr;
+        }
+    }
+
     void setInstructionList(const std::unordered_map<int, LinkedList> &curr_instr_lst) {
         // [09/02/2024]: VALIDATE that this makes a shallow copy (we only care abt the values, since we're going to continue to modify this [curr_instr_list])
         this->instruction_list = curr_instr_lst;

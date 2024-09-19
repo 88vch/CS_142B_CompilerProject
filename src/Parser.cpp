@@ -26,7 +26,7 @@ void Parser::parse_generate_SSA() {
     #endif
     this->SSA_start = this->p_start();
     #ifdef DEBUG
-        std::cout << "Done InITIALLY Parsing, got [" << this->SSA_instrs.size() << "] SSA Instructions" << std::endl;
+        std::cout << "Done InITIALLY Parsing, got [" << this->getInstrListSize() << "] SSA Instructions" << std::endl;
     #endif
 }
 
@@ -207,10 +207,14 @@ SSA* Parser::p_statement() {
         } else {
             std::cout << "stmt != nullptr; stmt = " << stmt->toString() << std::endl;
         }
-        std::cout << "\tSSA_instr's currently looks like [size=" << this->SSA_instrs.size() << "];" << std::endl;
-        for (const SSA* s : this->SSA_instrs) {
-            std::cout << "\t\t" << s->toString() << std::endl;
-        }
+
+        std::cout << "\tSSA_instr's currently looks like [size=" << this->getInstrListSize() << "];" << std::endl;
+        this->printInstrList();
+
+        // std::cout << "\tSSA_instr's currently looks like [size=" << this->SSA_instrs.size() << "];" << std::endl;
+        // for (const SSA* s : this->SSA_instrs) {
+        //     std::cout << "\t\t" << s->toString() << std::endl;
+        // }
     #endif
     return stmt; // [07/28/2024]: Why do we return an [SSA*] here?
 }
@@ -325,14 +329,14 @@ SSA* Parser::p_funcCall() {
                     std::cout << "\t[Parser::funcCall()] created new [tmp] SSA const instr" << std::endl;
                 #endif
                 res = new SSA(0, in);
-                this->SSA_instrs.push_back(res);
+                // this->SSA_instrs.push_back(res);
                 this->addSSA(res);
                 #ifdef DEBUG
-                    std::cout << "\t[const] val dne in [this->SSA_instrs], created new-SSA instruction: [" << res->toString() << "]" << std::endl;
+                    std::cout << "\t[const] val dne in [this->instrList], created new-SSA instruction: [" << res->toString() << "]" << std::endl;
                 #endif
             } else {
                 #ifdef DEBUG
-                    std::cout << "\t[const] val exists in [this->SSA_instrs], looks like: " << res->toString() << std::endl;
+                    std::cout << "\t[const] val exists in [this->instrList], looks like: " << res->toString() << std::endl;
                 #endif
             }
             // [08/05/2024]: we can consume the [const-val]?
@@ -448,7 +452,7 @@ SSA* Parser::p_ifStatement() {
     // [Special Instruction]: phi() goes here
 
     SSA *phi_instr = new SSA(6, if1, if2); // gives us location of where to continue [SSA instr's] based on outcome of [p_relation()]
-    this->SSA_instrs.push_back(phi_instr);
+    // this->SSA_instrs.push_back(phi_instr);
     this->addSSA(phi_instr);
     // return phi_instr; // [07/28/2024]: might need this here(?)
 
@@ -515,7 +519,7 @@ SSA* Parser::p_return() {
     SSA *retVal = p_expr();
 
     SSA *ret = new SSA(16, retVal); // [SSA constructor] should handle checking of [retVal](nullptr)
-    this->SSA_instrs.push_back(ret);
+    // this->SSA_instrs.push_back(ret);
     this->addSSA(ret);
     // return ret; // [07/28/2024]: might need this here(?)
 
@@ -584,7 +588,7 @@ SSA* Parser::p_relation() {
     
     // ToDo: get [instr_num] from [cmp SSA] -> [cmp_instr_num] so that you can pass it below 
     SSA *cmp_instr = new SSA(5, x, y); // [SymbolTable::operator_table `cmp`: 5]
-    this->SSA_instrs.push_back(cmp_instr);
+    // this->SSA_instrs.push_back(cmp_instr);
     this->addSSA(cmp_instr);
 
     #ifdef DEBUG
@@ -593,7 +597,7 @@ SSA* Parser::p_relation() {
 
     // return cmp_instr; // [07/28/2024]: might need this here(?)
     SSA *jmp_instr = new SSA(op, cmp_instr, nullptr); // [nullptr bc we don't know where to jump to yet]
-    this->SSA_instrs.push_back(jmp_instr);
+    // this->SSA_instrs.push_back(jmp_instr);
     this->addSSA(jmp_instr);
 
     #ifdef DEBUG
@@ -652,7 +656,7 @@ SSA* Parser::p_factor() {
     SSA *res = nullptr;
     if (this->sym.get_kind_literal() == 0) { // check [const]
         #ifdef DEBUG
-            std::cout << "\tgot [const], checking existence in [this->SSA_instrs]" << std::endl;
+            std::cout << "\tgot [const], checking existence in [this->instrList]" << std::endl;
         #endif
         // [07/26/2024]: return the SSA for the const value
         // 1) check if value already exists as a const SSA
@@ -665,10 +669,10 @@ SSA* Parser::p_factor() {
                 std::cout << "\t[Parser::p_factor()] created new [tmp] SSA const instr" << std::endl;
             #endif
             res = new SSA(0, this->sym.get_value_literal());
-            this->SSA_instrs.push_back(res);
+            // this->SSA_instrs.push_back(res);
             this->addSSA(res);
             #ifdef DEBUG
-                std::cout << "\t[const] val dne in [this->SSA_instrs], created new-SSA instruction: [" << res->toString() << "]" << std::endl;
+                std::cout << "\t[const] val dne in [this->instrList], created new-SSA instruction: [" << res->toString() << "]" << std::endl;
             #endif
         }
         next(); // [08/05/2024]: we can consume the [const-val]?
