@@ -9,7 +9,6 @@
 // format: [#instruction_no: debugging] [operation::operator_table] [operand(s)]
 class SSA {
 public:
-    bool isWhile;
     
     SSA(int op, int opnd); // [07/26/2024]: const
     SSA(int op, SSA *retVal); // [07/28/2024]: (New) Pointer to result returned from [return: 16] statement
@@ -129,6 +128,15 @@ public:
             res += x_val + ", \t\t" + y_val;
         }
         return res;
+    }
+
+    void set_operand1(SSA *s) {
+        if (this->x == nullptr) {
+            this->x = s;
+        } else {
+            std::cout << "Error: SSA setting [operand1] expected [operand1] to be [nullptr]!, got: [" << this->x->toString() << "]! exiting prematurely..." << std::endl;
+            exit(EXIT_FAILURE);
+        }
     }
 
     void set_operand2(SSA *s) {

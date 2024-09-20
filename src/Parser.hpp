@@ -98,13 +98,16 @@ public:
         this->varVals = {};
         
         this->curr = nullptr;
-        this->BB0 = new BasicBlock();
+        this->BB0 = new BasicBlock(true);
         this->BB_start = nullptr;
         this->BB_parent = this->BB0;
 
         for (unsigned int i = 1; i < SymbolTable::operator_table.size() - 1; i++) {
             this->instrList.insert({i, new LinkedList()});
         }
+
+        this->prevJump = false;
+        this->prevInstr = nullptr;
 
         next();
     }
@@ -202,7 +205,6 @@ public:
         //     }
         // }
 
-
         #ifdef DEBUG
             if (ret != nullptr) {
                 std::cout << "\t\treturning: [" << ret->toString() << "]" << std::endl;
@@ -213,8 +215,12 @@ public:
         return ret;
     }
 
+    // [09/20/2024]: Const is not found in instrList, rather in BB0
     // [08/22/2024]: might need to revise (like CheckExistence()) to include op and curr sym's values
     inline SSA* CheckConstExistence(int val = -1) const {
+        #ifdef DEBUG
+            std::cout << "in Parser::CheckConstExistence()" << std::endl;
+        #endif
         int comparisonVal;
         if (val == -1) {
             comparisonVal = this->sym.get_value_literal();
@@ -227,12 +233,13 @@ public:
         }
         SSA *ret = nullptr;
 
-        if (this->instrList.find(0) == this->instrList.end()) {
+        if (this->BB0->constList->head == nullptr) {
             return nullptr;
         }
 
+        // [09/20/2024]: Replaced from using [this->instrList] to [this->BB0->constList]
         // [09/19/2024]: Replaced Below (previous=this->SSA_instrs; current=this->instrList)
-        Node *curr = this->instrList.at(0)->head;
+        Node *curr = this->BB0->constList->head;
         while (curr) {
             #ifdef DEBUG
                 std::cout << "\tthis instr: [" << curr->instr->toString() << "]" << std::endl;
@@ -313,9 +320,11 @@ public:
             #ifdef DEBUG
                 std::cout << "\tinstr op == 0 (const)" << std::endl;
             #endif
+            // [09/20/2024]: new constList specifically for [this->BB0]
+            this->BB0->constList->InsertAtTail(instr);
             // [09/11/2024]: what do we do with const vars?
             // - add to BB0
-            this->BB0->instrs.push_back(instr);
+            // this->BB0->instrs.push_back(instr);
         } else {
             #ifdef DEBUG
                 std::cout << "\tinstr op == " << instr->get_operator() << std::endl;
@@ -324,6 +333,10 @@ public:
             if (SSA_LL->contains(instr) == false) {
                 SSA_LL->InsertAtTail(instr);
             }
+        }
+
+        if (this->prevJump) {
+            this->prevInstr->set_operand2(instr);
         }
     }
 
@@ -380,6 +393,9 @@ private:
     BasicBlock *BB0; // [09/02/2024]: special BB always generated at the start. Contains const SSA-instrs
     BasicBlock *BB_start; // first result obj generated from this file
     BasicBlock *BB_parent; // most recent BasicBlock (or 2nd most [if/while])
+
+    bool prevJump;
+    SSA *prevInstr;
 
     SSA *SSA_start;
     SSA *SSA_parent; // copied from above's [BasicBlock]

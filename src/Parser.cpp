@@ -114,24 +114,36 @@ SSA* Parser::p_statSeq() {
     SSA *first = p_statement(); // ends with `;` = end of statement
     while (this->CheckFor(Result(2, 4), true)) { // if [optional] next token is ';', then we still have statements
         next();
-        if ((first->isWhile) || 
-            (curr_stmt != nullptr && curr_stmt->isWhile)) {
+        
+        // [09/20/2024]: Thsi should be all we need eh? slightly changed up the way we handle [jmp instr's]
+        curr_stmt = p_statement();
+        if (curr_stmt == nullptr) { // [curr_stmt] = nullptr indicates that this was the last stmt and it js had a `;` too (last stmt `;` is optional)
             #ifdef DEBUG
-                std::cout << "in while stmt!" << std::endl;
+                std::cout << "curr_stmt returned nullptr!" << std::endl;
             #endif
-            SSA *tmp = curr_stmt;
-            curr_stmt = p_statement();
-            tmp->set_operand2(curr_stmt); // [08/08/2024]: update [jmp_instr] if previous statement was [while_statement()]
-        } else {
-            curr_stmt = p_statement();
-            if (curr_stmt == nullptr) { // [curr_stmt] = nullptr indicates that this was the last stmt and it js had a `;` too (last stmt `;` is optional)
-                #ifdef DEBUG
-                    std::cout << "curr_stmt returned nullptr!" << std::endl;
-                #endif
-                break;
-            }
+            break;
         }
-        // [07/28/2024]: Should be doing something with [curr_stmt] here.
+        
+        // if ((first->isWhile) || 
+        //     (curr_stmt != nullptr && curr_stmt->isWhile)) {
+        //     #ifdef DEBUG
+        //         std::cout << "in while stmt!" << std::endl;
+        //     #endif
+        //     SSA *tmp = curr_stmt;
+        //     curr_stmt = p_statement();
+        //     tmp->set_operand2(curr_stmt); // [08/08/2024]: update [jmp_instr] if previous statement was [while_statement()]
+        // } else {
+        //     curr_stmt = p_statement();
+        //     if (curr_stmt == nullptr) { // [curr_stmt] = nullptr indicates that this was the last stmt and it js had a `;` too (last stmt `;` is optional)
+        //         #ifdef DEBUG
+        //             std::cout << "curr_stmt returned nullptr!" << std::endl;
+        //         #endif
+        //         break;
+        //     }
+        // }
+        
+        
+        // [07/28/2024]: Should be doing something with [curr_stmt] here(?)
         #ifdef DEBUG
             std::cout << "[curr_stmt] returned: " << curr_stmt->toString() << std::endl;
         #endif
@@ -151,23 +163,33 @@ SSA* Parser::p_statSeq() {
 //     SSA *first = p_statement(); // ends with `;` = end of statement
 //     while (this->CheckFor(Result(2, 4), true)) { // if [optional] next token is ';', then we still have statements
 //         next();
-//         if ((first->isWhile) || 
-//             (curr_stmt != nullptr && curr_stmt->isWhile)) {
-//             #ifdef DEBUG
-//                 std::cout << "in while stmt!" << std::endl;
-//             #endif
-//             SSA *tmp = curr_stmt;
-//             curr_stmt = p_statement();
-//             tmp->set_operand2(curr_stmt); // [08/08/2024]: update [jmp_instr] if previous statement was [while_statement()]
-//         } else {
-//             curr_stmt = p_statement();
-//             if (curr_stmt == nullptr) { // [curr_stmt] = nullptr indicates that this was the last stmt and it js had a `;` too (last stmt `;` is optional)
-//                 #ifdef DEBUG
-//                     std::cout << "curr_stmt returned nullptr!" << std::endl;
-//                 #endif
-//                 break;
-//             }
-//         }
+
+        // curr_stmt = p_statement();
+        // if (curr_stmt == nullptr) { // [curr_stmt] = nullptr indicates that this was the last stmt and it js had a `;` too (last stmt `;` is optional)
+        //     #ifdef DEBUG
+        //         std::cout << "curr_stmt returned nullptr!" << std::endl;
+        //     #endif
+        //     break;
+        // }
+
+// //         if ((first->isWhile) || 
+// //             (curr_stmt != nullptr && curr_stmt->isWhile)) {
+// //             #ifdef DEBUG
+// //                 std::cout << "in while stmt!" << std::endl;
+// //             #endif
+// //             SSA *tmp = curr_stmt;
+// //             curr_stmt = p_statement();
+// //             tmp->set_operand2(curr_stmt); // [08/08/2024]: update [jmp_instr] if previous statement was [while_statement()]
+// //         } else {
+// //             curr_stmt = p_statement();
+// //             if (curr_stmt == nullptr) { // [curr_stmt] = nullptr indicates that this was the last stmt and it js had a `;` too (last stmt `;` is optional)
+// //                 #ifdef DEBUG
+// //                     std::cout << "curr_stmt returned nullptr!" << std::endl;
+// //                 #endif
+// //                 break;
+// //             }
+// //         }
+
 //         // [07/28/2024]: Should be doing something with [curr_stmt] here.
 //         #ifdef DEBUG
 //             std::cout << "[curr_stmt] returned: " << curr_stmt->toString() << std::endl;
@@ -208,8 +230,8 @@ SSA* Parser::p_statement() {
             std::cout << "stmt != nullptr; stmt = " << stmt->toString() << std::endl;
         }
 
-        std::cout << "\tSSA_instr's currently looks like [size=" << this->getInstrListSize() << "];" << std::endl;
-        this->printInstrList();
+        // std::cout << "\tSSA_instr's currently looks like [size=" << this->getInstrListSize() << "];" << std::endl;
+        // this->printInstrList();
 
         // std::cout << "\tSSA_instr's currently looks like [size=" << this->SSA_instrs.size() << "];" << std::endl;
         // for (const SSA* s : this->SSA_instrs) {
@@ -247,8 +269,26 @@ SSA* Parser::p_assignment() {
     // - [ident] should correspond to [SymbolTable::symbol_table] key with the value being the [value]; stoi(value)
     // - Should not need to return any SSA value for this; will probably need more complexity when BB's are introduced
     // [07/28/2024]: Add [ident : value] mapping into [symbol_table], that's it.
+    #ifdef DEBUG
+        std::cout << "in [Parser::p_assignment]: key=" << SymbolTable::symbol_table.at(ident) << ", current varVal value=";
+        if (this->varVals.find(SymbolTable::symbol_table.at(ident)) != this->varVals.end()) {
+            std::cout << this->varVals.at(SymbolTable::symbol_table.at(ident))->toString() << std::endl;
+        } else {
+            std::cout << "none!" << std::endl;
+        }
+    #endif
     this->varVals.insert_or_assign(SymbolTable::symbol_table.at(ident), value);
     this->printVVs();
+
+    if (value->get_constVal()) {
+        if (this->CheckConstExistence(*(value->get_constVal())) == nullptr) {
+            this->addSSA(value);
+        }
+    } else {
+        if (this->CheckExistence(value->get_operator(), value->get_operand1(), value->get_operand2()) == nullptr) {
+            this->addSSA(value);
+        }
+    }
 
     // [08/07/2024]: Revised; wtf was i trying to say down there???
     #ifdef DEBUG
@@ -260,6 +300,7 @@ SSA* Parser::p_assignment() {
         std::cout << "[Parser::p_assignment()]: returning " << value->toString() << std::endl;
     #endif
     return value;
+
     // [07/28/2024]: this will always be a new [SSA instr] bc it contains a path not simply a value (i.e. if the path has multiple ways to get there [think if/while-statements], the value will change depending on which route the path takes)
     // SSA *constVal = nullptr;
     // SSA tmp = SSA(0, value);
@@ -424,8 +465,11 @@ SSA* Parser::p_ifStatement() {
 
     // [Optional] ELSE
     // BasicBlock *ifStat_else = nullptr; // should use some similar logic to check for existence of [else block]
-    SSA *if2 = nullptr;
+    SSA *if2 = nullptr, *jmp1 = nullptr;
     if (this->CheckFor(Result(2, 20), true)) { // check `else`
+        // [09/20/2024]: if `else` exists, we need a jump at the end of `if` right?
+        jmp1 = new SSA(8, nullptr);
+    
         next();
 
         // // previously: do something start here
@@ -442,18 +486,23 @@ SSA* Parser::p_ifStatement() {
     this->CheckFor(Result(2, 21)); // check `fi`
 
     // [07/28/2024]: Are we not just returning the [SSA *relation] either way?
-    // no need for phi since only one path! just return the [ifStat_then] block (i think)
-    // if (else_exists) {} // is this the same logic as below?
     if (if2 == nullptr) { 
+        // [09/20/2024]: if `else` condition DNE, then we want to set the jump to be the next SSA instr after the `if-condition instr's`
+        this->prevJump = true;
+        this->prevInstr = jmp_instr;
+
         // [07/28/2024]: might need this here(?)
         return if1; // [08/08/2024]: Good call; yes we should
     }
 
     // [Special Instruction]: phi() goes here
-
     SSA *phi_instr = new SSA(6, if1, if2); // gives us location of where to continue [SSA instr's] based on outcome of [p_relation()]
     // this->SSA_instrs.push_back(phi_instr);
     this->addSSA(phi_instr);
+    // [09/20/2024]: Add the [jmp1] here (if an `else` condition exists, we jump here after if-statement)
+    this->prevJump = true;
+    this->prevInstr = jmp1;
+
     // return phi_instr; // [07/28/2024]: might need this here(?)
 
     // // previously: do something start here
@@ -477,7 +526,6 @@ SSA* Parser::p_whileStatement() {
     // WHILE
     this->CheckFor(Result(2, 22)); // check `while`; Note: we only do this as a best practice and to consume the `while` token
     SSA *jmp_instr = p_relation(); // WHILE: relation
-    jmp_instr->isWhile = true;
     // this->SSA_instrs.push_back(jmp_instr);
 
     // DO
@@ -502,6 +550,11 @@ SSA* Parser::p_whileStatement() {
 
     // return while1; // [07/28/2024]: might need this here(?)
     // [07/31/2024]: js matching [p_ifStatement()], for now don't know what to do abt this
+    
+    // [09/20/2024]: Do this before we return. so that the next SSA instr added will be the new jump from [unsuccessful relation: while-loop]
+    this->prevJump = true;
+    this->prevInstr = jmp_instr;
+
     return jmp_instr; // [08/08/2024]: This is good here; [jmp_instr] was pushed-back before returing from [p_relation()]
 }
 
@@ -579,7 +632,7 @@ SSA* Parser::p_relation() {
     }
 
     #ifdef DEBUG
-        std::cout << "\tgot op: " << op << std::endl;
+        std::cout << "\tgot op: " << op << " [" << SymbolTable::operator_table_reversed.at(op) << "]" << std::endl;
     #endif
 
     next();
@@ -599,6 +652,10 @@ SSA* Parser::p_relation() {
     SSA *jmp_instr = new SSA(op, cmp_instr, nullptr); // [nullptr bc we don't know where to jump to yet]
     // this->SSA_instrs.push_back(jmp_instr);
     this->addSSA(jmp_instr);
+    // [09/20/2024]: Nah this is wrong we don't want to add the VERY NEXT SSA as the jmp
+    // [09/20/2024]: Added AFTER [this->addSSA()] bc we check [prevJump && prevInstr] in [this->addSSA()]
+    // this->prevJump = true;
+    // this->prevInstr = jmp_instr;
 
     #ifdef DEBUG
         std::cout << "returning jmp_instr: " << jmp_instr->toString() << std::endl;
