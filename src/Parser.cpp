@@ -229,14 +229,6 @@ SSA* Parser::p_statement() {
         } else {
             std::cout << "stmt != nullptr; stmt = " << stmt->toString() << std::endl;
         }
-
-        // std::cout << "\tSSA_instr's currently looks like [size=" << this->getInstrListSize() << "];" << std::endl;
-        // this->printInstrList();
-
-        // std::cout << "\tSSA_instr's currently looks like [size=" << this->SSA_instrs.size() << "];" << std::endl;
-        // for (const SSA* s : this->SSA_instrs) {
-        //     std::cout << "\t\t" << s->toString() << std::endl;
-        // }
     #endif
     return stmt; // [07/28/2024]: Why do we return an [SSA*] here?
 }
@@ -385,6 +377,7 @@ SSA* Parser::p_funcCall() {
             // next(); // [09/02/2024]: commented out to prevent accidentally consuming the next token
         } else if (f.name == "OutputNum") {
             std::string num;
+            // [09/22/2024]: But what are we supposed to do with the args?
             // [08/31/2024]: ToDo: handle args for this to work
             this->CheckFor(Result(2, 13)); // check for `(`
             num = this->sym.get_value();

@@ -1,38 +1,18 @@
-main 
-
-var a1, a2, asdfjkl; 
-{
-
-let a2 <- 3204;
-let a1 <- 8;
-
-while 12345 == a2 do
-    if 3 == a2 then 
-        if a1 < 1 then 
-            let a2 <- 6;
-            if a1 < 1 then 
-                let a2 <- 666666;
-                while a2 == 666666 do
-                    let a2 <- 999999999
-                od
-            else
-                let a1 <- 333333
-            fi;
-            let a2 <- 99999
+main
+var a, b; {
+    let a <- call InputNum();
+    let b <- call InputNum();
+    if a > 0 then
+        if b > 0 then
+            call OutputNum(0)
         else
-            let a1 <- 3 
-        fi;
-        return ;
-        let a2 <- 8
-    else 
-        let a2 <- 5;
-        if a1 > 3 then 
-            let a2 <- 111111;
+            call OutputNum(1)
+        fi
+    else
+        if b > 0 then
+            call OutputNum(1)
         else
-            let a1 <- a2 + 2 * (a2 - 3000) + 50000  / 80
-        fi 
-    fi 
-od
-
-}
-.
+            call OutputNum(0)
+        fi
+    fi
+}.

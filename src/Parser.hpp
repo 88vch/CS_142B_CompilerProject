@@ -159,9 +159,9 @@ public:
 
 
     inline SSA* CheckExistence(const int op, SSA *x, SSA *y) const {
-        #ifdef DEBUG
-            std::cout << "\t[Parser::CheckExistence(op=[" << op << "], x=" << x->toString() << ",y=" << y->toString() << "), this->SSA_instrs.size()=" << this->SSA_instrs.size() << "]" << std::endl;
-        #endif
+        // #ifdef DEBUG
+        //     std::cout << "\t[Parser::CheckExistence(op=[" << op << "], x=" << x->toString() << ",y=" << y->toString() << "), this->SSA_instrs.size()=" << this->SSA_instrs.size() << "]" << std::endl;
+        // #endif
         SSA *ret = nullptr;
         
         if (this->instrList.find(0) == this->instrList.end()) {
@@ -171,63 +171,46 @@ public:
         // [09/19/2024]: Replaced Below (previous=this->SSA_instrs; current=this->instrList)
         Node *curr = this->instrList.at(0)->head;
         while (curr) {
-            #ifdef DEBUG
-                std::cout << "\t\tcomparing instr=[" << curr->instr->toString() << "]" << std::endl;
-            #endif
+            // #ifdef DEBUG
+            //     std::cout << "\t\tcomparing instr=[" << curr->instr->toString() << "]" << std::endl;
+            // #endif
             if (curr->instr->compare(op, x, y)) {
-                #ifdef DEBUG
-                    std::cout << "\t\tgot true!!!" << std::endl;
-                #endif
+                // #ifdef DEBUG
+                //     std::cout << "\t\tgot true!!!" << std::endl;
+                // #endif
                 ret = curr->instr;
                 break;
             } else {
-                #ifdef DEBUG
-                    std::cout << "\t\tgot false" << std::endl;
-                #endif
+                // #ifdef DEBUG
+                //     std::cout << "\t\tgot false" << std::endl;
+                // #endif
             }
             curr = curr->next;
         }
-        
-        // for (SSA* instr : this->SSA_instrs) {
-        //     #ifdef DEBUG
-        //         std::cout << "\t\tcomparing instr=[" << instr->toString() << "]" << std::endl;
-        //     #endif
-        //     if (instr->compare(op, x, y)) {
-        //         #ifdef DEBUG
-        //             std::cout << "\t\tgot true!!!" << std::endl;
-        //         #endif
-        //         ret = instr;
-        //         break;
-        //     } else {
-        //         #ifdef DEBUG
-        //             std::cout << "\t\tgot false" << std::endl;
-        //         #endif
-        //     }
-        // }
 
-        #ifdef DEBUG
-            if (ret != nullptr) {
-                std::cout << "\t\treturning: [" << ret->toString() << "]" << std::endl;
-            } else { 
-                std::cout << "\t\treturning: nullptr!" <<std::endl;
-            }
-        #endif
+        // #ifdef DEBUG
+        //     if (ret != nullptr) {
+        //         std::cout << "\t\treturning: [" << ret->toString() << "]" << std::endl;
+        //     } else { 
+        //         std::cout << "\t\treturning: nullptr!" <<std::endl;
+        //     }
+        // #endif
         return ret;
     }
 
     // [09/20/2024]: Const is not found in instrList, rather in BB0
     // [08/22/2024]: might need to revise (like CheckExistence()) to include op and curr sym's values
     inline SSA* CheckConstExistence(int val = -1) const {
-        #ifdef DEBUG
-            std::cout << "in Parser::CheckConstExistence()" << std::endl;
-        #endif
+        // #ifdef DEBUG
+        //     std::cout << "in Parser::CheckConstExistence()" << std::endl;
+        // #endif
         int comparisonVal;
         if (val == -1) {
             comparisonVal = this->sym.get_value_literal();
-            #ifdef DEBUG
-                // std::cout << "\t[Parser::CheckExistence(op=" << op << "), this->sym.get_value_literal()=" << this->sym.get_value_literal() << "]" << std::endl;
-                std::cout << "\tcomparing value: [" << comparisonVal << "], [this->SSA_instrs].size() =" << this->SSA_instrs.size() << std::endl;
-            #endif
+            // #ifdef DEBUG
+            //     // std::cout << "\t[Parser::CheckExistence(op=" << op << "), this->sym.get_value_literal()=" << this->sym.get_value_literal() << "]" << std::endl;
+            //     std::cout << "\tcomparing value: [" << comparisonVal << "], [this->SSA_instrs].size() =" << this->SSA_instrs.size() << std::endl;
+            // #endif
         } else {
             comparisonVal = val;
         }
@@ -241,26 +224,15 @@ public:
         // [09/19/2024]: Replaced Below (previous=this->SSA_instrs; current=this->instrList)
         Node *curr = this->BB0->constList->head;
         while (curr) {
-            #ifdef DEBUG
-                std::cout << "\tthis instr: [" << curr->instr->toString() << "]" << std::endl;
-            #endif
+            // #ifdef DEBUG
+            //     std::cout << "\tthis instr: [" << curr->instr->toString() << "]" << std::endl;
+            // #endif
             if (curr->instr->compareConst(comparisonVal)) {
                 ret = curr->instr;
                 break;
             }
             curr = curr->next;
         }
-
-        // for (SSA* instr : this->SSA_instrs) {
-        //     #ifdef DEBUG
-        //         std::cout << "\tthis instr: [" << instr->toString() << "]" << std::endl;
-        //     #endif
-        //     if (instr->compareConst(comparisonVal)) {
-        //         ret = instr;
-        //         break;
-        //     }
-        // }
-
         return ret;
     }
 
@@ -336,7 +308,11 @@ public:
         }
 
         if (this->prevJump) {
+            // [09/22/2024]: Assumption - [this->prevInstr] is alr in the instrList
             this->prevInstr->set_operand2(instr);
+
+            this->prevJump = false;
+            this->prevInstr = nullptr;
         }
     }
 

@@ -17,7 +17,7 @@
 
 // class SymbolTable; // forward declaration (?)
 
-#define in_f "tst/uninitialized_if_while.ty"
+#define in_f "tst/nested_if.ty"
 int main() {
     std::string symbolTable_f = "res/_SymbolTable_result.txt";
     std::string identifiers_f = "res/_Identifiers_result.txt";
