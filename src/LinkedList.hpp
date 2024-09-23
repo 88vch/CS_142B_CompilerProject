@@ -97,7 +97,7 @@ public:
         length++;
     }
 
-    bool contains(SSA *instruction) const {
+    SSA* contains(SSA *instruction) const {
         Node *curr = head;
 
         while (curr != tail) {
@@ -107,10 +107,10 @@ public:
             // }
             curr = curr->next;
             if (curr->instr->compare(instruction)) {
-                return true;
+                return curr->instr;
             }
         }
-        return false;
+        return nullptr;
     }
 
     void printList() const {

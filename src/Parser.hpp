@@ -1,6 +1,7 @@
 #ifndef PARSER_HPP
 #define PARSER_HPP
 
+#include <stack>
 #include <vector>
 #include <sstream>
 #include <cstring>
@@ -106,6 +107,7 @@ public:
             this->instrList.insert({i, new LinkedList()});
         }
 
+        this->prevInstrs = std::stack<SSA *>();
         this->prevJump = false;
         this->prevInstr = nullptr;
 
@@ -284,7 +286,9 @@ public:
         return ret;
     }
 
-    inline void addSSA(SSA *instr) {
+    inline SSA* addSSA(SSA *instr) {
+        SSA *retVal = instr;
+
         #ifdef DEBUG
             std::cout << "\t[Parser::addSSA(instr=" << instr->toString() << ")]" << std::endl;
         #endif
@@ -294,26 +298,32 @@ public:
             #endif
             // [09/20/2024]: new constList specifically for [this->BB0]
             this->BB0->constList->InsertAtTail(instr);
-            // [09/11/2024]: what do we do with const vars?
-            // - add to BB0
-            // this->BB0->instrs.push_back(instr);
+        } else if ((instr->get_operator() >= 8) && (instr->get_operator() <= 14)) {
+            LinkedList *SSA_LL = this->instrList.at(instr->get_operator());
+            SSA_LL->InsertAtTail(instr);
         } else {
             #ifdef DEBUG
                 std::cout << "\tinstr op == " << instr->get_operator() << std::endl;
             #endif
             LinkedList *SSA_LL = this->instrList.at(instr->get_operator());
-            if (SSA_LL->contains(instr) == false) {
+            if (SSA_LL->contains(instr) == nullptr) {
                 SSA_LL->InsertAtTail(instr);
+            } else {
+                retVal = SSA_LL->contains(instr);
             }
         }
 
         if (this->prevJump) {
             // [09/22/2024]: Assumption - [this->prevInstr] is alr in the instrList
+            this->prevInstr = this->prevInstrs.top();
             this->prevInstr->set_operand2(instr);
 
             this->prevJump = false;
             this->prevInstr = nullptr;
+            this->prevInstrs.pop();
         }
+
+        return retVal;
     }
 
     std::vector<SSA*> getSSA() const { return this->SSA_instrs; }
@@ -330,6 +340,9 @@ public:
 
     std::string instrListToString() const {
         std::string lst = "[instrA]:\n\tinstrA1, instrA2, instrA3, ...\n";
+        
+        lst += "[const]: \n\t" + this->BB0->constList->listToString();
+        
         for (unsigned int i = 1; i < SymbolTable::operator_table.size() - 1; i++) {
             lst += "[" + SymbolTable::operator_table_reversed.at(i) + "]: \n\t" + this->instrList.at(i)->listToString();
         }
@@ -372,6 +385,7 @@ private:
 
     bool prevJump;
     SSA *prevInstr;
+    std::stack<SSA *>prevInstrs;
 
     SSA *SSA_start;
     SSA *SSA_parent; // copied from above's [BasicBlock]

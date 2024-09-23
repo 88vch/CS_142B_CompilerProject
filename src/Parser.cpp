@@ -149,7 +149,11 @@ SSA* Parser::p_statSeq() {
         #endif
     }
     #ifdef DEBUG
-        std::cout << "[Parser::p_statSeq()] returning: " << first->toString() << std::endl;
+        if (first) {
+            std::cout << "[Parser::p_statSeq()] returning: " << first->toString() << std::endl;
+        } else {
+            std::cout << "[Parser::p_statSeq()] returning: nullptr!" << std::endl;
+        }
     #endif
     return first; // returning first [SSA_instr] in [p_statSeq()] so we know control flow
 }
@@ -395,12 +399,17 @@ SSA* Parser::p_funcCall() {
                 std::cout << "current [varVals] mapping looks like: " << std::endl;
                 this->printVVs();
             #endif
-            if (this->varVals.find(num) == this->varVals.end()) {
-                std::cout << "could not recognize identifier corresponding to: [" << num << "]; exiting prematurely..." << std::endl;
-                exit(EXIT_FAILURE);
+            if (this->varVals.find(num) != this->varVals.end()) {
+                res = this->varVals.at(num);
+                std::cout << res->toString() << std::endl;
+            } else {
+                try {
+                    std::cout << std::stoi(num) << std::endl;
+                } catch(...) {
+                    std::cout << "could not recognize identifier corresponding to: [" << num << "]; exiting prematurely..." << std::endl;
+                    exit(EXIT_FAILURE);
+                }
             }
-            res = this->varVals.at(num);
-            std::cout << res->toString() << std::endl;
         } else if (f.name == "OutputNewLine") {
             this->CheckFor_udf_optional_paren();
             std::cout << std::endl; // new line (?)
@@ -454,7 +463,7 @@ SSA* Parser::p_ifStatement() {
     // blk->children.push_back(ifStat_then);
     // // previously: do something end here
 
-    SSA *if1 = p_statSeq(); // returns the 1st SSA instruction in the case which we jump to [case 1: if () == true]
+    SSA *if1 = p_statSeq(); // returns the 1st SSA instruction 
 
     // [Optional] ELSE
     // BasicBlock *ifStat_else = nullptr; // should use some similar logic to check for existence of [else block]
@@ -473,28 +482,43 @@ SSA* Parser::p_ifStatement() {
 
         if2 = p_statSeq(); // returns the 1st SSA instruction in the case which we jump to [case 2: if () == false]
         jmp_instr->set_operand2(if2);
-    }
-
-    // FI
-    this->CheckFor(Result(2, 21)); // check `fi`
-
+    } else {
+    // 【09/23/2024】： This is not the condition that properly checks whether or not we have an `else` condition
+    // - it's possible to have a [statSeq] that doesn't use any SSA (right? Yes. Ex. OutputNum(1) OutputNewLine())
     // [07/28/2024]: Are we not just returning the [SSA *relation] either way?
-    if (if2 == nullptr) { 
+    // if (if2 == nullptr) {   
+        // FI
+        this->CheckFor(Result(2, 21)); // check `fi`
+    
         // [09/20/2024]: if `else` condition DNE, then we want to set the jump to be the next SSA instr after the `if-condition instr's`
         this->prevJump = true;
-        this->prevInstr = jmp_instr;
+        this->prevInstrs.push(jmp_instr);
 
         // [07/28/2024]: might need this here(?)
         return if1; // [08/08/2024]: Good call; yes we should
     }
 
+    // FI
+    this->CheckFor(Result(2, 21)); // check `fi`
+
     // [Special Instruction]: phi() goes here
     SSA *phi_instr = new SSA(6, if1, if2); // gives us location of where to continue [SSA instr's] based on outcome of [p_relation()]
     // this->SSA_instrs.push_back(phi_instr);
-    this->addSSA(phi_instr);
+    SSA *addedInstr = this->addSSA(phi_instr);
+    
+    // [09/23/2024]: do something like this 
+    // - bc we made a change in [LinkedList::contains()] && [Parser::addSSA()]
+    {
+        if (addedInstr != phi_instr) {
+            // implies our new phi-SSA is a dupe of a [phi] in our LinkedList,
+            // - so we didn't actually insert the new SSA we created
+            delete phi_instr; // so we should do this(?)
+        }
+    }
+
     // [09/20/2024]: Add the [jmp1] here (if an `else` condition exists, we jump here after if-statement)
     this->prevJump = true;
-    this->prevInstr = jmp1;
+    this->prevInstrs.push(jmp1);
 
     // return phi_instr; // [07/28/2024]: might need this here(?)
 
@@ -546,7 +570,7 @@ SSA* Parser::p_whileStatement() {
     
     // [09/20/2024]: Do this before we return. so that the next SSA instr added will be the new jump from [unsuccessful relation: while-loop]
     this->prevJump = true;
-    this->prevInstr = jmp_instr;
+    this->prevInstrs.push(jmp_instr);
 
     return jmp_instr; // [08/08/2024]: This is good here; [jmp_instr] was pushed-back before returing from [p_relation()]
 }
@@ -635,23 +659,36 @@ SSA* Parser::p_relation() {
     // ToDo: get [instr_num] from [cmp SSA] -> [cmp_instr_num] so that you can pass it below 
     SSA *cmp_instr = new SSA(5, x, y); // [SymbolTable::operator_table `cmp`: 5]
     // this->SSA_instrs.push_back(cmp_instr);
-    this->addSSA(cmp_instr);
+    SSA *addedInstr = this->addSSA(cmp_instr);
 
-    #ifdef DEBUG
-        std::cout << "created cmp_instr: " << cmp_instr->toString() << std::endl;
-    #endif
+    // [09/23/2024]: Similar idea as if-statement
+    // - bc we made a change in [LinkedList::contains()] && [Parser::addSSA()]
+    if (cmp_instr != addedInstr) {
+        delete cmp_instr;
+        cmp_instr = addedInstr;
+        
+        #ifdef DEBUG
+            std::cout << "cmp_instr dupe existed already; using dupe: " << cmp_instr->toString() << std::endl;
+        #endif
+    } else {
+        #ifdef DEBUG
+            std::cout << "created new cmp_instr: " << cmp_instr->toString() << std::endl;
+        #endif
+    }
+
 
     // return cmp_instr; // [07/28/2024]: might need this here(?)
     SSA *jmp_instr = new SSA(op, cmp_instr, nullptr); // [nullptr bc we don't know where to jump to yet]
     // this->SSA_instrs.push_back(jmp_instr);
     this->addSSA(jmp_instr);
+    // [09/23/2024]: For now we shouldn't be pushing it in the relation
+    // this->prevJump = true;
+    // this->prevInstrs.push(jmp_instr);
     // [09/20/2024]: Nah this is wrong we don't want to add the VERY NEXT SSA as the jmp
     // [09/20/2024]: Added AFTER [this->addSSA()] bc we check [prevJump && prevInstr] in [this->addSSA()]
-    // this->prevJump = true;
-    // this->prevInstr = jmp_instr;
-
+    
     #ifdef DEBUG
-        std::cout << "returning jmp_instr: " << jmp_instr->toString() << std::endl;
+        std::cout << "returning new jmp_instr: " << jmp_instr->toString() << std::endl;
     #endif
     
     return jmp_instr;
