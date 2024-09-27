@@ -85,7 +85,7 @@ BasicBlock* Parser::p2_start() {
     this->CheckFor(Result(2, 15)); // check for `{`
 
     // [09/24/2024]: Not sure how to handle this
-    // - big picture wise it's BB0->BB1->done; where BB1 is everything
+    // - big picture wise it's BB0->BB1->done; where BB1 is everything.
     BasicBlock *statSeq = p2_statSeq();
 
     this->CheckFor(Result(2, 16)); // check for `}`
