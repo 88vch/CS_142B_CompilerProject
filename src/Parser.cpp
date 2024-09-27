@@ -8,8 +8,8 @@ BasicBlock Parser::parse() {
     this->BB0 = new BasicBlock();
     // this->BB_start = this->p2_start();
 
-    this->BB0->child = this->BB_start;
-    this->BB_start->parent = this->BB0;
+    this->BB0->child = this->startBB;
+    this->startBB->parent = this->BB0;
     
     
     return this->BB0; // stub
@@ -86,6 +86,8 @@ BasicBlock* Parser::p2_start() {
 
     // [09/24/2024]: Not sure how to handle this
     // - big picture wise it's BB0->BB1->done; where BB1 is everything.
+    this->startBB = new BasicBlock();
+    this->currBB = this->startBB;
     BasicBlock *statSeq = p2_statSeq();
 
     this->CheckFor(Result(2, 16)); // check for `}`
@@ -129,25 +131,6 @@ SSA* Parser::p_statSeq() {
             break;
         }
         
-        // if ((first->isWhile) || 
-        //     (curr_stmt != nullptr && curr_stmt->isWhile)) {
-        //     #ifdef DEBUG
-        //         std::cout << "in while stmt!" << std::endl;
-        //     #endif
-        //     SSA *tmp = curr_stmt;
-        //     curr_stmt = p_statement();
-        //     tmp->set_operand2(curr_stmt); // [08/08/2024]: update [jmp_instr] if previous statement was [while_statement()]
-        // } else {
-        //     curr_stmt = p_statement();
-        //     if (curr_stmt == nullptr) { // [curr_stmt] = nullptr indicates that this was the last stmt and it js had a `;` too (last stmt `;` is optional)
-        //         #ifdef DEBUG
-        //             std::cout << "curr_stmt returned nullptr!" << std::endl;
-        //         #endif
-        //         break;
-        //     }
-        // }
-        
-        
         // [07/28/2024]: Should be doing something with [curr_stmt] here(?)
         #ifdef DEBUG
             std::cout << "[curr_stmt] returned: " << curr_stmt->toString() << std::endl;
@@ -164,51 +147,51 @@ SSA* Parser::p_statSeq() {
 }
 
 // [09/05/2024]: ToDo - resume here (after SSA_linked_list)!
-// BasicBlock* Parser::p2_statSeq() {
-//     #ifdef DEBUG
-//         std::cout << "[Parser::p2_statSeq(" << this->sym.to_string() << ")]: found a statement to parse" << std::endl;
-//     #endif
-//     SSA *curr_stmt;
-//     SSA *first = p_statement(); // ends with `;` = end of statement
-//     while (this->CheckFor(Result(2, 4), true)) { // if [optional] next token is ';', then we still have statements
-//         next();
+// - should return the first BasicBlock that was created here
+BasicBlock* Parser::p2_statSeq() {
+    #ifdef DEBUG
+        std::cout << "[Parser::p2_statSeq(" << this->sym.to_string() << ")]: found a statement to parse" << std::endl;
+    #endif
+    BasicBlock *curr_bb = nullptr, *prev_bb = nullptr;
+    BasicBlock *first = p2_statement(); // ends with `;` = end of statement
+    this->currBB = first;
+    prev_bb = this->currBB;
+    // - the first statement should always use the initial BB: even if we have jumps, we always write an SSA first (cmp, bra, etc...)
+    while (this->CheckFor(Result(2, 4), true)) { // if [optional] next token is ';', then we still have statements
+        next();
 
-        // curr_stmt = p_statement();
-        // if (curr_stmt == nullptr) { // [curr_stmt] = nullptr indicates that this was the last stmt and it js had a `;` too (last stmt `;` is optional)
-        //     #ifdef DEBUG
-        //         std::cout << "curr_stmt returned nullptr!" << std::endl;
-        //     #endif
-        //     break;
-        // }
+        // [09/27/2024]: NOTE we may not even need this, 
+        // it ultimately depends on where we 
+            // 1) notice we've created and are using a new BB, & 
+            // 2) when we have the ability to attatch (link) the newly created BB and old one (i.e. this->newBB->parent = this->oldBB)
 
-// //         if ((first->isWhile) || 
-// //             (curr_stmt != nullptr && curr_stmt->isWhile)) {
-// //             #ifdef DEBUG
-// //                 std::cout << "in while stmt!" << std::endl;
-// //             #endif
-// //             SSA *tmp = curr_stmt;
-// //             curr_stmt = p_statement();
-// //             tmp->set_operand2(curr_stmt); // [08/08/2024]: update [jmp_instr] if previous statement was [while_statement()]
-// //         } else {
-// //             curr_stmt = p_statement();
-// //             if (curr_stmt == nullptr) { // [curr_stmt] = nullptr indicates that this was the last stmt and it js had a `;` too (last stmt `;` is optional)
-// //                 #ifdef DEBUG
-// //                     std::cout << "curr_stmt returned nullptr!" << std::endl;
-// //                 #endif
-// //                 break;
-// //             }
-// //         }
+        curr_bb = p2_statement();
 
-//         // [07/28/2024]: Should be doing something with [curr_stmt] here.
-//         #ifdef DEBUG
-//             std::cout << "[curr_stmt] returned: " << curr_stmt->toString() << std::endl;
-//         #endif
-//     }
-//     #ifdef DEBUG
-//         std::cout << "[Parser::p_statSeq()] returning: " << first->toString() << std::endl;
-//     #endif
-//     return first; // returning first [SSA_instr] in [p_statSeq()] so we know control flow
-// }
+        if (curr_bb != prev_bb) {
+            prev_bb->child = curr_bb;
+            curr_bb->parent = prev_bb;
+        }
+
+        if (curr_bb == nullptr) { // [curr_bb] = nullptr indicates that this was the last stmt and it js had a `;` too (last stmt `;` is optional)
+            #ifdef DEBUG
+                std::cout << "curr_bb returned nullptr!" << std::endl;
+            #endif
+            break;
+        }
+
+        prev_bb = curr_bb;
+        this->currBB = curr_bb; // [09/27/2024]: implicitly gets passed into all the functions
+
+        // [07/28/2024]: Should be doing something with [curr_bb] here.
+        #ifdef DEBUG
+            std::cout << "[curr_bb] returned: " << curr_bb->toString() << std::endl;
+        #endif
+    }
+    #ifdef DEBUG
+        std::cout << "[Parser::p2_statSeq()] returning: " << first->toString() << std::endl;
+    #endif
+    return first; // returning first [SSA_instr] in [p_statSeq()] so we know control flow
+}
 
 SSA* Parser::p_statement() {
     #ifdef DEBUG
@@ -230,6 +213,38 @@ SSA* Parser::p_statement() {
         stmt = p_whileStatement();
     } else if (this->CheckFor(Result(2, 28), true)) {  // check `return`
         stmt = p_return();
+    }
+    // ToDo: [else {}]no more statements left to parse! (Not an error, this is possible)
+    #ifdef DEBUG
+        if (stmt == nullptr) { 
+            std::cout << "stmt == nullptr" << std::endl;
+        } else {
+            std::cout << "stmt != nullptr; stmt = " << stmt->toString() << std::endl;
+        }
+    #endif
+    return stmt; // [07/28/2024]: Why do we return an [SSA*] here?
+}
+
+BasicBlock* Parser::p2_statement() {
+    #ifdef DEBUG
+        std::cout << "[Parser::p2_statement(" << this->sym.to_string() << ")]" << std::endl;
+    #endif
+    BasicBlock *stmt = this->currBB;
+    // if we see any of these tokens then it means the next thing is another statement
+    // - [let, call, if, while, return]: checked by [p_statSeq]
+    // [Assumption]: after every statement has a semicolon
+    // [Assumption]: if we're in this function that means we know the next thing is a statement
+   
+    if (this->CheckFor(Result(2, 6), true)) {          // check `let`
+        stmt = p2_assignment();
+    } else if (this->CheckFor(Result(2, 25), true)) {  // check `call`
+        stmt = p2_funcCall();
+    } else if (this->CheckFor(Result(2, 18), true)) {  // check `if`
+        stmt = p2_ifStatement();
+    } else if (this->CheckFor(Result(2, 22), true)) {  // check `while` 
+        stmt = p2_whileStatement();
+    } else if (this->CheckFor(Result(2, 28), true)) {  // check `return`
+        stmt = p2_return();
     }
     // ToDo: [else {}]no more statements left to parse! (Not an error, this is possible)
     #ifdef DEBUG
@@ -320,6 +335,67 @@ SSA* Parser::p_assignment() {
     //     blk->updated_varval_map[ident] = value;
     // }
     // Old Code end;
+}
+
+BasicBlock* Parser::p2_assignment() {
+    #ifdef DEBUG
+        std::cout << "[Parser::p2_assignment(" << this->sym.to_string() << ")]" << std::endl;
+    #endif
+    // LET(TUCE GO)
+    this->CheckFor(Result(2, 6)); // check for `let`
+
+    // IDENT: not checking for a specific since this is a [variable]
+    // - validate that [variable] has been declared
+    if (this->varDeclarations.find(SymbolTable::identifiers.at(this->sym.get_value())) == this->varDeclarations.end()) {
+        // [Assumption]: we require variables, x, to be declared (i.e. `let x;`) before they are defined
+        std::cout << "Error: var [" << this->sym.to_string() << "] hasn't been declared! exiting prematurely..." << std::endl;
+        exit(EXIT_FAILURE);
+    }
+    int ident = SymbolTable::identifiers.at(this->sym.get_value()); // unused for now
+    next();
+
+    // ASSIGNMENT
+    this->CheckFor(Result(2, 7)); // check for `<-`
+
+    // EXPRESSION
+    SSA *value = p_expr();
+    // [08/07/2024]: This still holds true (below); 
+    // - [ident] should correspond to [SymbolTable::symbol_table] key with the value being the [value]; stoi(value)
+    // - Should not need to return any SSA value for this; will probably need more complexity when BB's are introduced
+    // [07/28/2024]: Add [ident : value] mapping into [symbol_table], that's it.
+    #ifdef DEBUG
+        std::cout << "in [Parser::p_assignment]: key=" << SymbolTable::symbol_table.at(ident) << ", current varVal value=";
+        if (this->varVals.find(SymbolTable::symbol_table.at(ident)) != this->varVals.end()) {
+            std::cout << this->varVals.at(SymbolTable::symbol_table.at(ident))->toString() << std::endl;
+        } else {
+            std::cout << "none!" << std::endl;
+        }
+    #endif
+    // - ToDo: replace with <int, int>
+    this->varVals.insert_or_assign(SymbolTable::symbol_table.at(ident), value); 
+    // this->currBB->updated_varval_map.insert_or_assign(SymbolTable::symbol_table.at(ident), value);
+    this->printVVs();
+
+    if (value->get_constVal()) {
+        if (this->CheckConstExistence(*(value->get_constVal())) == nullptr) {
+            this->addSSA(value);
+        }
+    } else {
+        if (this->CheckExistence(value->get_operator(), value->get_operand1(), value->get_operand2()) == nullptr) {
+            this->addSSA(value);
+        }
+    }
+
+    // [08/07/2024]: Revised; wtf was i trying to say down there???
+    #ifdef DEBUG
+        std::cout << "inserted new var-val mapping: {" << SymbolTable::symbol_table.at(ident) << ", " << value->toString() << "}" << std::endl;
+        std::cout << "value addr: " << &value << "; value toString(): " << value->toString() << std::endl;
+    #endif
+    // this->SSA_instrs.push_back(value);
+    #ifdef DEBUG
+        std::cout << "[Parser::p_assignment()]: returning " << value->toString() << std::endl;
+    #endif
+    return this->currBB;
 }
 
 // ToDo: after generating the Dot & graph the first time

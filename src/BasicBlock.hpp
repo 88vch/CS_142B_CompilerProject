@@ -27,6 +27,24 @@ public:
             this->constList = nullptr;
         }
     }
+
+    // [09/27/2024]: Copied from above, probs use this cause we need to inherit the map (&& SSA DLL)
+    // [09/02/2024]: Note - took away ssa_instructions[curr_instr_list]
+    BasicBlock(std::unordered_map<int, int> DOM_vv_map, std::unordered_map<int, LinkedList*> instrLst, bool isConst = false)
+    {
+        this->parent = nullptr;
+        this->parent2 = nullptr;
+        this->child = nullptr;
+        this->child2 = nullptr;
+        this->updated_varval_map = DOM_vv_map;
+
+        if (isConst) {
+            this->constList = new LinkedList();
+        } else {
+            this->instrList = instrLst;
+            this->constList = nullptr;
+        }
+    }
     // special block: [join]; need phi function here
     BasicBlock(BasicBlock *p1, BasicBlock *p2, std::unordered_map<int, int> DOM_vv_map)
     {

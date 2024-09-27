@@ -378,10 +378,10 @@ private:
     // [09/05/2024]: key=[SymbolTable::operator_table] values corresponding to specific SSA-instrs
     std::unordered_map<int, LinkedList*> instrList; 
     
-    BasicBlock *curr;
+    BasicBlock *currBB;
     BasicBlock *BB0; // [09/02/2024]: special BB always generated at the start. Contains const SSA-instrs
-    BasicBlock *BB_start; // first result obj generated from this file
-    BasicBlock *BB_parent; // most recent BasicBlock (or 2nd most [if/while])
+    BasicBlock *startBB; // first result obj generated from this file
+    BasicBlock *parentBB; // most recent BasicBlock (or 2nd most [if/while])
 
     bool prevJump;
     SSA *prevInstr;
