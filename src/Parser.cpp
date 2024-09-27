@@ -30,35 +30,6 @@ void Parser::parse_generate_SSA() {
     #endif
 }
 
-
-// BasicBlock* Parser::p2_start() {
-//     #ifdef DEBUG
-//         std::cout << "[Parser::p2_start(" << this->sym.to_string() << ")]" << std::endl;
-//     #endif
-//     this->CheckFor(Result(2, 29)); // consumes `main` token
-
-//     if (this->CheckFor(Result(2, 5), true)) { // check for `var` token
-//         #ifdef DEBUG
-//             std::cout << "[Parser::parse()]: next token is [varDecl]" << std::endl;
-//         #endif
-//         next(); // consumes `var` token
-//         p2_varDecl(); // ends with `;` = end of varDecl (consume it in the func)
-//         #ifdef DEBUG
-//             std::cout << "[Parser::parse()]: done parsing [varDecl]'s" << std::endl;
-//         #endif
-//     }
-
-//     // [09/05/2024]: ToDo - check for [function start] token
-//     this->CheckFor(Result(2, 15)); // check for `{`
-
-//     BasicBlock *statSeq = p2_statSeq();
-
-//     this->CheckFor(Result(2, 16)); // check for `}`
-//     this->CheckFor(Result(2, 30)); // check for `.`
-
-//     return statSeq;
-// }
-
 SSA* Parser::p_start() {
     #ifdef DEBUG
         std::cout << "[Parser::p_start(" << this->sym.to_string() << ")]" << std::endl;
@@ -82,6 +53,40 @@ SSA* Parser::p_start() {
 
     // handle [statSeq] here
     SSA *statSeq = p_statSeq();
+
+    this->CheckFor(Result(2, 16)); // check for `}`
+    this->CheckFor(Result(2, 30)); // check for `.`
+
+    return statSeq;
+}
+
+BasicBlock* Parser::p2_start() {
+    #ifdef DEBUG
+        std::cout << "[Parser::p2_start(" << this->sym.to_string() << ")]" << std::endl;
+    #endif
+    this->CheckFor(Result(2, 29)); // consumes `main` token
+
+    // [09/24/2024]: This should be in our first non-const BB right (i.e. not BB0, but first after that)
+    if (this->CheckFor(Result(2, 5), true)) { // check for `var` token
+        #ifdef DEBUG
+            std::cout << "[Parser::parse()]: next token is [varDecl]" << std::endl;
+        #endif
+        next(); // consumes `var` token
+        
+        // [09/24/2024]: What we want to add to the first BB
+        p2_varDecl(); // ends with `;` = end of varDecl (consume it in the func)
+
+        #ifdef DEBUG
+            std::cout << "[Parser::parse()]: done parsing [varDecl]'s" << std::endl;
+        #endif
+    }
+
+    // [09/05/2024]: ToDo - check for [function start] token
+    this->CheckFor(Result(2, 15)); // check for `{`
+
+    // [09/24/2024]: Not sure how to handle this
+    // - big picture wise it's BB0->BB1->done; where BB1 is everything
+    BasicBlock *statSeq = p2_statSeq();
 
     this->CheckFor(Result(2, 16)); // check for `}`
     this->CheckFor(Result(2, 30)); // check for `.`
