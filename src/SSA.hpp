@@ -10,7 +10,8 @@
 class SSA {
 public:
     
-    SSA(int op, int opnd); // [07/26/2024]: const
+    SSA(int op); // [09/27/2024]: [read]
+    SSA(int op, int opnd); // [07/26/2024]: [const]
     SSA(int op, SSA *retVal); // [07/28/2024]: (New) Pointer to result returned from [return: 16] statement
     SSA(int op, SSA *opnd1, SSA *opnd2); // [07/25/2024]: (New) Pointers to other SSA instructions
 

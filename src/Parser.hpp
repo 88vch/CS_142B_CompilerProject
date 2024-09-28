@@ -166,12 +166,12 @@ public:
         // #endif
         SSA *ret = nullptr;
         
-        if (this->instrList.find(0) == this->instrList.end()) {
+        if (this->instrList.find(op) == this->instrList.end()) {
             return nullptr;
         }
 
         // [09/19/2024]: Replaced Below (previous=this->SSA_instrs; current=this->instrList)
-        Node *curr = this->instrList.at(0)->head;
+        Node *curr = this->instrList.at(op)->head;
         while (curr) {
             // #ifdef DEBUG
             //     std::cout << "\t\tcomparing instr=[" << curr->instr->toString() << "]" << std::endl;

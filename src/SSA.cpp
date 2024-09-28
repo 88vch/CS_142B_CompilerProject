@@ -22,6 +22,28 @@ SSA::~SSA() {
     // if (this->y && (this->y->get_constVal() == nullptr)) { delete this->y; }
 }
 
+SSA::SSA(int op) {
+    #ifdef DEBUG
+        std::cout << "in SSA(int op) constructor" << std::endl;
+    #endif
+
+    if (op == 23 || op == 25) { // [read]
+        this->debug_num = curr_instr_num++;
+        this->op = op;
+        
+        this->x = nullptr;
+        this->y = nullptr;
+        this->constVal = nullptr;
+    } else {
+        std::cout << "Error: expected SSA() operation to be [23: read] got: [" << op << "]! exiting prematurely..." << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    #ifdef DEBUG
+        std::cout << "created SSA instruction: " << this->toString() << std::endl;
+    #endif
+}
+
 SSA::SSA(int op, int opnd) {
     #ifdef DEBUG
         std::cout << "in SSA(int op, int opnd) constructor" << std::endl;
@@ -57,7 +79,7 @@ SSA::SSA(int op, SSA *retVal) {
 
         this->y = nullptr;
         this->constVal = nullptr;
-    } else if (op == 8 || op == 16) {
+    } else if (op == 8 || op == 16 || op == 24) {
         this->debug_num = curr_instr_num++;
         this->op = op;
         this->x = retVal;
