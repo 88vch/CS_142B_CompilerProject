@@ -74,7 +74,7 @@ BasicBlock* Parser::p2_start() {
         next(); // consumes `var` token
         
         // [09/24/2024]: What we want to add to the first BB
-        p2_varDecl(); // ends with `;` = end of varDecl (consume it in the func)
+        p_varDecl(); // ends with `;` = end of varDecl (consume it in the func)
 
         #ifdef DEBUG
             std::cout << "[Parser::parse()]: done parsing [varDecl]'s" << std::endl;
@@ -236,15 +236,15 @@ BasicBlock* Parser::p2_statement() {
     // [Assumption]: if we're in this function that means we know the next thing is a statement
    
     if (this->CheckFor(Result(2, 6), true)) {          // check `let`
-        stmt = p2_assignment();
+        // stmt = p2_assignment();
     } else if (this->CheckFor(Result(2, 25), true)) {  // check `call`
-        stmt = p2_funcCall();
+        // stmt = p2_funcCall();
     } else if (this->CheckFor(Result(2, 18), true)) {  // check `if`
-        stmt = p2_ifStatement();
+        // stmt = p2_ifStatement();
     } else if (this->CheckFor(Result(2, 22), true)) {  // check `while` 
-        stmt = p2_whileStatement();
+        // stmt = p2_whileStatement();
     } else if (this->CheckFor(Result(2, 28), true)) {  // check `return`
-        stmt = p2_return();
+        // stmt = p2_return();
     }
     // ToDo: [else {}]no more statements left to parse! (Not an error, this is possible)
     #ifdef DEBUG
@@ -427,7 +427,10 @@ SSA* Parser::p_funcCall() {
         if (f.name == "InputNum") {
             this->CheckFor_udf_optional_paren();
 
-            SSA *tmp = new SSA(23);
+            res = this->CheckExistence(23, nullptr, nullptr);
+            if (!res) {
+                res = this->addSSA(new SSA(23));
+            }
 
             // ToDo; 
             // [08/27/2024]: What's expected behavior? repeatedly ping until received a num? or exit fail if not num?
@@ -436,11 +439,11 @@ SSA* Parser::p_funcCall() {
             // 2) if exists, use and return; else, create and return new-SSA const
             // res = this->CheckConstExistence(in);
             
-            res = this->addSSA(tmp);
-            if (res != tmp) {
-                delete tmp; // means we already have a [read-SSA] created && can just use that one
-            }
-            tmp = nullptr;
+            // res = this->addSSA(tmp);
+            // if (res->compare(tmp)) {
+            //     delete tmp; // means we already have a [read-SSA] created && can just use that one
+            // }
+            // tmp = nullptr;
         } else if (f.name == "OutputNum") {
             std::string num;
             // [09/22/2024]: But what are we supposed to do with the args?

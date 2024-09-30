@@ -72,7 +72,9 @@ public:
                 std::cout << "nullptr" << std::endl;
             }
         #endif
-        if ((this->debug_num < 0) || (this->x == nullptr) || (this->y == nullptr)) { return false; }
+
+        // return false because we have [compareConst()]
+        if (this->debug_num < 0) { return false; }
 
         if ((this->op == op) && (this->x == x) && (this->y == y)) {
             return true;

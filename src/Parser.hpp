@@ -98,12 +98,12 @@ public:
         this->SSA_instrs = {};
         this->varVals = {};
         
-        this->curr = nullptr;
+        this->currBB = nullptr;
         this->BB0 = new BasicBlock(true);
-        this->BB_start = nullptr;
-        this->BB_parent = this->BB0;
+        this->startBB = nullptr;
+        this->parentBB = this->BB0;
 
-        for (unsigned int i = 1; i < SymbolTable::operator_table.size() - 1; i++) {
+        for (unsigned int i = 1; i < SymbolTable::operator_table.size(); i++) {
             this->instrList.insert({i, new LinkedList()});
         }
 
@@ -120,7 +120,7 @@ public:
         #endif
         delete this->BB0;
         
-        for (unsigned int i = 1; i < this->instrList.size() - 1; i++) {
+        for (unsigned int i = 1; i < this->instrList.size(); i++) {
             // #ifdef DEBUG
             //     std::cout << "deleting linked list [" << SymbolTable::operator_table_reversed.at(i) << "];" << std::endl;
             // #endif

@@ -84,6 +84,32 @@ public:
         this->instrList = curr_instr_lst;
     }
 
+    std::string instrListToString() const {
+        std::string lst = "[instrA]:\n\tinstrA1, instrA2, instrA3, ...\n";
+        
+        if (this->constList) {
+            lst += "[const]: \n\t" + this->constList->listToString();
+        } else {
+            for (unsigned int i = 1; i < SymbolTable::operator_table.size() - 1; i++) {
+                lst += "[" + SymbolTable::operator_table_reversed.at(i) + "]: \n\t" + this->instrList.at(i)->listToString();
+            }
+        }
+        return lst;
+    }
+
+    std::string toString() const {
+        std::string res = "";
+
+        if (this->constList) {
+            res += "[const]: \n";
+            res += this->constList->listToString();
+        } else {
+            res += this->instrListToString();
+        }
+
+        return res;
+    }
+
     BasicBlock *parent, *parent2;
     BasicBlock *child, *child2;
     std::unordered_map<int, int> updated_varval_map; // [variable (sym_table val) : value]
