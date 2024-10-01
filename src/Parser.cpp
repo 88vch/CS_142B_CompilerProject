@@ -281,30 +281,38 @@ SSA* Parser::p_assignment() {
 
     // EXPRESSION
     SSA *value = p_expr();
+    
+    if (value->get_constVal()) {
+        if (this->CheckConstExistence(*(value->get_constVal())) == nullptr) {
+            this->addSSA(value); // [09/30/2024]: Note - there's an additional check here (return's [nullptr || SSA *])
+        }
+    } else {
+        if (this->CheckExistence(value->get_operator(), value->get_operand1(), value->get_operand2()) == nullptr) {
+            this->addSSA(value); // [09/30/2024]: Note - same as above
+        }
+    }
+
+    int VV_value = this->add_SSA_table(value);
     // [08/07/2024]: This still holds true (below); 
     // - [ident] should correspond to [SymbolTable::symbol_table] key with the value being the [value]; stoi(value)
     // - Should not need to return any SSA value for this; will probably need more complexity when BB's are introduced
     // [07/28/2024]: Add [ident : value] mapping into [symbol_table], that's it.
     #ifdef DEBUG
         std::cout << "in [Parser::p_assignment]: key=" << SymbolTable::symbol_table.at(ident) << ", current varVal value=";
-        if (this->varVals.find(SymbolTable::symbol_table.at(ident)) != this->varVals.end()) {
-            std::cout << this->varVals.at(SymbolTable::symbol_table.at(ident))->toString() << std::endl;
+        // if (this->varVals.find(SymbolTable::symbol_table.at(ident)) != this->varVals.end()) {
+        //     std::cout << this->varVals.at(SymbolTable::symbol_table.at(ident))->toString() << std::endl;
+        // } 
+        
+        if (this->VVs.find(ident) != this->VVs.end()) {
+            std::cout << this->ssa_table.at(this->VVs.at(ident))->toString() << std::endl;
         } else {
             std::cout << "none!" << std::endl;
         }
     #endif
-    this->varVals.insert_or_assign(SymbolTable::symbol_table.at(ident), value);
+    // this->varVals.insert_or_assign(SymbolTable::symbol_table.at(ident), value);
+    this->VVs.insert_or_assign(ident, VV_value);
     this->printVVs();
 
-    if (value->get_constVal()) {
-        if (this->CheckConstExistence(*(value->get_constVal())) == nullptr) {
-            this->addSSA(value);
-        }
-    } else {
-        if (this->CheckExistence(value->get_operator(), value->get_operand1(), value->get_operand2()) == nullptr) {
-            this->addSSA(value);
-        }
-    }
 
     // [08/07/2024]: Revised; wtf was i trying to say down there???
     #ifdef DEBUG
@@ -359,23 +367,7 @@ BasicBlock* Parser::p2_assignment() {
 
     // EXPRESSION
     SSA *value = p_expr();
-    // [08/07/2024]: This still holds true (below); 
-    // - [ident] should correspond to [SymbolTable::symbol_table] key with the value being the [value]; stoi(value)
-    // - Should not need to return any SSA value for this; will probably need more complexity when BB's are introduced
-    // [07/28/2024]: Add [ident : value] mapping into [symbol_table], that's it.
-    #ifdef DEBUG
-        std::cout << "in [Parser::p_assignment]: key=" << SymbolTable::symbol_table.at(ident) << ", current varVal value=";
-        if (this->varVals.find(SymbolTable::symbol_table.at(ident)) != this->varVals.end()) {
-            std::cout << this->varVals.at(SymbolTable::symbol_table.at(ident))->toString() << std::endl;
-        } else {
-            std::cout << "none!" << std::endl;
-        }
-    #endif
-    // - ToDo: replace with <int, int>
-    this->varVals.insert_or_assign(SymbolTable::symbol_table.at(ident), value); 
-    // this->currBB->updated_varval_map.insert_or_assign(SymbolTable::symbol_table.at(ident), value);
-    this->printVVs();
-
+    
     if (value->get_constVal()) {
         if (this->CheckConstExistence(*(value->get_constVal())) == nullptr) {
             this->addSSA(value);
@@ -385,6 +377,31 @@ BasicBlock* Parser::p2_assignment() {
             this->addSSA(value);
         }
     }
+
+    int VV_value = this->add_SSA_table(value);
+
+    // [08/07/2024]: This still holds true (below); 
+    // - [ident] should correspond to [SymbolTable::symbol_table] key with the value being the [value]; stoi(value)
+    // - Should not need to return any SSA value for this; will probably need more complexity when BB's are introduced
+    // [07/28/2024]: Add [ident : value] mapping into [symbol_table], that's it.
+    #ifdef DEBUG
+        std::cout << "in [Parser::p_assignment]: key=" << SymbolTable::symbol_table.at(ident) << ", current varVal value=";
+        // if (this->varVals.find(SymbolTable::symbol_table.at(ident)) != this->varVals.end()) {
+        //     std::cout << this->varVals.at(SymbolTable::symbol_table.at(ident))->toString() << std::endl;
+        // }
+        
+        if (this->VVs.find(ident) != this->VVs.end()) {
+            std::cout << this->ssa_table.at(this->VVs.at(ident))->toString() << std::endl;
+        } else {
+            std::cout << "none!" << std::endl;
+        }
+    #endif
+    // - ToDo: replace with <int, int>
+    // this->varVals.insert_or_assign(SymbolTable::symbol_table.at(ident), value); 
+    this->VVs.insert_or_assign(ident, VV_value); 
+    // this->currBB->updated_varval_map.insert_or_assign(SymbolTable::symbol_table.at(ident), value);
+    this->printVVs();
+
 
     // [08/07/2024]: Revised; wtf was i trying to say down there???
     #ifdef DEBUG
@@ -424,6 +441,8 @@ SSA* Parser::p_funcCall() {
         #ifdef DEBUG
             std::cout << "\tcreated func f: [" << f.getName() << "]" << std::endl;
         #endif
+        // [09/30/2024]: NOTE - do we need multiple SSA-instr's for read bc of the different input values that may come in from this function call?
+        // - we shouldn't because it doesn't take any values it's just the instruction for when we execute
         if (f.name == "InputNum") {
             this->CheckFor_udf_optional_paren();
 
@@ -431,25 +450,12 @@ SSA* Parser::p_funcCall() {
             if (!res) {
                 res = this->addSSA(new SSA(23));
             }
-
-            // ToDo; 
-            // [08/27/2024]: What's expected behavior? repeatedly ping until received a num? or exit fail if not num?
-            // [08/31/2024]: Check if [const SSA] of constVal [in] already exists, (if not then create it)
-            // 1) check if value already exists as a const SSA
-            // 2) if exists, use and return; else, create and return new-SSA const
-            // res = this->CheckConstExistence(in);
-            
-            // res = this->addSSA(tmp);
-            // if (res->compare(tmp)) {
-            //     delete tmp; // means we already have a [read-SSA] created && can just use that one
-            // }
-            // tmp = nullptr;
         } else if (f.name == "OutputNum") {
-            std::string num;
+            int num;
             // [09/22/2024]: But what are we supposed to do with the args?
             // [08/31/2024]: ToDo: handle args for this to work
             this->CheckFor(Result(2, 13)); // check for `(`
-            num = this->sym.get_value();
+            num = this->sym.get_value_literal();
 
             #ifdef DEBUG
                 std::cout << "\tgot: [" << num << "]" << std::endl;
@@ -464,21 +470,21 @@ SSA* Parser::p_funcCall() {
                 std::cout << "current [varVals] mapping looks like: " << std::endl;
                 this->printVVs();
             #endif
-            if (this->varVals.find(num) != this->varVals.end()) {
+            if (this->VVs.find(num) != this->VVs.end()) {
                 // res = this->varVals.at(num);
                 // std::cout << res->toString() << std::endl;
-                res = this->CheckExistence(24, this->varVals.at(num), nullptr);
+                res = this->CheckExistence(24, this->ssa_table.at(this->VVs.at(num)), nullptr);
                 if (!res) {
-                    res = this->addSSA(new SSA(24, this->varVals.at(num)));
+                    res = this->addSSA(new SSA(24, this->VVs.at(num)));
                 }
             } else {
                 try {
                     // std::cout << std::stoi(num) << std::endl;
-                    res = this->CheckConstExistence(std::stoi(num));
+                    res = this->CheckConstExistence(num);
                     // [09/27/2024]: then add to basicblock
                     if (!res) {
                         // [09/27/2024]: if [const-SSA] dne, create & return it [addSSA()]; use that as argument for [write-SSA]
-                        res = this->addSSA(new SSA(24, this->addSSA(new SSA(0, std::stoi(num)))));
+                        res = this->addSSA(new SSA(24, this->addSSA(new SSA(0, num))));
                     }
                 } catch(...) {
                     std::cout << "could not recognize identifier corresponding to: [" << num << "]; exiting prematurely..." << std::endl;
@@ -845,11 +851,12 @@ SSA* Parser::p_factor() {
         }
         next(); // [08/05/2024]: we can consume the [const-val]?
     } else if (this->sym.get_kind_literal() == 1) { // check [ident]
-        if (this->varVals.find(this->sym.get_value()) == this->varVals.end()) {
+        // if (this->varVals.find(this->sym.get_value()) == this->varVals.end()) {
+        if (this->VVs.find(this->sym.get_value_literal()) == this->VVs.end()) {
             std::cout << "Error: p_factor(ident) expected a defined variable (in [varVals]), got: [" << this->sym.to_string() << "]! exiting prematurely..." << std::endl;
             exit(EXIT_FAILURE);
         }
-        res = this->varVals.at(this->sym.get_value());
+        res = this->ssa_table.at(this->VVs.at(this->sym.get_value_literal()));
         next(); // [08/08/2024]: must consume the [ident]?
     } else if (this->CheckFor(Result(2, 13), true)) { // check [`(` expression `)`]
         next(); // consume `(`

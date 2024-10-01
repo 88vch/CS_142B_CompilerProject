@@ -96,7 +96,8 @@ public:
         this->s_index = 0;
         this->source_len = tkns.size();
         this->SSA_instrs = {};
-        this->varVals = {};
+        // this->varVals = {};
+        this->VVs = {};
         
         this->currBB = nullptr;
         this->BB0 = new BasicBlock(true);
@@ -328,7 +329,25 @@ public:
 
     std::vector<SSA*> getSSA() const { return this->SSA_instrs; }
 
-    std::unordered_map<std::string, SSA*> getVarVal() const { return this->varVals; }
+    // [09/30/2024]: Converts to original varVal mapping
+    std::unordered_map<std::string, SSA*> getVarVal() const { 
+        std::unordered_map<std::string, SSA *> res = {};
+
+        for (const auto pair : this->VVs) {
+            res.insert(std::pair<std::string, SSA *>(SymbolTable::symbol_table.at(pair.first), this->ssa_table.at(pair.second)));
+        }
+        
+        return res; 
+    }
+
+    void printVVs() { // print varVals
+        std::unordered_map<std::string, SSA *> res = this->getVarVal();
+        
+        std::cout << "printing [this->varVals(size=" << res.size() << ")]:" << std::endl;
+        for (const auto &p : res) {
+            std::cout << "[" << p.first << "], [" << p.second->toString() << "]" << std::endl;
+        }
+    }
 
     void printInstrList() const {
         std::cout << "[instrA]:\n\tinstrA1, instrA2, instrA3, ..." << std::endl;
@@ -367,10 +386,16 @@ private:
     Result sym;
     std::vector<Result> source;
     std::vector<SSA*> SSA_instrs; // [09/11/2024]: this is pretty much js for our testing/reference purposes now
+    
+    // [09/30/2024]: Though this may be for a legitimate reason
+    std::unordered_map<int, SSA *> ssa_table = {};
+    std::unordered_map<SSA *, int> ssa_table_reversed = {};
 
     // [09/02/2024]: Do we need to optimize this? (i.e. <int, int> that is a table lookup probably in [SymbolTable]?)
     // - Note: we probably should
-    std::unordered_map<std::string, SSA*> varVals; 
+    // std::unordered_map<std::string, SSA*> varVals; 
+    
+    std::unordered_map<int, int> VVs; // [key (int) = SymbolTable::symbol_table.at(key) (string)], [value (int) = SymbolTable::ssa_table.at(value) (string)]
     size_t s_index, source_len;
 
     // [09/02/2024]: Does this need to include the `const` SSA's? I don't think it should bc the const instr's only belong to BB0 (special)
@@ -513,12 +538,14 @@ private:
         return false;
     }
 
-    inline void printVVs() { // print varVals
-        std::cout << "printing [this->varVals(size=" << this->varVals.size() << ")]:" << std::endl;
-        for (const auto &p : this->varVals) {
-            std::cout << "[" << p.first << "], [" << p.second->toString() << "]" << std::endl;
-        }
+    int add_SSA_table(SSA *toAdd) {
+        ssa_table.insert(std::pair<int, SSA *>(ssa_table.size(), toAdd));
+        ssa_table_reversed.insert(std::pair<SSA *, int>(toAdd, ssa_table.size() - 1));
+
+        return ssa_table.size() - 1; // [09/30/2024]: return the int that is associated with SSA-instr
     }
+
+
 };
 
 #endif

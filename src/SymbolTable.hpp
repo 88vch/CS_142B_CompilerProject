@@ -14,6 +14,8 @@ namespace SymbolTable {
     void print_identifiers_table();
     void print_numbers_table();
     void update_table(std::string s, std::string type);
+    
+    
     extern std::unordered_map<std::string, int> identifiers;
     extern std::unordered_map<std::string, int> numbers;
     extern const std::unordered_map<std::string, int> keywords;
