@@ -245,7 +245,7 @@ BasicBlock* Parser::p2_statement() {
     } else if (this->CheckFor(Result(2, 22), true)) {  // check `while` 
         // stmt = p2_whileStatement();
     } else if (this->CheckFor(Result(2, 28), true)) {  // check `return`
-        // stmt = p2_return();
+        stmt = p2_return();
     }
     // ToDo: [else {}]no more statements left to parse! (Not an error, this is possible)
     #ifdef DEBUG
@@ -354,32 +354,59 @@ BasicBlock* Parser::p2_assignment() {
     this->CheckFor(Result(2, 6)); // check for `let`
 
     // IDENT: not checking for a specific since this is a [variable]
+    int ident = SymbolTable::identifiers.at(this->sym.get_value()); // unused for now
+
     // - validate that [variable] has been declared
-    if (this->varDeclarations.find(SymbolTable::identifiers.at(this->sym.get_value())) == this->varDeclarations.end()) {
+    if (this->varDeclarations.find(ident) == this->varDeclarations.end()) {
         // [Assumption]: we don't require variables, x, to be declared (i.e. `let x;`) before they are defined, we'll emit a warning encouraging that tho
         std::cout << "Warning: var [" << this->sym.to_string() << "] hasn't been declared!" << std::endl;
         // exit(EXIT_FAILURE);
+
+    } else {
+        // [10/02/2024]: Check if it's already defined before (if so then we need a new BasicBlock!)
+        if (this->VVs.find(ident) != this->VVs.end()) {
+            #ifdef DEBUG
+                std::cout << "ident exists with a definition: ident=" << ident << ", val=" << this->ssa_table.at(this->VVs.at(ident))->toString() << std::endl;
+            #endif
+
+            this->currBB->instrList = this->instrList;
+            this->parentBB = this->currBB;
+            this->currBB = new BasicBlock();
+            this->parentBB->child = this->currBB;
+            this->currBB->parent = this->parentBB;
+        }
     }
-    int ident = SymbolTable::identifiers.at(this->sym.get_value()); // unused for now
     next();
 
     // ASSIGNMENT
     this->CheckFor(Result(2, 7)); // check for `<-`
 
     // EXPRESSION
-    SSA *value = p_expr();
+    SSA *ret = nullptr, *value = p_expr();
     
+    // todo: if SSA instr already exists, no need to create new entry in [add_SSA_table()]
     if (value->get_constVal()) {
         if (this->CheckConstExistence(*(value->get_constVal())) == nullptr) {
-            this->addSSA(value);
+            ret = this->addSSA(value);
         }
     } else {
         if (this->CheckExistence(value->get_operator(), value->get_operand1(), value->get_operand2()) == nullptr) {
-            this->addSSA(value);
+            ret = this->addSSA(value);
         }
     }
 
-    int VV_value = this->add_SSA_table(value);
+    if (ret != value) {
+        #ifdef DEBUG
+            std::cout << "SSA instr already exists!, using that instead!" << std::endl;
+        #endif
+    } else {
+        // int VV_value = this->add_SSA_table(value);
+        
+        // - ToDo: replace with <int, int>
+        // this->varVals.insert_or_assign(SymbolTable::symbol_table.at(ident), value); 
+        this->VVs.insert_or_assign(ident, this->add_SSA_table(value)); 
+    }
+
 
     // [08/07/2024]: This still holds true (below); 
     // - [ident] should correspond to [SymbolTable::symbol_table] key with the value being the [value]; stoi(value)
@@ -397,9 +424,6 @@ BasicBlock* Parser::p2_assignment() {
             std::cout << "none!" << std::endl;
         }
     #endif
-    // - ToDo: replace with <int, int>
-    // this->varVals.insert_or_assign(SymbolTable::symbol_table.at(ident), value); 
-    this->VVs.insert_or_assign(ident, VV_value); 
     // this->currBB->updated_varval_map.insert_or_assign(SymbolTable::symbol_table.at(ident), value);
     this->printVVs();
 
@@ -428,15 +452,6 @@ SSA* Parser::p_funcCall() {
     // check for `call`
     if (this->CheckFor(Result(2, 25), true)) {
         next(); 
-
-        // #ifdef DEBUG
-        //     for (int i = 0; i < 2; i++) {
-        //         std::cout << this->sym.to_string() << std::endl;
-        //         next();
-        //     }
-        //     std::cout << "testing [funcCall]" << std::endl;
-        //     exit(EXIT_SUCCESS);
-        // #endif
 
         // check UDF's that return void
         Func f(this->sym.get_value());
@@ -497,12 +512,7 @@ SSA* Parser::p_funcCall() {
         } else if (f.name == "OutputNewLine") {
             this->CheckFor_udf_optional_paren();
             // std::cout << std::endl; // new line (?)
-            SSA *tmp = new SSA(25);
-            res = this->addSSA(tmp);
-            if (res != tmp) {
-                delete tmp;
-                tmp = nullptr;
-            }
+            res = this->addSSA(new SSA(25));
         } else {
             // [09/02/2024]: User-Defined Function (?)
             // check for optional `(`: determine whether a UD-function may/will have arguments or not
@@ -719,7 +729,7 @@ BasicBlock* Parser::p2_return() {
     //     blk->instruction_list.at(op).InsertAtHead(SSA(op, {value}));
     // }
 
-    return ret; // [08/31/2024]: compilation stub
+    return this->currBB; // [10/02/2024]: compilation stub
 }
 
 SSA* Parser::p_relation() {

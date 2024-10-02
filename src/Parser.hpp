@@ -309,6 +309,11 @@ public:
             LinkedList *SSA_LL = this->instrList.at(instr->get_operator());
             if (SSA_LL->contains(instr) == nullptr) {
                 SSA_LL->InsertAtTail(instr);
+
+                // ssa_table.insert(std::pair<int, SSA *>(ssa_table.size(), instr));
+                // ssa_table_reversed.insert(std::pair<SSA *, int>(instr, ssa_table.size() - 1));
+
+                // int rVal = ssa_table.size() - 1;
             } else {
                 retVal = SSA_LL->contains(instr);
             }
@@ -324,10 +329,22 @@ public:
             this->prevInstrs.pop();
         }
 
+        // this->currBB->setInstructionList(this->instrList);
+        
+        // [10/02/2024]: maintain last instr here as well
+        // - THIS DOESN'T FEEL RIGHT THOUGH...
+        this->prevInstr = retVal; 
         return retVal;
     }
 
-    std::vector<SSA*> getSSA() const { return this->SSA_instrs; }
+    inline int add_SSA_table(SSA *toAdd) {
+        ssa_table.insert(std::pair<int, SSA *>(ssa_table.size(), toAdd));
+        ssa_table_reversed.insert(std::pair<SSA *, int>(toAdd, ssa_table.size() - 1));
+
+        return ssa_table.size() - 1; // [09/30/2024]: return the int that is associated with SSA-instr
+    }
+
+    inline std::vector<SSA*> getSSA() const { return this->SSA_instrs; }
 
     // [09/30/2024]: Converts to original varVal mapping
     std::unordered_map<std::string, SSA*> getVarVal() const { 
@@ -394,7 +411,6 @@ private:
     // [09/02/2024]: Do we need to optimize this? (i.e. <int, int> that is a table lookup probably in [SymbolTable]?)
     // - Note: we probably should
     // std::unordered_map<std::string, SSA*> varVals; 
-    
     std::unordered_map<int, int> VVs; // [key (int) = SymbolTable::symbol_table.at(key) (string)], [value (int) = SymbolTable::ssa_table.at(value) (string)]
     size_t s_index, source_len;
 
@@ -536,13 +552,6 @@ private:
             }
         }
         return false;
-    }
-
-    int add_SSA_table(SSA *toAdd) {
-        ssa_table.insert(std::pair<int, SSA *>(ssa_table.size(), toAdd));
-        ssa_table_reversed.insert(std::pair<SSA *, int>(toAdd, ssa_table.size() - 1));
-
-        return ssa_table.size() - 1; // [09/30/2024]: return the int that is associated with SSA-instr
     }
 
 
