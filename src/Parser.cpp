@@ -225,6 +225,7 @@ SSA* Parser::p_statement() {
     return stmt; // [07/28/2024]: Why do we return an [SSA*] here?
 }
 
+// [10/01/2024]: ToDo
 BasicBlock* Parser::p2_statement() {
     #ifdef DEBUG
         std::cout << "[Parser::p2_statement(" << this->sym.to_string() << ")]" << std::endl;
@@ -236,7 +237,7 @@ BasicBlock* Parser::p2_statement() {
     // [Assumption]: if we're in this function that means we know the next thing is a statement
    
     if (this->CheckFor(Result(2, 6), true)) {          // check `let`
-        // stmt = p2_assignment();
+        stmt = p2_assignment();
     } else if (this->CheckFor(Result(2, 25), true)) {  // check `call`
         // stmt = p2_funcCall();
     } else if (this->CheckFor(Result(2, 18), true)) {  // check `if`
@@ -355,9 +356,9 @@ BasicBlock* Parser::p2_assignment() {
     // IDENT: not checking for a specific since this is a [variable]
     // - validate that [variable] has been declared
     if (this->varDeclarations.find(SymbolTable::identifiers.at(this->sym.get_value())) == this->varDeclarations.end()) {
-        // [Assumption]: we require variables, x, to be declared (i.e. `let x;`) before they are defined
-        std::cout << "Error: var [" << this->sym.to_string() << "] hasn't been declared! exiting prematurely..." << std::endl;
-        exit(EXIT_FAILURE);
+        // [Assumption]: we don't require variables, x, to be declared (i.e. `let x;`) before they are defined, we'll emit a warning encouraging that tho
+        std::cout << "Warning: var [" << this->sym.to_string() << "] hasn't been declared!" << std::endl;
+        // exit(EXIT_FAILURE);
     }
     int ident = SymbolTable::identifiers.at(this->sym.get_value()); // unused for now
     next();
@@ -385,7 +386,7 @@ BasicBlock* Parser::p2_assignment() {
     // - Should not need to return any SSA value for this; will probably need more complexity when BB's are introduced
     // [07/28/2024]: Add [ident : value] mapping into [symbol_table], that's it.
     #ifdef DEBUG
-        std::cout << "in [Parser::p_assignment]: key=" << SymbolTable::symbol_table.at(ident) << ", current varVal value=";
+        std::cout << "in [Parser::p2_assignment]: key=" << SymbolTable::symbol_table.at(ident) << ", current varVal value=";
         // if (this->varVals.find(SymbolTable::symbol_table.at(ident)) != this->varVals.end()) {
         //     std::cout << this->varVals.at(SymbolTable::symbol_table.at(ident))->toString() << std::endl;
         // }
@@ -412,6 +413,8 @@ BasicBlock* Parser::p2_assignment() {
     #ifdef DEBUG
         std::cout << "[Parser::p_assignment()]: returning " << value->toString() << std::endl;
     #endif
+
+    // [10/01/2024]: Don't we need to assign [this->VVs] to this->currBB first?
     return this->currBB;
 }
 
@@ -522,6 +525,10 @@ SSA* Parser::p_funcCall() {
     }
     return res; // [08/31]2024]: stub (?)
 }
+
+// [10/01/2024]: Do we need to define functions before they're called? 
+// - IM SCARED TO START THIS PART
+// BasicBlock* Parser::p2_funcCall() {}
 
 // ToDo; [07/28/2024]: what exactly are we supposed to return???
 SSA* Parser::p_ifStatement() {
@@ -672,6 +679,29 @@ SSA* Parser::p_whileStatement() {
 SSA* Parser::p_return() {
     #ifdef DEBUG
         std::cout << "[Parser::p_return(" << this->sym.to_string() << ")]" << std::endl;
+    #endif
+    SSA *retVal = p_expr();
+
+    SSA *ret = new SSA(16, retVal); // [SSA constructor] should handle checking of [retVal](nullptr)
+    // this->SSA_instrs.push_back(ret);
+    this->addSSA(ret);
+    // return ret; // [07/28/2024]: might need this here(?)
+
+
+    // // [07/19/2024] This probably needs revising
+    // if (value == -1) { // no expr (optional)
+    //     // previously: do something here (add [return] SSA?)
+    //     int op = SymbolTable::operator_table.at("ret");
+    //     this->instruction_list.at(op).InsertAtHead(SSA(op, {value}));
+    //     blk->instruction_list.at(op).InsertAtHead(SSA(op, {value}));
+    // }
+
+    return ret; // [08/31/2024]: compilation stub
+}
+
+BasicBlock* Parser::p2_return() {
+    #ifdef DEBUG
+        std::cout << "[Parser::p2_return(" << this->sym.to_string() << ")]" << std::endl;
     #endif
     SSA *retVal = p_expr();
 

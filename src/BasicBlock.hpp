@@ -78,6 +78,13 @@ public:
         // }
     }
 
+    // [10/01/2024]: We don't actually need to do this bc we can do smtn else instead
+    // - [Parser::this->addSSA()] already adds the SSA instr to the LinkedList, 
+    // - right before we create a new [BasicBlock] each time, we should ONLY THEN assign the [Parser::SSA_LL] to [this->instrList]!!!
+    void insertInstr(SSA *instr) {
+        this->instrList.at(instr->get_operator())->InsertAtTail(instr);
+    }
+
     void setInstructionList(const std::unordered_map<int, LinkedList*> &curr_instr_lst) {
         // [09/20/2024]: We have to make deep copies lol
         // [09/02/2024]: VALIDATE that this makes a shallow copy (we only care abt the values, since we're going to continue to modify this [curr_instr_list])
