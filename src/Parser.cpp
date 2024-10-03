@@ -148,15 +148,18 @@ SSA* Parser::p_statSeq() {
 
 // [09/05/2024]: ToDo - resume here (after SSA_linked_list)!
 // - should return the first BasicBlock that was created here
-BasicBlock* Parser::p2_statSeq() {
+SSA* Parser::p2_statSeq() {
     #ifdef DEBUG
         std::cout << "[Parser::p2_statSeq(" << this->sym.to_string() << ")]: found a statement to parse" << std::endl;
     #endif
-    BasicBlock *curr_bb = nullptr, *prev_bb = nullptr;
-    BasicBlock *first = p2_statement(); // ends with `;` = end of statement
-    this->currBB = first;
-    prev_bb = this->currBB;
+    // BasicBlock *curr_bb = nullptr, *prev_bb = nullptr;
+    // BasicBlock *first = p2_statement(); // ends with `;` = end of statement
+    // this->currBB = first;
+    // prev_bb = this->currBB;
     // - the first statement should always use the initial BB: even if we have jumps, we always write an SSA first (cmp, bra, etc...)
+    
+    SSA *first_SSA = nullptr; // the first SSA instr executed in the statement
+
     while (this->CheckFor(Result(2, 4), true)) { // if [optional] next token is ';', then we still have statements
         next();
 
@@ -165,32 +168,43 @@ BasicBlock* Parser::p2_statSeq() {
             // 1) notice we've created and are using a new BB, & 
             // 2) when we have the ability to attatch (link) the newly created BB and old one (i.e. this->newBB->parent = this->oldBB)
 
-        curr_bb = p2_statement();
+        first_SSA = p2_statement();
 
-        if (curr_bb != prev_bb) {
-            prev_bb->child = curr_bb;
-            curr_bb->parent = prev_bb;
-        }
+        if (this->prevJump) {
+            this->prevInstr->set_operand2(first_SSA);
 
-        if (curr_bb == nullptr) { // [curr_bb] = nullptr indicates that this was the last stmt and it js had a `;` too (last stmt `;` is optional)
             #ifdef DEBUG
-                std::cout << "curr_bb returned nullptr!" << std::endl;
+                std::cout << "prevInstr [" << this->prevInstr->toString() << "] has been updated with new [y] operand (2)!" << std::endl;
             #endif
-            break;
+
+            this->prevJump = false;
+            this->prevInstr = nullptr;
         }
 
-        prev_bb = curr_bb;
-        this->currBB = curr_bb; // [09/27/2024]: implicitly gets passed into all the functions
+        // if (curr_bb != prev_bb) {
+        //     prev_bb->child = curr_bb;
+        //     curr_bb->parent = prev_bb;
+        // }
+
+        // if (curr_bb == nullptr) { // [curr_bb] = nullptr indicates that this was the last stmt and it js had a `;` too (last stmt `;` is optional)
+        //     #ifdef DEBUG
+        //         std::cout << "curr_bb returned nullptr!" << std::endl;
+        //     #endif
+        //     break;
+        // }
+
+        // prev_bb = curr_bb;
+        // this->currBB = curr_bb; // [09/27/2024]: implicitly gets passed into all the functions
 
         // [07/28/2024]: Should be doing something with [curr_bb] here.
-        #ifdef DEBUG
-            std::cout << "[curr_bb] returned: " << curr_bb->toString() << std::endl;
-        #endif
+        // #ifdef DEBUG
+        //     std::cout << "[curr_bb] returned: " << curr_bb->toString() << std::endl;
+        // #endif
     }
     #ifdef DEBUG
-        std::cout << "[Parser::p2_statSeq()] returning: " << first->toString() << std::endl;
+        std::cout << "[Parser::p2_statSeq()] returning: " << first_SSA->toString() << std::endl;
     #endif
-    return first; // returning first [SSA_instr] in [p_statSeq()] so we know control flow
+    return first_SSA; // returning first [SSA_instr] in [p_statSeq()] so we know control flow
 }
 
 SSA* Parser::p_statement() {
@@ -226,11 +240,13 @@ SSA* Parser::p_statement() {
 }
 
 // [10/01/2024]: ToDo
-BasicBlock* Parser::p2_statement() {
+// - should return FIRST instruction executed within statement (for while-loop so we know where to jmp after)
+SSA* Parser::p2_statement() {
     #ifdef DEBUG
         std::cout << "[Parser::p2_statement(" << this->sym.to_string() << ")]" << std::endl;
     #endif
-    BasicBlock *stmt = this->currBB;
+    // BasicBlock *stmt = this->currBB;
+    SSA *stmt = nullptr;
     // if we see any of these tokens then it means the next thing is another statement
     // - [let, call, if, while, return]: checked by [p_statSeq]
     // [Assumption]: after every statement has a semicolon
@@ -255,7 +271,7 @@ BasicBlock* Parser::p2_statement() {
             std::cout << "stmt != nullptr; stmt = " << stmt->toString() << std::endl;
         }
     #endif
-    return stmt; // [07/28/2024]: Why do we return an [SSA*] here?
+    return stmt; // [10/03/2024]: Why do we return an [SSA*] here?
 }
 
 // [07/28/2024]: Return the [SSA instr] pointing to the const-assignment of the [value]
@@ -346,7 +362,7 @@ SSA* Parser::p_assignment() {
     // Old Code end;
 }
 
-BasicBlock* Parser::p2_assignment() {
+SSA* Parser::p2_assignment() {
     #ifdef DEBUG
         std::cout << "[Parser::p2_assignment(" << this->sym.to_string() << ")]" << std::endl;
     #endif
@@ -430,16 +446,16 @@ BasicBlock* Parser::p2_assignment() {
 
     // [08/07/2024]: Revised; wtf was i trying to say down there???
     #ifdef DEBUG
-        std::cout << "inserted new var-val mapping: {" << SymbolTable::symbol_table.at(ident) << ", " << value->toString() << "}" << std::endl;
-        std::cout << "value addr: " << &value << "; value toString(): " << value->toString() << std::endl;
+        std::cout << "inserted new var-val mapping: {" << SymbolTable::symbol_table.at(ident) << ", " << ret->toString() << "}" << std::endl;
+        std::cout << "value addr: " << &ret << "; value toString(): " << ret->toString() << std::endl;
     #endif
     // this->SSA_instrs.push_back(value);
     #ifdef DEBUG
-        std::cout << "[Parser::p_assignment()]: returning " << value->toString() << std::endl;
+        std::cout << "[Parser::p_assignment()]: returning " << ret->toString() << std::endl;
     #endif
 
     // [10/01/2024]: Don't we need to assign [this->VVs] to this->currBB first?
-    return this->currBB;
+    return ret;
 }
 
 // ToDo: after generating the Dot & graph the first time
@@ -639,7 +655,6 @@ SSA* Parser::p_ifStatement() {
     return phi_instr; // [08/08/2024]: For now this is good
 }
 
-// ToDo;
 SSA* Parser::p_whileStatement() {
     #ifdef DEBUG
         std::cout << "[Parser::p_whileStatement(" << this->sym.to_string() << ")]" << std::endl;
@@ -647,6 +662,46 @@ SSA* Parser::p_whileStatement() {
     // WHILE
     this->CheckFor(Result(2, 22)); // check `while`; Note: we only do this as a best practice and to consume the `while` token
     SSA *jmp_instr = p_relation(); // WHILE: relation
+    // this->SSA_instrs.push_back(jmp_instr);
+
+    // DO
+    this->CheckFor(Result(2, 23)); // check `do`
+
+    // // previously: do something start here
+    // BasicBlock *while_body;
+    // BasicBlock body = BasicBlock(blk, this->instruction_list);
+    // while_body = &body;
+    // blk->children.push_back(while_body);
+    // while_body->children.push_back(blk); // technically a "child" since we loop back to it
+    // // previously: do something end here
+
+    SSA *while1 = p_statSeq(); // DO: relation
+    // this->SSA_instrs.push_back(while1); // returns first statement from statSeq in while
+    #ifdef DEBUG
+        std::cout << "[Parser::p_whileStatement()] pushes back: " << while1->toString() << std::endl;
+    #endif
+
+    // OD
+    this->CheckFor(Result(2, 24)); // check `od`
+
+    // return while1; // [07/28/2024]: might need this here(?)
+    // [07/31/2024]: js matching [p_ifStatement()], for now don't know what to do abt this
+    
+    // [09/20/2024]: Do this before we return. so that the next SSA instr added will be the new jump from [unsuccessful relation: while-loop]
+    this->prevJump = true;
+    this->prevInstrs.push(jmp_instr);
+
+    return jmp_instr; // [08/08/2024]: This is good here; [jmp_instr] was pushed-back before returing from [p_relation()]
+}
+
+// ToDo;
+SSA* Parser::p2_whileStatement() {
+    #ifdef DEBUG
+        std::cout << "[Parser::p2_whileStatement(" << this->sym.to_string() << ")]" << std::endl;
+    #endif
+    // WHILE
+    this->CheckFor(Result(2, 22)); // check `while`; Note: we only do this as a best practice and to consume the `while` token
+    SSA *jmp_instr = p2_relation(); // WHILE: relation
     // this->SSA_instrs.push_back(jmp_instr);
 
     // DO
@@ -709,7 +764,7 @@ SSA* Parser::p_return() {
     return ret; // [08/31/2024]: compilation stub
 }
 
-BasicBlock* Parser::p2_return() {
+SSA* Parser::p2_return() {
     #ifdef DEBUG
         std::cout << "[Parser::p2_return(" << this->sym.to_string() << ")]" << std::endl;
     #endif
@@ -717,7 +772,16 @@ BasicBlock* Parser::p2_return() {
 
     SSA *ret = new SSA(16, retVal); // [SSA constructor] should handle checking of [retVal](nullptr)
     // this->SSA_instrs.push_back(ret);
-    this->addSSA(ret);
+    SSA *tmp = this->addSSA(ret);
+
+    if (tmp != ret) {
+        ret = tmp;
+        delete tmp;
+        tmp = nullptr;
+    } else {
+        this->add_SSA_table(ret);
+    }
+
     // return ret; // [07/28/2024]: might need this here(?)
 
 
@@ -729,7 +793,7 @@ BasicBlock* Parser::p2_return() {
     //     blk->instruction_list.at(op).InsertAtHead(SSA(op, {value}));
     // }
 
-    return this->currBB; // [10/02/2024]: compilation stub
+    return ret; // [10/02/2024]: compilation stub
 }
 
 SSA* Parser::p_relation() {

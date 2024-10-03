@@ -437,13 +437,13 @@ private:
     // [09/04/2024]: ToDo - transition into BasicBlocks
     BasicBlock* p2_start();
     void p2_varDecl();
-    BasicBlock* p2_statSeq();
-    BasicBlock* p2_statement(); 
-    BasicBlock* p2_assignment();
+    SSA* p2_statSeq();
+    SSA* p2_statement(); 
+    SSA* p2_assignment();
     BasicBlock* p2_funcCall();
     BasicBlock* p2_ifStatement();
     BasicBlock* p2_whileStatement();
-    BasicBlock* p2_return();
+    SSA* p2_return();
 
     BasicBlock* p2_relation();
     BasicBlock* p2_expr();
