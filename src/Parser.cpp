@@ -782,17 +782,6 @@ SSA* Parser::p2_return() {
         this->add_SSA_table(ret);
     }
 
-    // return ret; // [07/28/2024]: might need this here(?)
-
-
-    // // [07/19/2024] This probably needs revising
-    // if (value == -1) { // no expr (optional)
-    //     // previously: do something here (add [return] SSA?)
-    //     int op = SymbolTable::operator_table.at("ret");
-    //     this->instruction_list.at(op).InsertAtHead(SSA(op, {value}));
-    //     blk->instruction_list.at(op).InsertAtHead(SSA(op, {value}));
-    // }
-
     return ret; // [10/02/2024]: compilation stub
 }
 
