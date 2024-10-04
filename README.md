@@ -1,4 +1,13 @@
 # **To Do;**
+**[10/03/2024]**
+linked-list
+- most recenly added SSA-stmt should be searched first (i.e. placed at head), OR maintain a ptr at end of each LL (turn it into a LL which iterates from tail to head) and search from tail
+
+if-statement
+- create empty [phi():SSA] at the start
+- each time we have a new SSA, update the phi based on which path (if/else) SSA belongs to
+- last SSA for [if-path] should have a branch (to phi if else exists)
+
 **[07/28/2024]**
 Think we should figure out a way to ensure that (the previous [SSA] we're using) definitely DOM's the [current/new SSA] being generated
 **[07/25/2024]**

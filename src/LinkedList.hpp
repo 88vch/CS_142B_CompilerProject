@@ -8,19 +8,20 @@
 class Node {
 public:
     SSA *instr;
-    Node *next;
+    // Node *next;
     Node *prev;
 
     // Constructor
-    Node() : instr(nullptr), next(nullptr), prev(nullptr) {}
+    // Node() : instr(nullptr), next(nullptr), prev(nullptr) {}
+    Node() : instr(nullptr), prev(nullptr) {}
 
     ~Node() { 
         if (this->instr) {
             delete this->instr; 
-            this->instr = nullptr; 
         }
-        // this->instr = nullptr;
-        this->next = nullptr; this->prev = nullptr; 
+        this->instr = nullptr;
+        // this->next = nullptr; 
+        this->prev = nullptr; 
     }
 };
     
@@ -41,11 +42,14 @@ public:
         //     std::cout << "\tin ~LinkedList()" << std::endl;
         // #endif
 
-        Node *current = head;
+        // Node *current = this->head;
+        Node *current = this->tail;
+        
         while (current) {
             Node *temp = current;
-            current = current->next;
-            
+            // current = current->next;
+            current = current->prev;
+
             delete temp;
             temp = nullptr;
         }
@@ -60,22 +64,23 @@ public:
         // #endif
     }
 
-    void InsertAtHead(SSA *instruction) {
-        Node* newNode = new Node();
-        newNode->instr = instruction;
+    // [10/03/2024]: Commenting out to make singly linked list
+    // void InsertAtHead(SSA *instruction) {
+    //     Node* newNode = new Node();
+    //     newNode->instr = instruction;
 
-        // If the list is empty, make the new node as the head
-        if (head == nullptr) {
-            head = newNode;
-            tail = newNode;
-        } else {
-            // Otherwise, insert the new node after the current head
-            head->prev = newNode;
-            head->prev->next = head;
-            head = newNode;
-        }
-        length++;
-    }
+    //     // If the list is empty, make the new node as the head
+    //     if (head == nullptr) {
+    //         head = newNode;
+    //         tail = newNode;
+    //     } else {
+    //         // Otherwise, insert the new node after the current head
+    //         head->prev = newNode;
+    //         head->prev->next = head;
+    //         head = newNode;
+    //     }
+    //     length++;
+    // }
 
     void InsertAtTail(SSA *instruction) {
         #ifdef DEBUG
@@ -85,27 +90,31 @@ public:
         newNode->instr = instruction;
 
         // If the list is empty, make the new node as the head
-        if (head == nullptr) {
-            head = newNode;
-            tail = newNode;
+        if (this->head == nullptr) {
+            this->head = newNode;
+            this->tail = newNode;
         } else {
             // Otherwise, insert the new node after the current tail
-            tail->next = newNode;
-            newNode->prev = tail;
-            tail = newNode;
+            // tail->next = newNode;
+            newNode->prev = this->tail;
+            this->tail = newNode;
         }
         length++;
     }
 
     SSA* contains(SSA *instruction) const {
-        Node *curr = head;
+        // Node *curr = this->head;
+        Node *curr = this->tail; // [10/03/2024]: making compare start at tail to compare from 'most recently added instr'
 
-        while (curr != tail) {
+        // while (curr != tail) {
+        while (curr != this->head) {
             // ToDo: Revise this! [Old Version]; 
             // if (SSA::compare(curr->instr, instruction)) {
             //     return true;
             // }
-            curr = curr->next;
+
+            // curr = curr->next;
+            curr = curr->prev;
             if (curr->instr->compare(instruction)) {
                 return curr->instr;
             }
@@ -114,17 +123,20 @@ public:
     }
 
     void printList() const {
-        Node *curr = this->head;
+        // Node *curr = this->head;
+        Node *curr = this->tail;
         // #ifdef DEBUG
         //     std::cout << "LinkedList::printList()" << std::endl;
         // #endif
 
         while (curr) {
             std::cout << curr->instr->toString();
-            if (curr != tail) {
+            // if (curr != this->tail) {
+            if (curr != this->head) {
                 std::cout << ", " << std::endl << "\t";
             }
-            curr = curr->next;
+            // curr = curr->next;
+            curr = curr->prev;
         }
         std::cout << std::endl;
         // #ifdef DEBUG
@@ -134,14 +146,17 @@ public:
 
     std::string listToString() const {
         std::string lst = "";
-        Node *curr = this->head;
+        // Node *curr = this->head;
+        Node *curr = this->tail;
 
         while (curr) {
             lst += curr->instr->toString();
-            if (curr != tail) {
+            // if (curr != this->tail) {
+            if (curr != this->head) {
                 lst += ", \n\t";
             }
-            curr = curr->next;
+            // curr = curr->next;
+            curr = curr->prev;
         }
         lst += "\n";
         return lst;
