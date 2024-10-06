@@ -172,7 +172,7 @@ public:
         }
 
         // [09/19/2024]: Replaced Below (previous=this->SSA_instrs; current=this->instrList)
-        Node *curr = this->instrList.at(op)->head;
+        Node *curr = this->instrList.at(op)->tail;
         while (curr) {
             // #ifdef DEBUG
             //     std::cout << "\t\tcomparing instr=[" << curr->instr->toString() << "]" << std::endl;
@@ -188,7 +188,7 @@ public:
                 //     std::cout << "\t\tgot false" << std::endl;
                 // #endif
             }
-            curr = curr->next;
+            curr = curr->prev;
         }
 
         // #ifdef DEBUG
@@ -225,7 +225,7 @@ public:
 
         // [09/20/2024]: Replaced from using [this->instrList] to [this->BB0->constList]
         // [09/19/2024]: Replaced Below (previous=this->SSA_instrs; current=this->instrList)
-        Node *curr = this->BB0->constList->head;
+        Node *curr = this->BB0->constList->tail;
         while (curr) {
             // #ifdef DEBUG
             //     std::cout << "\tthis instr: [" << curr->instr->toString() << "]" << std::endl;
@@ -234,7 +234,7 @@ public:
                 ret = curr->instr;
                 break;
             }
-            curr = curr->next;
+            curr = curr->prev;
         }
         return ret;
     }
@@ -284,6 +284,21 @@ public:
                     break;
             }
         this->SSA_instrs.push_back(ret);
+        return ret;
+    }
+
+    inline SSA* addSSA1(SSA *instr, bool check = false) {
+        // [10/05/2024]: todo refactor addSSA() with additional prameter to determine if need to check for existence
+        SSA *ret = nullptr;
+        if (instr->get_constVal()) {
+            if (this->CheckConstExistence(*(instr->get_constVal())) == nullptr) {
+                ret = this->addSSA(instr);
+            }
+        } else {
+            if (this->CheckExistence(instr->get_operator(), instr->get_operand1(), instr->get_operand2()) == nullptr) {
+                ret = this->addSSA(instr);
+            }
+        }
         return ret;
     }
 
