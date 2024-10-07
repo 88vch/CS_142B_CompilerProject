@@ -60,7 +60,7 @@ SSA* Parser::p_start() {
     return statSeq;
 }
 
-BasicBlock* Parser::p2_start() {
+SSA* Parser::p2_start() {
     #ifdef DEBUG
         std::cout << "[Parser::p2_start(" << this->sym.to_string() << ")]" << std::endl;
     #endif
@@ -88,7 +88,7 @@ BasicBlock* Parser::p2_start() {
     // - big picture wise it's BB0->BB1->done; where BB1 is everything.
     this->startBB = new BasicBlock();
     this->currBB = this->startBB;
-    BasicBlock *statSeq = p2_statSeq();
+    SSA *statSeq = p2_statSeq();
 
     this->CheckFor(Result(2, 16)); // check for `}`
     this->CheckFor(Result(2, 30)); // check for `.`
@@ -297,20 +297,17 @@ SSA* Parser::p_assignment() {
     this->CheckFor(Result(2, 7)); // check for `<-`
 
     // EXPRESSION
-    SSA *res = nullptr, *value = p_expr();
-    
-    res = this->addSSA1(value, true);
-    // if (value->get_constVal()) {
-    //     if (this->CheckConstExistence(*(value->get_constVal())) == nullptr) {
-    //         this->addSSA(value); // [09/30/2024]: Note - there's an additional check here (return's [nullptr || SSA *])
+    SSA *res = p_expr();
+    // if (res->get_constVal()) {
+    //     if (this->CheckConstExistence(*(res->get_constVal())) == nullptr) {
+    //         this->addSSA(res); // [09/30/2024]: Note - there's an additional check here (return's [nullptr || SSA *])
     //     }
     // } else {
-    //     if (this->CheckExistence(value->get_operator(), value->get_operand1(), value->get_operand2()) == nullptr) {
-    //         this->addSSA(value); // [09/30/2024]: Note - same as above
+    //     if (this->CheckExistence(res->get_operator(), res->get_operand1(), res->get_operand2()) == nullptr) {
     //     }
     // }
 
-    int VV_value = this->add_SSA_table(value);
+    int VV_value = this->add_SSA_table(res);
     // [08/07/2024]: This still holds true (below); 
     // - [ident] should correspond to [SymbolTable::symbol_table] key with the value being the [value]; stoi(value)
     // - Should not need to return any SSA value for this; will probably need more complexity when BB's are introduced
@@ -327,25 +324,25 @@ SSA* Parser::p_assignment() {
             std::cout << "none!" << std::endl;
         }
     #endif
-    // this->varVals.insert_or_assign(SymbolTable::symbol_table.at(ident), value);
+    // this->varVals.insert_or_assign(SymbolTable::symbol_table.at(ident), this->CheckExistence(instr->get_operator(), instr->get_operand1(), instr->get_operand2()));
     this->VVs.insert_or_assign(ident, VV_value);
     this->printVVs();
 
 
     // [08/07/2024]: Revised; wtf was i trying to say down there???
     #ifdef DEBUG
-        std::cout << "inserted new var-val mapping: {" << SymbolTable::symbol_table.at(ident) << ", " << value->toString() << "}" << std::endl;
-        std::cout << "value addr: " << &value << "; value toString(): " << value->toString() << std::endl;
+        std::cout << "inserted new var-val mapping: {" << SymbolTable::symbol_table.at(ident) << ", " << res->toString() << "}" << std::endl;
+        std::cout << "value addr: " << &res << "; value toString(): " << res->toString() << std::endl;
     #endif
-    // this->SSA_instrs.push_back(value);
+    // this->SSA_instrs.push_back(res);
     #ifdef DEBUG
-        std::cout << "[Parser::p_assignment()]: returning " << value->toString() << std::endl;
+        std::cout << "[Parser::p_assignment()]: returning " << res->toString() << std::endl;
     #endif
-    return value;
+    return res;
 
     // [07/28/2024]: this will always be a new [SSA instr] bc it contains a path not simply a value (i.e. if the path has multiple ways to get there [think if/while-statements], the value will change depending on which route the path takes)
     // SSA *constVal = nullptr;
-    // SSA tmp = SSA(0, value);
+    // SSA tmp = SSA(0, res);
     // constVal = &tmp;
     // this->SSA_instrs.push_back(constVal);
     // #ifdef DEBUG
@@ -485,6 +482,9 @@ SSA* Parser::p_funcCall() {
             SSA *tmp = new SSA(23);
             res = this->addSSA1(tmp, true);
             if (res != tmp) {
+                #ifdef DEBUG
+                    std::cout << "res: [" << res->toString() << "] != tmp: [" << tmp->toString() << "]" << std::endl;
+                #endif
                 delete tmp;
                 tmp = nullptr;
             }
@@ -517,7 +517,7 @@ SSA* Parser::p_funcCall() {
                 // res = this->varVals.at(num);
                 // std::cout << res->toString() << std::endl;
                 
-                SSA *tmp = new SSA(24, this->VVs.at(num));
+                SSA *tmp = new SSA(24, this->ssa_table.at(this->VVs.at(num)));
                 res = this->addSSA1(tmp, true);
                 if (res != tmp) {
                     delete tmp;
@@ -536,12 +536,12 @@ SSA* Parser::p_funcCall() {
                         delete tmp;
                         tmp = nullptr;
                     }
-                    tmp = res;
-                    SSA *tmp2 = new SSA(24, tmp);
-                    res = this->addSSA(tmp2);
-                    if (res != tmp2) {
-                        delete tmp2;
-                        tmp2 = nullptr;
+
+                    tmp = new SSA(24, res);
+                    res = this->addSSA1(tmp);
+                    if (res != tmp) {
+                        delete tmp;
+                        tmp = nullptr;
                     }
                     
                     // res = this->CheckConstExistence(num);
@@ -608,7 +608,11 @@ SSA* Parser::p_ifStatement() {
     */
     // IF
     this->CheckFor(Result(2, 18)); // check `if`; Note: we only do this as a best practice and to consume the `if` token
-    SSA *jmp_instr = p_relation(); // IF: relation
+    SSA *cmp_instr = p_relation(); // IF: relation
+    
+    SSA *bra_instr = new SSA(8); // [10/06/2024]: Note - figure out which branch instruction to use && finish this 
+    this->addSSA1(bra_instr);
+
 
     // THEN
     this->CheckFor(Result(2, 19)); // check `then`
@@ -638,7 +642,10 @@ SSA* Parser::p_ifStatement() {
         // // previously: do something end here
 
         if2 = p_statSeq(); // returns the 1st SSA instruction in the case which we jump to [case 2: if () == false]
-        jmp_instr->set_operand2(if2);
+        #ifdef DEBUG
+            std::cout << "bra_instr: " << bra_instr->toString() << std::endl;
+        #endif
+        bra_instr->set_operand2(if2); // [10/06/2024]: keep [set_operand2()] since we may change the `bra` instr to a different type of instruction (which will make it dependent upon the result of the previous instr `cmp`)
     } else {
     // 【09/23/2024】： This is not the condition that properly checks whether or not we have an `else` condition
     // - it's possible to have a [statSeq] that doesn't use any SSA (right? Yes. Ex. OutputNum(1) OutputNewLine())
@@ -649,7 +656,7 @@ SSA* Parser::p_ifStatement() {
     
         // [09/20/2024]: if `else` condition DNE, then we want to set the jump to be the next SSA instr after the `if-condition instr's`
         this->prevJump = true;
-        this->prevInstrs.push(jmp_instr);
+        this->prevInstrs.push(cmp_instr);
 
         // [07/28/2024]: might need this here(?)
         return if1; // [08/08/2024]: Good call; yes we should
@@ -881,7 +888,8 @@ SSA* Parser::p_relation() {
     // ToDo: get [instr_num] from [cmp SSA] -> [cmp_instr_num] so that you can pass it below 
     SSA *cmp_instr = new SSA(5, x, y); // [SymbolTable::operator_table `cmp`: 5]
     // this->SSA_instrs.push_back(cmp_instr);
-    ret = this->addSSA(cmp_instr);
+    // ret = this->addSSA(cmp_instr);
+    ret = this->addSSA1(cmp_instr);
     if (ret != cmp_instr) {
         delete cmp_instr;
         cmp_instr = nullptr;
@@ -933,6 +941,10 @@ SSA* Parser::p_relation() {
     return jmp_instr;
 }
 
+SSA* Parser::p2_relation() {
+    return this->prevInstr; // [10/06/2024]: compilation stub
+}
+
 // returns the corresponding value in [SymbolTable::symbol_table]
 // [07/24/2024]: Should always return a [kind=0] const value bc all sub-routes lead to execution of a (+, -, *, /)
 SSA* Parser::p_expr() { // Check For `+` && `-`
@@ -946,6 +958,7 @@ SSA* Parser::p_expr() { // Check For `+` && `-`
         next();
         SSA *y = p_expr();
         x = BuildIR(op, x, y); // ToDo: Create IR Block
+        this->addSSA1(x, true);
     }
     #ifdef DEBUG
         std::cout << "[Parser::p_expr()]: returning: " << x->toString() << std::endl;

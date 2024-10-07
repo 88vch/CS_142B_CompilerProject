@@ -27,7 +27,7 @@ SSA::SSA(int op) {
         std::cout << "in SSA(int op) constructor" << std::endl;
     #endif
 
-    if (op == 23 || op == 25) { // [read]
+    if (op == 8 || op == 23 || op == 25) { // [read]
         this->debug_num = curr_instr_num++;
         this->op = op;
         
@@ -35,7 +35,7 @@ SSA::SSA(int op) {
         this->y = nullptr;
         this->constVal = nullptr;
     } else {
-        std::cout << "Error: expected SSA() operation to be [23: read] got: [" << op << "]! exiting prematurely..." << std::endl;
+        std::cout << "Error: expected SSA() operation to be [8: bra, 23: read, or 25: writeNL] got: [" << op << "]! exiting prematurely..." << std::endl;
         exit(EXIT_FAILURE);
     }
 
@@ -46,7 +46,7 @@ SSA::SSA(int op) {
 
 SSA::SSA(int op, int opnd) {
     #ifdef DEBUG
-        std::cout << "in SSA(int op, int opnd) constructor" << std::endl;
+        std::cout << "in SSA(int op=" << op << ", int opnd=" << opnd << ") constructor" << std::endl;
     #endif
 
 

@@ -283,24 +283,42 @@ public:
                     ret = new SSA(SymbolTable::operator_table.at("div"), x, y);
                     break;
             }
-        this->SSA_instrs.push_back(ret);
+        // this->SSA_instrs.push_back(ret);
         return ret;
     }
 
     // [10/06/2024]: When wouldn't we want to check (A: phi)
     inline SSA* addSSA1(SSA *instr, bool check = false) {
+        #ifdef DEBUG
+            std::cout << "in addSSA1(instr=" << instr->toString() << ")" << std::endl;
+        #endif
         // [10/05/2024]: todo refactor addSSA() with additional prameter to determine if need to check for existence
-        SSA *ret = nullptr;
+        // SSA *ret = nullptr;
         if (instr->get_constVal()) {
-            if (this->CheckConstExistence(*(instr->get_constVal())) == nullptr) {
-                ret = this->addSSA(instr);
+            #ifdef DEBUG
+                std::cout << "\tinstr is const" << std::endl;
+            #endif
+            SSA *tmp = this->CheckConstExistence(*(instr->get_constVal())); 
+            if (tmp == nullptr) {
+                // ret = this->addSSA(instr);
+                instr = this->addSSA(instr);
+            } else {
+                instr = tmp;
             }
         } else {
-            if (this->CheckExistence(instr->get_operator(), instr->get_operand1(), instr->get_operand2()) == nullptr) {
-                ret = this->addSSA(instr);
+            #ifdef DEBUG
+                std::cout << "\tinstr is NOT const" << std::endl;
+            #endif
+            SSA *tmp = this->CheckExistence(instr->get_operator(), instr->get_operand1(), instr->get_operand2());
+            if (tmp == nullptr) {
+                // ret = this->addSSA(instr);
+                instr = this->addSSA(instr);
+            } else {
+                instr = tmp;
             }
         }
-        return ret;
+        // return ret;
+        return instr;
     }
 
     inline SSA* addSSA(SSA *instr) {
@@ -424,10 +442,10 @@ private:
     std::unordered_map<int, SSA *> ssa_table = {};
     std::unordered_map<SSA *, int> ssa_table_reversed = {};
 
-    // [09/02/2024]: Do we need to optimize this? (i.e. <int, int> that is a table lookup probably in [SymbolTable]?)
+    // [09/02/2024]: Do we need to optimize this? (i.e. <int, int> that is a table lookup probably in [SymbolTable]? Nope! in [Parser])
     // - Note: we probably should
     // std::unordered_map<std::string, SSA*> varVals; 
-    std::unordered_map<int, int> VVs; // [key (int) = SymbolTable::symbol_table.at(key) (string)], [value (int) = SymbolTable::ssa_table.at(value) (string)]
+    std::unordered_map<int, int> VVs; // [key (int) = SymbolTable::symbol_table.at(key) (string)], [value (int) = Parser::ssa_table.at(value) (string)]
     size_t s_index, source_len;
 
     // [09/02/2024]: Does this need to include the `const` SSA's? I don't think it should bc the const instr's only belong to BB0 (special)
@@ -451,17 +469,17 @@ private:
     std::unordered_set<int> funcDeclarations; // the int in the symbol table
 
     // [09/04/2024]: ToDo - transition into BasicBlocks
-    BasicBlock* p2_start();
+    SSA* p2_start();
     void p2_varDecl();
     SSA* p2_statSeq();
     SSA* p2_statement(); 
     SSA* p2_assignment();
     BasicBlock* p2_funcCall();
     BasicBlock* p2_ifStatement();
-    BasicBlock* p2_whileStatement();
+    SSA* p2_whileStatement();
     SSA* p2_return();
 
-    BasicBlock* p2_relation();
+    SSA* p2_relation();
     BasicBlock* p2_expr();
     BasicBlock* p2_term();
     BasicBlock* p2_factor();

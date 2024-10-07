@@ -77,8 +77,14 @@ public:
         if (this->debug_num < 0) { return false; }
 
         if ((this->op == op) && (this->x == x) && (this->y == y)) {
+            #ifdef DEBUG
+                std::cout << "\treturned true!" << std::endl;
+            #endif
             return true;
         }
+        #ifdef DEBUG
+            std::cout << "\treturned false!" << std::endl;
+        #endif
         return false;
     }
     bool compare(SSA *s) const {
