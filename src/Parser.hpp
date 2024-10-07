@@ -287,6 +287,7 @@ public:
         return ret;
     }
 
+    // [10/06/2024]: When wouldn't we want to check (A: phi)
     inline SSA* addSSA1(SSA *instr, bool check = false) {
         // [10/05/2024]: todo refactor addSSA() with additional prameter to determine if need to check for existence
         SSA *ret = nullptr;

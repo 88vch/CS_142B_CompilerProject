@@ -297,17 +297,18 @@ SSA* Parser::p_assignment() {
     this->CheckFor(Result(2, 7)); // check for `<-`
 
     // EXPRESSION
-    SSA *value = p_expr();
+    SSA *res = nullptr, *value = p_expr();
     
-    if (value->get_constVal()) {
-        if (this->CheckConstExistence(*(value->get_constVal())) == nullptr) {
-            this->addSSA(value); // [09/30/2024]: Note - there's an additional check here (return's [nullptr || SSA *])
-        }
-    } else {
-        if (this->CheckExistence(value->get_operator(), value->get_operand1(), value->get_operand2()) == nullptr) {
-            this->addSSA(value); // [09/30/2024]: Note - same as above
-        }
-    }
+    res = this->addSSA1(value, true);
+    // if (value->get_constVal()) {
+    //     if (this->CheckConstExistence(*(value->get_constVal())) == nullptr) {
+    //         this->addSSA(value); // [09/30/2024]: Note - there's an additional check here (return's [nullptr || SSA *])
+    //     }
+    // } else {
+    //     if (this->CheckExistence(value->get_operator(), value->get_operand1(), value->get_operand2()) == nullptr) {
+    //         this->addSSA(value); // [09/30/2024]: Note - same as above
+    //     }
+    // }
 
     int VV_value = this->add_SSA_table(value);
     // [08/07/2024]: This still holds true (below); 
@@ -400,16 +401,17 @@ SSA* Parser::p2_assignment() {
     // EXPRESSION
     SSA *ret = nullptr, *value = p_expr();
     
+    ret = this->addSSA1(value, true);
     // todo: if SSA instr already exists, no need to create new entry in [add_SSA_table()]
-    if (value->get_constVal()) {
-        if (this->CheckConstExistence(*(value->get_constVal())) == nullptr) {
-            ret = this->addSSA(value);
-        }
-    } else {
-        if (this->CheckExistence(value->get_operator(), value->get_operand1(), value->get_operand2()) == nullptr) {
-            ret = this->addSSA(value);
-        }
-    }
+    // if (value->get_constVal()) {
+    //     if (this->CheckConstExistence(*(value->get_constVal())) == nullptr) {
+    //         ret = this->addSSA(value);
+    //     }
+    // } else {
+    //     if (this->CheckExistence(value->get_operator(), value->get_operand1(), value->get_operand2()) == nullptr) {
+    //         ret = this->addSSA(value);
+    //     }
+    // }
 
     if (ret != value) {
         #ifdef DEBUG
@@ -480,10 +482,17 @@ SSA* Parser::p_funcCall() {
         if (f.name == "InputNum") {
             this->CheckFor_udf_optional_paren();
 
-            res = this->CheckExistence(23, nullptr, nullptr);
-            if (!res) {
-                res = this->addSSA(new SSA(23));
+            SSA *tmp = new SSA(23);
+            res = this->addSSA1(tmp, true);
+            if (res != tmp) {
+                delete tmp;
+                tmp = nullptr;
             }
+
+            // res = this->CheckExistence(23, nullptr, nullptr);
+            // if (!res) {
+            //     res = this->addSSA(new SSA(23));
+            // }
         } else if (f.name == "OutputNum") {
             int num;
             // [09/22/2024]: But what are we supposed to do with the args?
@@ -507,19 +516,40 @@ SSA* Parser::p_funcCall() {
             if (this->VVs.find(num) != this->VVs.end()) {
                 // res = this->varVals.at(num);
                 // std::cout << res->toString() << std::endl;
-                res = this->CheckExistence(24, this->ssa_table.at(this->VVs.at(num)), nullptr);
-                if (!res) {
-                    res = this->addSSA(new SSA(24, this->VVs.at(num)));
+                
+                SSA *tmp = new SSA(24, this->VVs.at(num));
+                res = this->addSSA1(tmp, true);
+                if (res != tmp) {
+                    delete tmp;
+                    tmp = nullptr;
                 }
+                
+                // res = this->CheckExistence(24, this->ssa_table.at(this->VVs.at(num)), nullptr);
+                // if (!res) {
+                //     res = this->addSSA(new SSA(24, this->VVs.at(num)));
+                // }
             } else {
                 try {
-                    // std::cout << std::stoi(num) << std::endl;
-                    res = this->CheckConstExistence(num);
-                    // [09/27/2024]: then add to basicblock
-                    if (!res) {
-                        // [09/27/2024]: if [const-SSA] dne, create & return it [addSSA()]; use that as argument for [write-SSA]
-                        res = this->addSSA(new SSA(24, this->addSSA(new SSA(0, num))));
+                    SSA *tmp = new SSA(0, num);
+                    res = this->addSSA1(tmp, true);
+                    if (res != tmp) {
+                        delete tmp;
+                        tmp = nullptr;
                     }
+                    tmp = res;
+                    SSA *tmp2 = new SSA(24, tmp);
+                    res = this->addSSA(tmp2);
+                    if (res != tmp2) {
+                        delete tmp2;
+                        tmp2 = nullptr;
+                    }
+                    
+                    // res = this->CheckConstExistence(num);
+                    // // [09/27/2024]: then add to basicblock
+                    // if (!res) {
+                    //     // [09/27/2024]: if [const-SSA] dne, create & return it [addSSA()]; use that as argument for [write-SSA]
+                    //     res = this->addSSA(new SSA(24, this->addSSA(new SSA(0, num))));
+                    // }
                 } catch(...) {
                     std::cout << "could not recognize identifier corresponding to: [" << num << "]; exiting prematurely..." << std::endl;
                     exit(EXIT_FAILURE);
@@ -528,7 +558,14 @@ SSA* Parser::p_funcCall() {
         } else if (f.name == "OutputNewLine") {
             this->CheckFor_udf_optional_paren();
             // std::cout << std::endl; // new line (?)
-            res = this->addSSA(new SSA(25));
+            SSA *tmp = new SSA(25);
+            res = this->addSSA1(tmp, true);
+            if (res != tmp) {
+                delete tmp;
+                tmp = nullptr;
+            }
+
+            // res = this->addSSA(new SSA(25));
         } else {
             // [09/02/2024]: User-Defined Function (?)
             // check for optional `(`: determine whether a UD-function may/will have arguments or not
@@ -624,7 +661,8 @@ SSA* Parser::p_ifStatement() {
     // [Special Instruction]: phi() goes here
     SSA *phi_instr = new SSA(6, if1, if2); // gives us location of where to continue [SSA instr's] based on outcome of [p_relation()]
     // this->SSA_instrs.push_back(phi_instr);
-    SSA *addedInstr = this->addSSA(phi_instr);
+    SSA *addedInstr = this->addSSA1(phi_instr); // [check=false]
+    // SSA *addedInstr = this->addSSA(phi_instr);
     
     // [09/23/2024]: do something like this 
     // - bc we made a change in [LinkedList::contains()] && [Parser::addSSA()]
@@ -747,9 +785,13 @@ SSA* Parser::p_return() {
     #endif
     SSA *retVal = p_expr();
 
-    SSA *ret = new SSA(16, retVal); // [SSA constructor] should handle checking of [retVal](nullptr)
+    SSA *ret = nullptr, *tmp = new SSA(16, retVal); // [SSA constructor] should handle checking of [retVal](nullptr)
     // this->SSA_instrs.push_back(ret);
-    this->addSSA(ret);
+    ret = this->addSSA1(tmp, true);
+    if (ret != tmp) {
+        delete tmp;
+        tmp = nullptr;
+    }
     // return ret; // [07/28/2024]: might need this here(?)
 
 
@@ -770,12 +812,10 @@ SSA* Parser::p2_return() {
     #endif
     SSA *retVal = p_expr();
 
-    SSA *ret = new SSA(16, retVal); // [SSA constructor] should handle checking of [retVal](nullptr)
+    SSA *ret = nullptr, *tmp = new SSA(16, retVal); // [SSA constructor] should handle checking of [retVal](nullptr)
     // this->SSA_instrs.push_back(ret);
-    SSA *tmp = this->addSSA(ret);
-
-    if (tmp != ret) {
-        ret = tmp;
+    ret = this->addSSA1(tmp, true);
+    if (ret != tmp) {
         delete tmp;
         tmp = nullptr;
     } else {
@@ -786,6 +826,8 @@ SSA* Parser::p2_return() {
 }
 
 SSA* Parser::p_relation() {
+    SSA *ret = nullptr;
+
     #ifdef DEBUG
         std::cout << "[Parser::p_relation(" << this->sym.to_string() << ")]" << std::endl;
     #endif
@@ -839,13 +881,17 @@ SSA* Parser::p_relation() {
     // ToDo: get [instr_num] from [cmp SSA] -> [cmp_instr_num] so that you can pass it below 
     SSA *cmp_instr = new SSA(5, x, y); // [SymbolTable::operator_table `cmp`: 5]
     // this->SSA_instrs.push_back(cmp_instr);
-    SSA *addedInstr = this->addSSA(cmp_instr);
+    ret = this->addSSA(cmp_instr);
+    if (ret != cmp_instr) {
+        delete cmp_instr;
+        cmp_instr = nullptr;
+    }
 
     // [09/23/2024]: Similar idea as if-statement
     // - bc we made a change in [LinkedList::contains()] && [Parser::addSSA()]
-    if (cmp_instr != addedInstr) {
+    if (cmp_instr != ret) {
         delete cmp_instr;
-        cmp_instr = addedInstr;
+        cmp_instr = ret;
         
         #ifdef DEBUG
             std::cout << "cmp_instr dupe existed already; using dupe: " << cmp_instr->toString() << std::endl;
@@ -860,7 +906,20 @@ SSA* Parser::p_relation() {
     // return cmp_instr; // [07/28/2024]: might need this here(?)
     SSA *jmp_instr = new SSA(op, cmp_instr, nullptr); // [nullptr bc we don't know where to jump to yet]
     // this->SSA_instrs.push_back(jmp_instr);
-    this->addSSA(jmp_instr);
+    ret = this->addSSA1(jmp_instr);
+    if (ret != jmp_instr) {
+        delete jmp_instr;
+        jmp_instr = ret;
+
+        #ifdef DEBUG
+            std::cout << "jmp_instr dupe existed already; using dupe: " << cmp_instr->toString() << std::endl;
+        #endif
+    } else {
+        #ifdef DEBUG
+            std::cout << "created new jmp_instr: " << cmp_instr->toString() << std::endl;
+        #endif
+    }
+
     // [09/23/2024]: For now we shouldn't be pushing it in the relation
     // this->prevJump = true;
     // this->prevInstrs.push(jmp_instr);
@@ -925,23 +984,38 @@ SSA* Parser::p_factor() {
         #ifdef DEBUG
             std::cout << "\tgot [const], checking existence in [this->instrList]" << std::endl;
         #endif
-        // [07/26/2024]: return the SSA for the const value
-        // 1) check if value already exists as a const SSA
-        // 2) if exists, use and return; else, create and return new-SSA const
-        res = this->CheckConstExistence();
+        SSA *tmp = new SSA(0, this->sym.get_value_literal());
+        res = this->addSSA1(tmp, true);
+        if (res != tmp) {
+            delete tmp;
+            tmp = nullptr;
 
-        if (res == nullptr) { // if dne, create and return new-SSA const
-            // int val = this->sym.get_value_literal();
             #ifdef DEBUG
-                std::cout << "\t[Parser::p_factor()] created new [tmp] SSA const instr" << std::endl;
+                std::cout << "\t[const] val EXISTS in [this->instrList], using pre-existing-SSA instruction: [" << res->toString() << "]" << std::endl;
             #endif
-            res = new SSA(0, this->sym.get_value_literal());
-            // this->SSA_instrs.push_back(res);
-            this->addSSA(res);
+        } else {
             #ifdef DEBUG
                 std::cout << "\t[const] val dne in [this->instrList], created new-SSA instruction: [" << res->toString() << "]" << std::endl;
             #endif
         }
+        
+        // [07/26/2024]: return the SSA for the const value
+        // 1) check if value already exists as a const SSA
+        // 2) if exists, use and return; else, create and return new-SSA const
+        // res = this->CheckConstExistence(this->sym.get_value_literal());
+
+        // if (res == nullptr) { // if dne, create and return new-SSA const
+        //     // int val = this->sym.get_value_literal();
+        //     #ifdef DEBUG
+        //         std::cout << "\t[Parser::p_factor()] created new [tmp] SSA const instr" << std::endl;
+        //     #endif
+        //     res = new SSA(0, this->sym.get_value_literal());
+        //     // this->SSA_instrs.push_back(res);
+        //     this->addSSA(res);
+        //     #ifdef DEBUG
+        //         std::cout << "\t[const] val dne in [this->instrList], created new-SSA instruction: [" << res->toString() << "]" << std::endl;
+        //     #endif
+        // }
         next(); // [08/05/2024]: we can consume the [const-val]?
     } else if (this->sym.get_kind_literal() == 1) { // check [ident]
         // if (this->varVals.find(this->sym.get_value()) == this->varVals.end()) {
