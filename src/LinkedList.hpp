@@ -38,9 +38,9 @@ public:
     // [09/20/2024]: ToDo - create copy constructor
     
     ~LinkedList() {
-        // #ifdef DEBUG
-        //     std::cout << "\tin ~LinkedList()" << std::endl;
-        // #endif
+        #ifdef DEBUG
+            std::cout << "\tin ~LinkedList()" << std::endl;
+        #endif
 
         // Node *current = this->head;
         Node *current = this->tail;

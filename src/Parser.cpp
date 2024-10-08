@@ -632,7 +632,16 @@ SSA* Parser::p_ifStatement() {
     if (this->CheckFor(Result(2, 20), true)) { // check `else`
         // [09/20/2024]: if `else` exists, we need a jump at the end of `if` right?
         jmp1 = new SSA(8, nullptr);
-    
+        {
+            SSA *tmpInstr = jmp1;
+            jmp1 = this->addSSA1(jmp1); // [check=false]
+        
+            if (jmp1 != tmpInstr) {
+                delete tmpInstr;
+                tmpInstr = nullptr;
+            }
+        }
+
         next();
 
         // // previously: do something start here
@@ -668,16 +677,18 @@ SSA* Parser::p_ifStatement() {
     // [Special Instruction]: phi() goes here
     SSA *phi_instr = new SSA(6, if1, if2); // gives us location of where to continue [SSA instr's] based on outcome of [p_relation()]
     // this->SSA_instrs.push_back(phi_instr);
-    SSA *addedInstr = this->addSSA1(phi_instr); // [check=false]
-    // SSA *addedInstr = this->addSSA(phi_instr);
-    
-    // [09/23/2024]: do something like this 
-    // - bc we made a change in [LinkedList::contains()] && [Parser::addSSA()]
     {
-        if (addedInstr != phi_instr) {
+        SSA *tmpInstr = phi_instr;
+        phi_instr = this->addSSA1(phi_instr); // [check=false]
+        // SSA *addedInstr = this->addSSA(phi_instr);
+    
+        // [09/23/2024]: do something like this 
+        // - bc we made a change in [LinkedList::contains()] && [Parser::addSSA()]
+        if (tmpInstr != phi_instr) {
             // implies our new phi-SSA is a dupe of a [phi] in our LinkedList,
             // - so we didn't actually insert the new SSA we created
-            delete phi_instr; // so we should do this(?)
+            delete tmpInstr; // so we should do this(?)
+            tmpInstr = nullptr;
         }
     }
 

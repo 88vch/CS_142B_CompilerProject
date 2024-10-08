@@ -65,7 +65,7 @@ public:
         }
     }
     
-    static std::vector<Result> int_to_result(std::vector<int> tokenizerTokens);
+    static std::vector<Result> int_to_result(const std::vector<int> &tokenizerTokens);
 private:
     int kind;   // [0: const, 1: identifier, 2: keyword]
     int value;  // [symbol_table] value representing that kind of Result

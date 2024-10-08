@@ -1,7 +1,7 @@
 #include "Result.hpp"
 #include <vector>
 
-std::vector<Result> Result::int_to_result(std::vector<int> tokenizerTokens) {
+std::vector<Result> Result::int_to_result(const std::vector<int> &tokenizerTokens) {
     std::vector<Result> resultTokens = {};
 
     for (const int &token_value : tokenizerTokens) {

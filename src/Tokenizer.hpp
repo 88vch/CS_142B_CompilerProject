@@ -20,9 +20,10 @@ public:
     Tokenizer(std::string in) 
         // : source(std::move(in))
     {
+        this->source = in; 
+
         this->tokens = {};
         this->s_index = 0;
-        this->source = std::move(in);
         this->source_len = this->source.length();
         #ifdef DEBUG
             std::cout << "[Tokenizer]: Read input. Got: \n" << this->source << std::endl;

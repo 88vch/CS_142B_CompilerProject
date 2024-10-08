@@ -88,8 +88,9 @@ struct Func {
 class Parser {
 public:
     Parser(const std::vector<Result> &tkns)
-        :source(std::move(tkns)) 
     {
+        this->source = tkns;
+
         this->SSA_start = nullptr;
         this->SSA_parent = nullptr;
 
@@ -299,7 +300,7 @@ public:
                 std::cout << "\tinstr is const" << std::endl;
             #endif
             SSA *tmp = this->CheckConstExistence(*(instr->get_constVal())); 
-            if (tmp == nullptr) {
+            if ((tmp == nullptr) || (check)) {
                 // ret = this->addSSA(instr);
                 instr = this->addSSA(instr);
             } else {
@@ -310,7 +311,7 @@ public:
                 std::cout << "\tinstr is NOT const" << std::endl;
             #endif
             SSA *tmp = this->CheckExistence(instr->get_operator(), instr->get_operand1(), instr->get_operand2());
-            if (tmp == nullptr) {
+            if ((tmp == nullptr) || (check)) {
                 // ret = this->addSSA(instr);
                 instr = this->addSSA(instr);
             } else {
