@@ -288,7 +288,15 @@ public:
         return ret;
     }
 
+    inline SSA* addSSA1(int op, SSA *x = nullptr, SSA *y = nullptr, bool check = false) {
+        SSA *tmp = new SSA(op, x, y);
+        SSA *res = this->addSSA1(tmp, check);
+        delete tmp;
+        return res;
+    }
+        
     // [10/06/2024]: When wouldn't we want to check (A: phi)
+    // [10/09/2024]: If the SSA already exists, we don't need to check for it and just add it like normally
     inline SSA* addSSA1(SSA *instr, bool check = false) {
         #ifdef DEBUG
             std::cout << "in addSSA1(instr=" << instr->toString() << ")" << std::endl;
@@ -372,6 +380,7 @@ public:
         return retVal;
     }
 
+    // [10/09/2024]: ToDo - should check if [SSA] already exists in [this->ssa_table] 
     inline int add_SSA_table(SSA *toAdd) {
         ssa_table.insert(std::pair<int, SSA *>(ssa_table.size(), toAdd));
         ssa_table_reversed.insert(std::pair<SSA *, int>(toAdd, ssa_table.size() - 1));
@@ -440,7 +449,7 @@ private:
     std::vector<SSA*> SSA_instrs; // [09/11/2024]: this is pretty much js for our testing/reference purposes now
     
     // [09/30/2024]: Though this may be for a legitimate reason
-    std::unordered_map<int, SSA *> ssa_table = {};
+    std::unordered_map<int, SSA *> ssa_table = {}; // key=[value's in this->VVs] : value=SSA-corresponding to int-val
     std::unordered_map<SSA *, int> ssa_table_reversed = {};
 
     // [09/02/2024]: Do we need to optimize this? (i.e. <int, int> that is a table lookup probably in [SymbolTable]? Nope! in [Parser])

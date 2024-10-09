@@ -479,15 +479,15 @@ SSA* Parser::p_funcCall() {
         if (f.name == "InputNum") {
             this->CheckFor_udf_optional_paren();
 
-            SSA *tmp = new SSA(23);
-            res = this->addSSA1(tmp, true);
-            if (res != tmp) {
-                #ifdef DEBUG
-                    std::cout << "res: [" << res->toString() << "] != tmp: [" << tmp->toString() << "]" << std::endl;
-                #endif
-                delete tmp;
-                tmp = nullptr;
-            }
+            // SSA *tmp = new SSA(23);
+            res = this->addSSA1(23, nullptr, nullptr, true);
+            // if (res != tmp) {
+            //     #ifdef DEBUG
+            //         std::cout << "res: [" << res->toString() << "] != tmp: [" << tmp->toString() << "]" << std::endl;
+            //     #endif
+            //     delete tmp;
+            //     tmp = nullptr;
+            // }
 
             // res = this->CheckExistence(23, nullptr, nullptr);
             // if (!res) {
@@ -517,12 +517,12 @@ SSA* Parser::p_funcCall() {
                 // res = this->varVals.at(num);
                 // std::cout << res->toString() << std::endl;
                 
-                SSA *tmp = new SSA(24, this->ssa_table.at(this->VVs.at(num)));
-                res = this->addSSA1(tmp, true);
-                if (res != tmp) {
-                    delete tmp;
-                    tmp = nullptr;
-                }
+                // SSA *tmp = new SSA(24, this->ssa_table.at(this->VVs.at(num)));
+                res = this->addSSA1(24, this->ssa_table.at(this->VVs.at(num)), nullptr, true);
+                // if (res != tmp) {
+                //     delete tmp;
+                //     tmp = nullptr;
+                // }
                 
                 // res = this->CheckExistence(24, this->ssa_table.at(this->VVs.at(num)), nullptr);
                 // if (!res) {
@@ -530,6 +530,7 @@ SSA* Parser::p_funcCall() {
                 // }
             } else {
                 try {
+                    // [10/09/2024]: Can't modify constVal SSA call
                     SSA *tmp = new SSA(0, num);
                     res = this->addSSA1(tmp, true);
                     if (res != tmp) {
@@ -537,12 +538,12 @@ SSA* Parser::p_funcCall() {
                         tmp = nullptr;
                     }
 
-                    tmp = new SSA(24, res);
-                    res = this->addSSA1(tmp);
-                    if (res != tmp) {
-                        delete tmp;
-                        tmp = nullptr;
-                    }
+                    // tmp = new SSA(24, res);
+                    res = this->addSSA1(24, res, nullptr);
+                    // if (res != tmp) {
+                    //     delete tmp;
+                    //     tmp = nullptr;
+                    // }
                     
                     // res = this->CheckConstExistence(num);
                     // // [09/27/2024]: then add to basicblock
@@ -558,12 +559,12 @@ SSA* Parser::p_funcCall() {
         } else if (f.name == "OutputNewLine") {
             this->CheckFor_udf_optional_paren();
             // std::cout << std::endl; // new line (?)
-            SSA *tmp = new SSA(25);
-            res = this->addSSA1(tmp, true);
-            if (res != tmp) {
-                delete tmp;
-                tmp = nullptr;
-            }
+            // SSA *tmp = new SSA(25);
+            res = this->addSSA1(25, nullptr, nullptr, true);
+            // if (res != tmp) {
+            //     delete tmp;
+            //     tmp = nullptr;
+            // }
 
             // res = this->addSSA(new SSA(25));
         } else {
@@ -610,8 +611,9 @@ SSA* Parser::p_ifStatement() {
     this->CheckFor(Result(2, 18)); // check `if`; Note: we only do this as a best practice and to consume the `if` token
     SSA *cmp_instr = p_relation(); // IF: relation
     
-    SSA *bra_instr = new SSA(8); // [10/06/2024]: Note - figure out which branch instruction to use && finish this 
-    this->addSSA1(bra_instr);
+    // SSA *bra_instr = new SSA(8); // [10/06/2024]: Note - figure out which branch instruction to use && finish this 
+    // this->addSSA1(bra_instr);
+    SSA *bra_instr = this->addSSA1(8, nullptr, nullptr);
 
 
     // THEN
@@ -631,17 +633,16 @@ SSA* Parser::p_ifStatement() {
     SSA *if2 = nullptr, *jmp1 = nullptr;
     if (this->CheckFor(Result(2, 20), true)) { // check `else`
         // [09/20/2024]: if `else` exists, we need a jump at the end of `if` right?
-        jmp1 = new SSA(8, nullptr);
-        {
-            SSA *tmpInstr = jmp1;
-            jmp1 = this->addSSA1(jmp1); // [check=false]
+        // jmp1 = new SSA(8, nullptr);
+        // SSA *tmpInstr = jmp1;
+        // jmp1 = this->addSSA1(jmp1); // [check=false]
+        jmp1 = this->addSSA1(8, nullptr, nullptr); // [check=false(?)]
+    
+        // if (jmp1 != tmpInstr) {
+        //     delete tmpInstr;
+        //     tmpInstr = nullptr;
+        // }
         
-            if (jmp1 != tmpInstr) {
-                delete tmpInstr;
-                tmpInstr = nullptr;
-            }
-        }
-
         next();
 
         // // previously: do something start here
@@ -803,13 +804,15 @@ SSA* Parser::p_return() {
     #endif
     SSA *retVal = p_expr();
 
-    SSA *ret = nullptr, *tmp = new SSA(16, retVal); // [SSA constructor] should handle checking of [retVal](nullptr)
+    // SSA *ret = nullptr, *tmp = new SSA(16, retVal); // [SSA constructor] should handle checking of [retVal](nullptr)
     // this->SSA_instrs.push_back(ret);
-    ret = this->addSSA1(tmp, true);
-    if (ret != tmp) {
-        delete tmp;
-        tmp = nullptr;
-    }
+    // ret = this->addSSA1(tmp, true);
+    SSA *ret = this->addSSA1(16, retVal, nullptr, true);
+    // if (ret != tmp) {
+    //     delete tmp;
+    //     tmp = nullptr;
+    // }
+
     // return ret; // [07/28/2024]: might need this here(?)
 
 
@@ -830,21 +833,24 @@ SSA* Parser::p2_return() {
     #endif
     SSA *retVal = p_expr();
 
-    SSA *ret = nullptr, *tmp = new SSA(16, retVal); // [SSA constructor] should handle checking of [retVal](nullptr)
+    // SSA *ret = nullptr, *tmp = new SSA(16, retVal); // [SSA constructor] should handle checking of [retVal](nullptr)
     // this->SSA_instrs.push_back(ret);
-    ret = this->addSSA1(tmp, true);
-    if (ret != tmp) {
-        delete tmp;
-        tmp = nullptr;
-    } else {
-        this->add_SSA_table(ret);
-    }
+    // ret = this->addSSA1(tmp, true);
+    SSA *ret = this->addSSA1(16, retVal, nullptr, true);
+    
+    // if (ret != tmp) {
+    //     delete tmp;
+    //     tmp = nullptr;
+    // } else {
+    //     this->add_SSA_table(ret);
+    // }
+    this->add_SSA_table(ret);
 
     return ret; // [10/02/2024]: compilation stub
 }
 
 SSA* Parser::p_relation() {
-    SSA *ret = nullptr;
+    // SSA *ret = nullptr;
 
     #ifdef DEBUG
         std::cout << "[Parser::p_relation(" << this->sym.to_string() << ")]" << std::endl;
@@ -897,47 +903,36 @@ SSA* Parser::p_relation() {
     
     
     // ToDo: get [instr_num] from [cmp SSA] -> [cmp_instr_num] so that you can pass it below 
-    SSA *cmp_instr = new SSA(5, x, y); // [SymbolTable::operator_table `cmp`: 5]
+    // SSA *cmp_instr = new SSA(5, x, y); // [SymbolTable::operator_table `cmp`: 5]
     // this->SSA_instrs.push_back(cmp_instr);
     // ret = this->addSSA(cmp_instr);
-    ret = this->addSSA1(cmp_instr);
-    if (ret != cmp_instr) {
-        delete cmp_instr;
-        cmp_instr = nullptr;
-    }
+    // ret = this->addSSA1(cmp_instr);
+    SSA *cmp_instr = this->addSSA1(5, x, y); // [check=false(?)]
 
-    // [09/23/2024]: Similar idea as if-statement
-    // - bc we made a change in [LinkedList::contains()] && [Parser::addSSA()]
-    if (cmp_instr != ret) {
-        delete cmp_instr;
-        cmp_instr = ret;
-        
-        #ifdef DEBUG
-            std::cout << "cmp_instr dupe existed already; using dupe: " << cmp_instr->toString() << std::endl;
-        #endif
-    } else {
-        #ifdef DEBUG
-            std::cout << "created new cmp_instr: " << cmp_instr->toString() << std::endl;
-        #endif
-    }
-
+    // if (ret != cmp_instr) {
+    //     delete cmp_instr;
+    //     cmp_instr = nullptr;
+    // }
 
     // return cmp_instr; // [07/28/2024]: might need this here(?)
-    SSA *jmp_instr = new SSA(op, cmp_instr, nullptr); // [nullptr bc we don't know where to jump to yet]
+    
+    // SSA *jmp_instr = new SSA(op, cmp_instr, nullptr); // [nullptr bc we don't know where to jump to yet]
     // this->SSA_instrs.push_back(jmp_instr);
-    ret = this->addSSA1(jmp_instr);
-    if (ret != jmp_instr) {
-        delete jmp_instr;
-        jmp_instr = ret;
+    // ret = this->addSSA1(jmp_instr);
+    SSA *jmp_instr = this->addSSA1(op, cmp_instr, nullptr); // [check=false(?)]
 
-        #ifdef DEBUG
-            std::cout << "jmp_instr dupe existed already; using dupe: " << cmp_instr->toString() << std::endl;
-        #endif
-    } else {
-        #ifdef DEBUG
-            std::cout << "created new jmp_instr: " << cmp_instr->toString() << std::endl;
-        #endif
-    }
+    // if (ret != jmp_instr) {
+    //     delete jmp_instr;
+    //     jmp_instr = ret;
+
+    //     #ifdef DEBUG
+    //         std::cout << "jmp_instr dupe existed already; using dupe: " << cmp_instr->toString() << std::endl;
+    //     #endif
+    // } else {
+    //     #ifdef DEBUG
+    //         std::cout << "created new jmp_instr: " << cmp_instr->toString() << std::endl;
+    //     #endif
+    // }
 
     // [09/23/2024]: For now we shouldn't be pushing it in the relation
     // this->prevJump = true;
@@ -946,7 +941,7 @@ SSA* Parser::p_relation() {
     // [09/20/2024]: Added AFTER [this->addSSA()] bc we check [prevJump && prevInstr] in [this->addSSA()]
     
     #ifdef DEBUG
-        std::cout << "returning new jmp_instr: " << jmp_instr->toString() << std::endl;
+        std::cout << "returning jmp_instr: " << jmp_instr->toString() << std::endl;
     #endif
     
     return jmp_instr;
