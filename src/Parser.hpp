@@ -291,7 +291,9 @@ public:
     inline SSA* addSSA1(int op, SSA *x = nullptr, SSA *y = nullptr, bool check = false) {
         SSA *tmp = new SSA(op, x, y);
         SSA *res = this->addSSA1(tmp, check);
-        delete tmp;
+        if (tmp != res) {
+            delete tmp;
+        }
         return res;
     }
         
@@ -342,27 +344,17 @@ public:
             #endif
             // [09/20/2024]: new constList specifically for [this->BB0]
             this->BB0->constList->InsertAtTail(instr);
-        } else if ((instr->get_operator() >= 8) && (instr->get_operator() <= 14)) {
-            LinkedList *SSA_LL = this->instrList.at(instr->get_operator());
-            SSA_LL->InsertAtTail(instr);
         } else {
             #ifdef DEBUG
                 std::cout << "\tinstr op == " << instr->get_operator() << std::endl;
             #endif
-            LinkedList *SSA_LL = this->instrList.at(instr->get_operator());
-            if (SSA_LL->contains(instr) == nullptr) {
-                SSA_LL->InsertAtTail(instr);
-
-                // ssa_table.insert(std::pair<int, SSA *>(ssa_table.size(), instr));
-                // ssa_table_reversed.insert(std::pair<SSA *, int>(instr, ssa_table.size() - 1));
-
-                // int rVal = ssa_table.size() - 1;
-            } else {
-                retVal = SSA_LL->contains(instr);
-            }
+            this->instrList.at(instr->get_operator())->InsertAtTail(instr);
         }
 
         if (this->prevJump) {
+            #ifdef DEBUG
+                std::cout << "\tprevJump exists!" << std::endl;
+            #endif
             // [09/22/2024]: Assumption - [this->prevInstr] is alr in the instrList
             this->prevInstr = this->prevInstrs.top();
             this->prevInstr->set_operand2(instr);
