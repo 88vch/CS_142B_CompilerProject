@@ -60,7 +60,7 @@ public:
 
     bool compare(int op, SSA *x, SSA *y) const {
         #ifdef DEBUG
-            std::cout << "\t[SSA::compare(op=" << op << ")]; this->op=" << this->op << ", this->x=";
+            std::cout << "[SSA::compare(op=" << op << ")]; this->op=" << this->op << ", this->x=";
             if (this->x) {
                 std::cout << this->x->toString() << ", this->y=";
             } else {
@@ -97,10 +97,19 @@ public:
     }
 
     bool compareConst(int val) const {
+        #ifdef DEBUG
+            std::cout << "this->val=" << *(this->constVal) << ", comparing=" << val << std::endl;
+        #endif
         if ((this->debug_num < 0) && (this->op == 0) && 
             (this->constVal != nullptr && (*(this->constVal) == val))) {
+            #ifdef DEBUG
+                std::cout << "\treturning true!" << std::endl;
+            #endif
             return true;
         }
+        #ifdef DEBUG
+            std::cout << "\treturning false!" << std::endl;
+        #endif
         return false;
     }
     bool compareConst(SSA *s) const {

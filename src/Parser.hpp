@@ -205,9 +205,9 @@ public:
     // [09/20/2024]: Const is not found in instrList, rather in BB0
     // [08/22/2024]: might need to revise (like CheckExistence()) to include op and curr sym's values
     inline SSA* CheckConstExistence(int val = -1) const {
-        // #ifdef DEBUG
-        //     std::cout << "in Parser::CheckConstExistence()" << std::endl;
-        // #endif
+        #ifdef DEBUG
+            std::cout << "in Parser::CheckConstExistence(val=" << val << ")" << std::endl;
+        #endif
         int comparisonVal;
         if (val == -1) {
             comparisonVal = this->sym.get_value_literal();
@@ -228,11 +228,14 @@ public:
         // [09/19/2024]: Replaced Below (previous=this->SSA_instrs; current=this->instrList)
         Node *curr = this->BB0->constList->tail;
         while (curr) {
-            // #ifdef DEBUG
-            //     std::cout << "\tthis instr: [" << curr->instr->toString() << "]" << std::endl;
-            // #endif
+            #ifdef DEBUG
+                std::cout << "\tthis instr: [" << curr->instr->toString() << "]" << std::endl;
+            #endif
             if (curr->instr->compareConst(comparisonVal)) {
                 ret = curr->instr;
+                #ifdef DEBUG
+                    std::cout << "ret is now: " << ret->toString() << std::endl;
+                #endif
                 break;
             }
             curr = curr->prev;
@@ -301,7 +304,7 @@ public:
     // [10/09/2024]: If the SSA already exists, we don't need to check for it and just add it like normally
     inline SSA* addSSA1(SSA *instr, bool check = false) {
         #ifdef DEBUG
-            std::cout << "in addSSA1(instr=" << instr->toString() << ")" << std::endl;
+            std::cout << "in addSSA1(instr=" << instr->toString() << ", check=" << check << ")" << std::endl;
         #endif
         // [10/05/2024]: todo refactor addSSA() with additional prameter to determine if need to check for existence
         // SSA *ret = nullptr;
@@ -309,23 +312,44 @@ public:
             #ifdef DEBUG
                 std::cout << "\tinstr is const" << std::endl;
             #endif
-            SSA *tmp = this->CheckConstExistence(*(instr->get_constVal())); 
-            if ((tmp == nullptr) || (check)) {
-                // ret = this->addSSA(instr);
-                instr = this->addSSA(instr);
+            if (check) {
+                SSA *tmp = this->CheckConstExistence(*(instr->get_constVal())); 
+                if (tmp == nullptr) {
+                    // ret = this->addSSA(instr);
+                    instr = this->addSSA(instr);
+                } else {
+                    #ifdef DEBUG
+                        std::cout << "instr exists already: " << tmp->toString() << std::endl;
+                    #endif
+                    // instr = this->addSSA(instr);
+                    instr = tmp;
+                }
             } else {
-                instr = tmp;
+                #ifdef DEBUG
+                    std::cout << "not checking! instr=" << instr->toString() << std::endl;
+                #endif
+                instr = this->addSSA(instr);
             }
         } else {
             #ifdef DEBUG
                 std::cout << "\tinstr is NOT const" << std::endl;
             #endif
-            SSA *tmp = this->CheckExistence(instr->get_operator(), instr->get_operand1(), instr->get_operand2());
-            if ((tmp == nullptr) || (check)) {
-                // ret = this->addSSA(instr);
-                instr = this->addSSA(instr);
+            if (check) {
+                SSA *tmp = this->CheckExistence(instr->get_operator(), instr->get_operand1(), instr->get_operand2());
+                if (tmp == nullptr) {
+                    // ret = this->addSSA(instr);
+                    instr = this->addSSA(instr);
+                } else {
+                    #ifdef DEBUG
+                        std::cout << "instr exists already: " << tmp->toString() << std::endl;
+                    #endif
+                    instr = tmp;
+                }
             } else {
-                instr = tmp;
+                #ifdef DEBUG
+                    std::cout << "not checking! instr=" << instr->toString() << std::endl;
+                #endif
+                instr = this->addSSA(instr);
             }
         }
         // return ret;
@@ -399,6 +423,17 @@ public:
         std::cout << "printing [this->varVals(size=" << res.size() << ")]:" << std::endl;
         for (const auto &p : res) {
             std::cout << "[" << p.first << "], [" << p.second->toString() << "]" << std::endl;
+        }
+    }
+
+    void printPrevInstrs() const {
+        std::stack<SSA *> temp = this->prevInstrs;
+        
+        if (temp.empty()) { std::cout << "\tempty!" << std::endl; }
+
+        while (!temp.empty()) {
+            std::cout << "\t" << temp.top()->toString() << std::endl;
+            temp.pop();
         }
     }
 
@@ -504,9 +539,9 @@ private:
 
     // peek & consume char
     inline void next() {
-        #ifdef DEBUG
-            std::cout << "in [next(this->sym=" << this->sym.to_string_literal() << ")]" << std::endl;
-        #endif
+        // #ifdef DEBUG
+        //     std::cout << "in [next(this->sym=" << this->sym.to_string_literal() << ")]" << std::endl;
+        // #endif
 
 
         if (this->s_index < this->source_len) {
@@ -522,9 +557,9 @@ private:
 
     // consumes [non-optional's]
     inline bool CheckFor(Result expected_token, bool optional = false) {
-        #ifdef DEBUG
-            std::cout << "Checking For [expected: " << expected_token.to_string() << "], [got: " << this->sym.to_string() << "]" << std::endl;
-        #endif
+        // #ifdef DEBUG
+        //     std::cout << "Checking For [expected: " << expected_token.to_string() << "], [got: " << this->sym.to_string() << "]" << std::endl;
+        // #endif
         bool retVal = false;
         
         // Note: there might be some logic messed up abt this (relation: [expected_token, Result(2, -1)])

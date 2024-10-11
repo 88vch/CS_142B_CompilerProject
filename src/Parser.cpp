@@ -117,7 +117,7 @@ SSA* Parser::p_statSeq() {
     #ifdef DEBUG
         std::cout << "[Parser::p_statSeq(" << this->sym.to_string() << ")]: found a statement to parse" << std::endl;
     #endif
-    SSA *curr_stmt;
+    SSA *curr_stmt = nullptr;
     SSA *first = p_statement(); // ends with `;` = end of statement
     while (this->CheckFor(Result(2, 4), true)) { // if [optional] next token is ';', then we still have statements
         next();
@@ -136,13 +136,13 @@ SSA* Parser::p_statSeq() {
             std::cout << "[curr_stmt] returned: " << curr_stmt->toString() << std::endl;
         #endif
     }
-    #ifdef DEBUG
-        if (first) {
-            std::cout << "[Parser::p_statSeq()] returning: " << first->toString() << std::endl;
-        } else {
-            std::cout << "[Parser::p_statSeq()] returning: nullptr!" << std::endl;
-        }
-    #endif
+    // #ifdef DEBUG
+    //     if (first) {
+    //         std::cout << "[Parser::p_statSeq()] returning: " << first->toString() << std::endl;
+    //     } else {
+    //         std::cout << "[Parser::p_statSeq()] returning: nullptr!" << std::endl;
+    //     }
+    // #endif
     return first; // returning first [SSA_instr] in [p_statSeq()] so we know control flow
 }
 
@@ -201,9 +201,9 @@ SSA* Parser::p2_statSeq() {
         //     std::cout << "[curr_bb] returned: " << curr_bb->toString() << std::endl;
         // #endif
     }
-    #ifdef DEBUG
-        std::cout << "[Parser::p2_statSeq()] returning: " << first_SSA->toString() << std::endl;
-    #endif
+    // #ifdef DEBUG
+    //     std::cout << "[Parser::p2_statSeq()] returning: " << first_SSA->toString() << std::endl;
+    // #endif
     return first_SSA; // returning first [SSA_instr] in [p_statSeq()] so we know control flow
 }
 
@@ -228,14 +228,15 @@ SSA* Parser::p_statement() {
     } else if (this->CheckFor(Result(2, 28), true)) {  // check `return`
         stmt = p_return();
     }
+
     // ToDo: [else {}]no more statements left to parse! (Not an error, this is possible)
-    #ifdef DEBUG
-        if (stmt == nullptr) { 
-            std::cout << "stmt == nullptr" << std::endl;
-        } else {
-            std::cout << "stmt != nullptr; stmt = " << stmt->toString() << std::endl;
-        }
-    #endif
+    // #ifdef DEBUG
+    //     if (stmt == nullptr) { 
+    //         std::cout << "stmt == nullptr" << std::endl;
+    //     } else {
+    //         std::cout << "stmt != nullptr; stmt = " << stmt->toString() << std::endl;
+    //     }
+    // #endif
     return stmt; // [07/28/2024]: Why do we return an [SSA*] here?
 }
 
@@ -263,14 +264,15 @@ SSA* Parser::p2_statement() {
     } else if (this->CheckFor(Result(2, 28), true)) {  // check `return`
         stmt = p2_return();
     }
+
     // ToDo: [else {}]no more statements left to parse! (Not an error, this is possible)
-    #ifdef DEBUG
-        if (stmt == nullptr) { 
-            std::cout << "stmt == nullptr" << std::endl;
-        } else {
-            std::cout << "stmt != nullptr; stmt = " << stmt->toString() << std::endl;
-        }
-    #endif
+    // #ifdef DEBUG
+    //     if (stmt == nullptr) { 
+    //         std::cout << "stmt == nullptr" << std::endl;
+    //     } else {
+    //         std::cout << "stmt != nullptr; stmt = " << stmt->toString() << std::endl;
+    //     }
+    // #endif
     return stmt; // [10/03/2024]: Why do we return an [SSA*] here?
 }
 
@@ -335,9 +337,9 @@ SSA* Parser::p_assignment() {
         std::cout << "value addr: " << &res << "; value toString(): " << res->toString() << std::endl;
     #endif
     // this->SSA_instrs.push_back(res);
-    #ifdef DEBUG
-        std::cout << "[Parser::p_assignment()]: returning " << res->toString() << std::endl;
-    #endif
+    // #ifdef DEBUG
+    //     std::cout << "[Parser::p_assignment()]: returning " << res->toString() << std::endl;
+    // #endif
     return res;
 
     // [07/28/2024]: this will always be a new [SSA instr] bc it contains a path not simply a value (i.e. if the path has multiple ways to get there [think if/while-statements], the value will change depending on which route the path takes)
@@ -449,9 +451,9 @@ SSA* Parser::p2_assignment() {
         std::cout << "value addr: " << &ret << "; value toString(): " << ret->toString() << std::endl;
     #endif
     // this->SSA_instrs.push_back(value);
-    #ifdef DEBUG
-        std::cout << "[Parser::p_assignment()]: returning " << ret->toString() << std::endl;
-    #endif
+    // #ifdef DEBUG
+    //     std::cout << "[Parser::p_assignment()]: returning " << ret->toString() << std::endl;
+    // #endif
 
     // [10/01/2024]: Don't we need to assign [this->VVs] to this->currBB first?
     return ret;
@@ -542,8 +544,8 @@ SSA* Parser::p_funcCall() {
                         tmp = nullptr;
                     }
 
-                    // tmp = new SSA(24, res);
-                    res = this->addSSA1(24, res, nullptr);
+                    // tmp = res;
+                    res = this->addSSA1(24, res, nullptr, true);
                     // if (res != tmp) {
                     //     delete tmp;
                     //     tmp = nullptr;
@@ -592,9 +594,9 @@ SSA* Parser::p_funcCall() {
         // [09/02/2024]: ORRRRR Don't they all start with the `call` token???? confirm this then delete this and js [CheckFor] `call`
     }
 
-    #ifdef DEBUG
-        std::cout << "\t[Parser::p_funcCall()] returning res: " << res->toString() << std::endl;
-    #endif
+    // #ifdef DEBUG
+    //     std::cout << "\t[Parser::p_funcCall()] returning res: " << res->toString() << std::endl;
+    // #endif
     return res; // [08/31]2024]: stub (?)
 }
 
@@ -657,7 +659,15 @@ SSA* Parser::p_ifStatement() {
     // jmpIf_instr = new SSA(8, nullptr);
     // SSA *tmpInstr = jmpIf_instr;
     // jmpIf_instr = this->addSSA1(jmpIf_instr); // [check=false]
-    jmpIf_instr = this->addSSA1(8, nullptr, nullptr); // [check=false(?)]
+    jmpIf_instr = this->addSSA1(8, nullptr, nullptr); // [check=false(?)]; bra-instr
+    #ifdef DEBUG
+        std::cout << "created `bra` (jmpIf_instr): " << jmpIf_instr->toString() << std::endl;
+        std::cout << "\t[this->prevInstrs] looks like: " << std::endl;
+        this->printPrevInstrs();
+
+        std::cout << "\t[this->instrList] looks like: " << std::endl;
+        this->printInstrList();
+    #endif
         // [10/10/2024]: this is the last SSA of the if-BasicBlock right?
 
 
@@ -678,6 +688,9 @@ SSA* Parser::p_ifStatement() {
     if2 = p_statSeq(); // returns the 1st SSA instruction in the case which we jump to [case 2: if () == false]
     #ifdef DEBUG
         std::cout << "jmp_instr: " << jmp_instr->toString() << std::endl;
+        std::cout << "jmpIf_instr: " << jmpIf_instr->toString() << std::endl;
+        std::cout << "\t[this->prevInstrs] looks like: " << std::endl;
+        this->printPrevInstrs();
     #endif
     jmp_instr->set_operand2(if2);
 
@@ -689,9 +702,9 @@ SSA* Parser::p_ifStatement() {
 
     // [SECTION_A]
     // 【10/10/2024】： Note that we can't [this->prevJump=true; this->prevInstrs.push(jmpIf_instr)] bc we set_operand1() rather than set_operand2()...see below
-    #ifdef DEBUG
-        std::cout << "jmpIf_instr: " << jmpIf_instr->toString() << std::endl;
-    #endif
+    // #ifdef DEBUG
+    //     std::cout << "jmpIf_instr: " << jmpIf_instr->toString() << std::endl;
+    // #endif
     jmpIf_instr->set_operand1(phi_instr); // set_operand1 since it's just a `bra` instr
 
 
@@ -953,9 +966,9 @@ SSA* Parser::p_relation() {
     //     #endif
     // }
 
-    #ifdef DEBUG
-        std::cout << "returning jmp_instr: " << jmp_instr->toString() << std::endl;
-    #endif
+    // #ifdef DEBUG
+    //     std::cout << "returning jmp_instr: " << jmp_instr->toString() << std::endl;
+    // #endif
     
     return jmp_instr;
 }
@@ -979,9 +992,10 @@ SSA* Parser::p_expr() { // Check For `+` && `-`
         x = BuildIR(op, x, y); // ToDo: Create IR Block
         this->addSSA1(x, true);
     }
-    #ifdef DEBUG
-        std::cout << "[Parser::p_expr()]: returning: " << x->toString() << std::endl;
-    #endif
+
+    // #ifdef DEBUG
+    //     std::cout << "[Parser::p_expr()]: returning: " << x->toString() << std::endl;
+    // #endif
     return x;
 }
 
@@ -999,11 +1013,11 @@ SSA* Parser::p_term() { // Check For `*` && `/`
         x = BuildIR(op, x, y); // ToDo: Create IR Block
         std::cout << "in while loop" << std::endl;
     }
+
     // [08/02/2024]: Segmentation Fault here (both CheckFor()'s should return false, DEBUG stmt should print (currently doesn't!))
-    #ifdef DEBUG
-        std::cout << "[Parser::p_term()]: returning: ";
-        std::cout << x->toString() << std::endl;
-    #endif
+    // #ifdef DEBUG
+    //     std::cout << "[Parser::p_term()]: returning: " << x->toString() << std::endl;
+    // #endif
     return x;
 }
 
@@ -1069,8 +1083,8 @@ SSA* Parser::p_factor() {
         exit(EXIT_FAILURE);
     }
 
-    #ifdef DEBUG
-        std::cout << "[Parser::p_factor()]: returning: " << res->toString() << std::endl;
-    #endif
+    // #ifdef DEBUG
+    //     std::cout << "[Parser::p_factor()]: returning: " << res->toString() << std::endl;
+    // #endif
     return res;
 }
