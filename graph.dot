@@ -1,0 +1,8 @@
+digraph G {
+    A [label="starting now\ntest\nconfirm\nnow", shape=box];
+    B [shape=box];
+    C [shape=box];
+
+    A -> B [label="transition", color=red];
+    B -> C;
+}

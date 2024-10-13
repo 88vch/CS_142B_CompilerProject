@@ -8,9 +8,7 @@ BasicBlock Parser::parse() {
     this->BB0 = new BasicBlock();
     // this->BB_start = this->p2_start();
 
-    this->BB0->child = this->startBB;
-    this->startBB->parent = this->BB0;
-    
+    this->SSA_start = this->p2_start();    
     
     return this->BB0; // stub
 }
@@ -88,6 +86,7 @@ SSA* Parser::p2_start() {
     // - big picture wise it's BB0->BB1->done; where BB1 is everything.
     this->startBB = new BasicBlock();
     this->currBB = this->startBB;
+    this->BB0->child = this->currBB;
     SSA *statSeq = p2_statSeq();
 
     this->CheckFor(Result(2, 16)); // check for `}`
@@ -990,12 +989,13 @@ SSA* Parser::p_expr() { // Check For `+` && `-`
         next();
         SSA *y = p_expr();
         x = BuildIR(op, x, y); // ToDo: Create IR Block
-        this->addSSA1(x, true);
     }
 
     // #ifdef DEBUG
     //     std::cout << "[Parser::p_expr()]: returning: " << x->toString() << std::endl;
     // #endif
+
+    this->addSSA1(x, true);
     return x;
 }
 
@@ -1011,6 +1011,7 @@ SSA* Parser::p_term() { // Check For `*` && `/`
         next();
         SSA *y = p_factor();
         x = BuildIR(op, x, y); // ToDo: Create IR Block
+        this->addSSA1(x, true);
         std::cout << "in while loop" << std::endl;
     }
 

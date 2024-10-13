@@ -5,6 +5,9 @@
 #include <vector>
 #include <sstream>
 #include <cstring>
+#include <fstream>
+// #include <stdio.h>
+// #include <cstdio>
 #include "Result.hpp"
 #include "BasicBlock.hpp"
 #include "SSA.hpp"
@@ -466,6 +469,46 @@ public:
             size += pair.second->length;
         }
         return size;
+    }
+
+    inline std::string BBtoDOT() const {
+        std::string res = "diagraph G {\n";
+        std::string c_res = "";
+
+        int i = 0;
+        BasicBlock *curr = this->BB0;
+
+        while (curr != nullptr) {
+            res += "\tbb" + std::to_string(i) + " [shape=record, label=\"";
+
+            c_res += curr->toDOT();
+
+            res += c_res + "\"];\n";
+            curr = curr->child;
+        }
+
+        res += "}";
+        return res;
+    }
+
+    inline void generateDOT() const {
+        // Open the file for writing
+        std::ofstream file("res/DOT.dot");
+
+        // Check if the file was opened successfully
+        if (!file.is_open()) {
+            std::cerr << "Failed to open the file." << std::endl;
+            exit(EXIT_FAILURE); // Return false to indicate failure
+        }
+
+        // Get content
+        std::string content = this->BBtoDOT();
+
+        // Write content to the file
+        file << content;
+
+        // Close the file
+        file.close();
     }
 
     BasicBlock parse(); // IR BB-representation 

@@ -17,7 +17,10 @@
 
 // class SymbolTable; // forward declaration (?)
 
-#define in_f "tst/nested_if.ty"
+std::string f_ext = ".ty";
+std::string f_name = "nested_if_while";
+std::string f_full = f_name + f_ext;
+std::string in_f = "tst/" + f_name + f_ext;
 
 int main() {
     std::string symbolTable_f = "res/_SymbolTable_result.txt";
@@ -107,10 +110,7 @@ int main() {
     if (ll) { std::cout << "Results have successfully been written to: " << linkedList_f << "(size=[" << parser.getInstrListSize() << "])" << std::endl; }
     else { std::cout << "Error occured when trying to write results!" << std::endl; }
 
-
-
-
-
+    parser.generateDOT();
 
 
 

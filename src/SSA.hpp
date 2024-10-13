@@ -148,6 +148,22 @@ public:
         return res;
     }
 
+    std::string toDOT() const {
+        std::string res = "";
+
+        res += std::to_string(this->debug_num) + ":" + this->opToString();
+
+        if (this->x) {
+            res += " (" + std::to_string(this->x->get_operator()) + ")";
+        }
+
+        if (this->y) {
+            res += " (" + std::to_string(this->y->get_operator()) + ")";
+        }
+
+        return res;
+    }
+
     void set_operand1(SSA *s) {
         if (this->x == nullptr) {
             this->x = s;
