@@ -4,5 +4,5 @@ digraph G {
     C [shape=box];
 
     A -> B [label="transition", color=red];
-    B -> C;
+    B -> C [label="transition", color=red];
 }
