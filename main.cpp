@@ -17,10 +17,11 @@
 
 // class SymbolTable; // forward declaration (?)
 
-std::string f_ext = ".ty";
-std::string f_name = "nested_if_while";
-std::string f_full = f_name + f_ext;
-std::string in_f = "tst/" + f_name + f_ext;
+// std::string f_ext = ".ty";
+// std::string f_name = "nested_if_while";
+// std::string f_full = f_name + f_ext;
+// std::string in_f = "tst/" + f_name + f_ext;
+#define in_f "tst/nested_if_while.ty"
 
 int main() {
     std::string symbolTable_f = "res/_SymbolTable_result.txt";
@@ -86,14 +87,12 @@ int main() {
     #endif
     Parser parser(results);
     
-
-
     #ifdef DEBUG
         std::cout << "[Parser]: After constructor. Before FIRST [parse](SSA Generation)" << std::endl;
     #endif
     parser.parse_generate_SSA();
     #ifdef DEBUG
-        std::cout << "[Parser]: After FIRST [parse]" << std::endl;
+        std::cout << "[Parser]: After FIRST [parse.parse_generate_SSA()]" << std::endl;
     #endif
 
     std::vector<SSA*> SSA_instrs = parser.getSSA();
@@ -109,6 +108,14 @@ int main() {
     bool ll = fr.write_file_contents(linkedList_f, parser.instrListToString(), "LinkedList");
     if (ll) { std::cout << "Results have successfully been written to: " << linkedList_f << "(size=[" << parser.getInstrListSize() << "])" << std::endl; }
     else { std::cout << "Error occured when trying to write results!" << std::endl; }
+
+    #ifdef DEBUG
+        std::cout << "[Parser]: Before SECOND [parse](BasicBlock Generation)" << std::endl;
+    #endif
+    parser.parse();
+    #ifdef DEBUG
+        std::cout << "[Parser]: After SECOND [parse.parse()]" << std::endl;
+    #endif
 
     parser.generateDOT();
 

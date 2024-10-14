@@ -4,9 +4,8 @@
 // [0ld Version]: assumes we've generated all SSA Instructions & Have done error checking
 // [09/03/2024]: Unable to pre-generate all SSA Instructions (bc some branch locations may be unknown still)
 // - need BasicBlock's (IR) to get a better idea of control-flow (-> CFG's)
-BasicBlock Parser::parse() {
-    this->BB0 = new BasicBlock();
-    // this->BB_start = this->p2_start();
+BasicBlock* Parser::parse() {
+    this->reset();
 
     this->SSA_start = this->p2_start();    
     
@@ -16,6 +15,8 @@ BasicBlock Parser::parse() {
 
 // does error checking here
 void Parser::parse_generate_SSA() {
+    this->reset();
+    
     // concerned with first 15 operators first
     // ToDo: this is where we will use Recursive Descent [OldParser.*]
     // - [RESUME HERE]!!!!!!
@@ -84,9 +85,10 @@ SSA* Parser::p2_start() {
 
     // [09/24/2024]: Not sure how to handle this
     // - big picture wise it's BB0->BB1->done; where BB1 is everything.
-    this->startBB = new BasicBlock();
+    this->startBB = new BasicBlock(this->instrList);
     this->currBB = this->startBB;
-    this->BB0->child = this->currBB;
+    this->BB0->child = this->startBB;
+    this->startBB->parent = this->BB0;
     SSA *statSeq = p2_statSeq();
 
     this->CheckFor(Result(2, 16)); // check for `}`
@@ -116,7 +118,7 @@ SSA* Parser::p_statSeq() {
     #ifdef DEBUG
         std::cout << "[Parser::p_statSeq(" << this->sym.to_string() << ")]: found a statement to parse" << std::endl;
     #endif
-    SSA *curr_stmt = nullptr;
+    SSA *curr_stmt;
     SSA *first = p_statement(); // ends with `;` = end of statement
     while (this->CheckFor(Result(2, 4), true)) { // if [optional] next token is ';', then we still have statements
         next();
@@ -135,13 +137,13 @@ SSA* Parser::p_statSeq() {
             std::cout << "[curr_stmt] returned: " << curr_stmt->toString() << std::endl;
         #endif
     }
-    // #ifdef DEBUG
-    //     if (first) {
-    //         std::cout << "[Parser::p_statSeq()] returning: " << first->toString() << std::endl;
-    //     } else {
-    //         std::cout << "[Parser::p_statSeq()] returning: nullptr!" << std::endl;
-    //     }
-    // #endif
+    #ifdef DEBUG
+        if (first) {
+            std::cout << "[Parser::p_statSeq()] returning: " << first->toString() << std::endl;
+        } else {
+            std::cout << "[Parser::p_statSeq()] returning: nullptr!" << std::endl;
+        }
+    #endif
     return first; // returning first [SSA_instr] in [p_statSeq()] so we know control flow
 }
 
@@ -200,9 +202,9 @@ SSA* Parser::p2_statSeq() {
         //     std::cout << "[curr_bb] returned: " << curr_bb->toString() << std::endl;
         // #endif
     }
-    // #ifdef DEBUG
-    //     std::cout << "[Parser::p2_statSeq()] returning: " << first_SSA->toString() << std::endl;
-    // #endif
+    #ifdef DEBUG
+        std::cout << "[Parser::p2_statSeq()] returning: " << first_SSA->toString() << std::endl;
+    #endif
     return first_SSA; // returning first [SSA_instr] in [p_statSeq()] so we know control flow
 }
 
@@ -227,15 +229,14 @@ SSA* Parser::p_statement() {
     } else if (this->CheckFor(Result(2, 28), true)) {  // check `return`
         stmt = p_return();
     }
-
     // ToDo: [else {}]no more statements left to parse! (Not an error, this is possible)
-    // #ifdef DEBUG
-    //     if (stmt == nullptr) { 
-    //         std::cout << "stmt == nullptr" << std::endl;
-    //     } else {
-    //         std::cout << "stmt != nullptr; stmt = " << stmt->toString() << std::endl;
-    //     }
-    // #endif
+    #ifdef DEBUG
+        if (stmt == nullptr) { 
+            std::cout << "stmt == nullptr" << std::endl;
+        } else {
+            std::cout << "stmt != nullptr; stmt = " << stmt->toString() << std::endl;
+        }
+    #endif
     return stmt; // [07/28/2024]: Why do we return an [SSA*] here?
 }
 
@@ -263,15 +264,14 @@ SSA* Parser::p2_statement() {
     } else if (this->CheckFor(Result(2, 28), true)) {  // check `return`
         stmt = p2_return();
     }
-
     // ToDo: [else {}]no more statements left to parse! (Not an error, this is possible)
-    // #ifdef DEBUG
-    //     if (stmt == nullptr) { 
-    //         std::cout << "stmt == nullptr" << std::endl;
-    //     } else {
-    //         std::cout << "stmt != nullptr; stmt = " << stmt->toString() << std::endl;
-    //     }
-    // #endif
+    #ifdef DEBUG
+        if (stmt == nullptr) { 
+            std::cout << "stmt == nullptr" << std::endl;
+        } else {
+            std::cout << "stmt != nullptr; stmt = " << stmt->toString() << std::endl;
+        }
+    #endif
     return stmt; // [10/03/2024]: Why do we return an [SSA*] here?
 }
 
@@ -336,9 +336,9 @@ SSA* Parser::p_assignment() {
         std::cout << "value addr: " << &res << "; value toString(): " << res->toString() << std::endl;
     #endif
     // this->SSA_instrs.push_back(res);
-    // #ifdef DEBUG
-    //     std::cout << "[Parser::p_assignment()]: returning " << res->toString() << std::endl;
-    // #endif
+    #ifdef DEBUG
+        std::cout << "[Parser::p_assignment()]: returning " << res->toString() << std::endl;
+    #endif
     return res;
 
     // [07/28/2024]: this will always be a new [SSA instr] bc it contains a path not simply a value (i.e. if the path has multiple ways to get there [think if/while-statements], the value will change depending on which route the path takes)
@@ -386,7 +386,7 @@ SSA* Parser::p2_assignment() {
 
             this->currBB->instrList = this->instrList;
             this->parentBB = this->currBB;
-            this->currBB = new BasicBlock();
+            this->currBB = new BasicBlock(this->instrList);
             this->parentBB->child = this->currBB;
             this->currBB->parent = this->parentBB;
         }
@@ -450,9 +450,9 @@ SSA* Parser::p2_assignment() {
         std::cout << "value addr: " << &ret << "; value toString(): " << ret->toString() << std::endl;
     #endif
     // this->SSA_instrs.push_back(value);
-    // #ifdef DEBUG
-    //     std::cout << "[Parser::p_assignment()]: returning " << ret->toString() << std::endl;
-    // #endif
+    #ifdef DEBUG
+        std::cout << "[Parser::p_assignment()]: returning " << ret->toString() << std::endl;
+    #endif
 
     // [10/01/2024]: Don't we need to assign [this->VVs] to this->currBB first?
     return ret;
@@ -543,8 +543,8 @@ SSA* Parser::p_funcCall() {
                         tmp = nullptr;
                     }
 
-                    // tmp = res;
-                    res = this->addSSA1(24, res, nullptr, true);
+                    // tmp = new SSA(24, res);
+                    res = this->addSSA1(24, res, nullptr);
                     // if (res != tmp) {
                     //     delete tmp;
                     //     tmp = nullptr;
@@ -593,9 +593,9 @@ SSA* Parser::p_funcCall() {
         // [09/02/2024]: ORRRRR Don't they all start with the `call` token???? confirm this then delete this and js [CheckFor] `call`
     }
 
-    // #ifdef DEBUG
-    //     std::cout << "\t[Parser::p_funcCall()] returning res: " << res->toString() << std::endl;
-    // #endif
+    #ifdef DEBUG
+        std::cout << "\t[Parser::p_funcCall()] returning res: " << res->toString() << std::endl;
+    #endif
     return res; // [08/31]2024]: stub (?)
 }
 
@@ -655,25 +655,8 @@ SSA* Parser::p_ifStatement() {
     // BasicBlock *ifStat_else = nullptr; // should use some similar logic to check for existence of [else block]
     SSA *if2 = nullptr, *jmpIf_instr = nullptr;
     // [09/20/2024]: if `else` exists, we need a jump at the end of `if` right?
-    // jmpIf_instr = new SSA(8, nullptr);
-    // SSA *tmpInstr = jmpIf_instr;
-    // jmpIf_instr = this->addSSA1(jmpIf_instr); // [check=false]
-    jmpIf_instr = this->addSSA1(8, nullptr, nullptr); // [check=false(?)]; bra-instr
-    #ifdef DEBUG
-        std::cout << "created `bra` (jmpIf_instr): " << jmpIf_instr->toString() << std::endl;
-        std::cout << "\t[this->prevInstrs] looks like: " << std::endl;
-        this->printPrevInstrs();
-
-        std::cout << "\t[this->instrList] looks like: " << std::endl;
-        this->printInstrList();
-    #endif
+    jmpIf_instr = this->addSSA1(8, nullptr, nullptr); // [check=false(?)]
         // [10/10/2024]: this is the last SSA of the if-BasicBlock right?
-
-
-    // if (jmpIf_instr != tmpInstr) {
-    //     delete tmpInstr;
-    //     tmpInstr = nullptr;
-    // }
     
     next();
 
@@ -687,9 +670,6 @@ SSA* Parser::p_ifStatement() {
     if2 = p_statSeq(); // returns the 1st SSA instruction in the case which we jump to [case 2: if () == false]
     #ifdef DEBUG
         std::cout << "jmp_instr: " << jmp_instr->toString() << std::endl;
-        std::cout << "jmpIf_instr: " << jmpIf_instr->toString() << std::endl;
-        std::cout << "\t[this->prevInstrs] looks like: " << std::endl;
-        this->printPrevInstrs();
     #endif
     jmp_instr->set_operand2(if2);
 
@@ -701,9 +681,9 @@ SSA* Parser::p_ifStatement() {
 
     // [SECTION_A]
     // 【10/10/2024】： Note that we can't [this->prevJump=true; this->prevInstrs.push(jmpIf_instr)] bc we set_operand1() rather than set_operand2()...see below
-    // #ifdef DEBUG
-    //     std::cout << "jmpIf_instr: " << jmpIf_instr->toString() << std::endl;
-    // #endif
+    #ifdef DEBUG
+        std::cout << "jmpIf_instr: " << jmpIf_instr->toString() << std::endl;
+    #endif
     jmpIf_instr->set_operand1(phi_instr); // set_operand1 since it's just a `bra` instr
 
 
@@ -736,6 +716,125 @@ SSA* Parser::p_ifStatement() {
     // // previously: do something end here
 
     // return join_ptr; // [07/28/2024]: might need this here(?)
+    // [07/31/2024]: For now don't know what to do abt this (or if this is even right)
+    return phi_instr; // [08/08/2024]: For now this is good
+}
+
+SSA* Parser::p2_ifStatement() {
+    #ifdef DEBUG
+        std::cout << "[Parser::p2_ifStatement(" << this->sym.to_string() << ")]" << std::endl;
+    #endif
+    /*
+    [07/19/2024] Thought about this:
+    ii) we could create the SSA instr WITH the empty position,
+    then fill it once we see a corresponding `else`
+    - I think this might be better
+
+    Note: the curr instr list here DOMinates all 3 following blocks for [if-statement][then, else, && join]
+    */
+    // IF
+    this->CheckFor(Result(2, 18)); // check `if`; Note: we only do this as a best practice and to consume the `if` token
+    SSA *jmp_instr = p_relation(); // IF: relation
+
+    // THEN
+    this->CheckFor(Result(2, 19)); // check `then`
+
+    // [10/14/2024];
+    BasicBlock *then_blk = new BasicBlock(this->instrList);
+    then_blk->parent = this->currBB;
+    this->currBB->child = then_blk;
+    BasicBlock *if_parent = this->currBB;
+    this->currBB = then_blk; // [10/14/2024]: Assume [p2_statSeq()] manipulates [this->currBB]
+
+    SSA *if1 = p2_statSeq(); // returns the 1st SSA instruction 
+
+    // [Optional] ELSE
+    // if (this->CheckFor(Result(2, 20), true)) { // check `else`
+    //    moved below。。。
+    // } else {
+
+    if (!this->CheckFor(Result(2, 20), true)) { // if no-else statement
+    // 【09/23/2024】： This is not the condition that properly checks whether or not we have an `else` condition
+    // - it's possible to have a [statSeq] that doesn't use any SSA (right? Yes. Ex. OutputNum(1) OutputNewLine())
+    // [07/28/2024]: Are we not just returning the [SSA *relation] either way?
+    // if (if2 == nullptr) {   
+        // FI
+        this->CheckFor(Result(2, 21)); // check `fi`
+    
+        // [09/20/2024]: if `else` condition DNE, then we want to set the jump to be the next SSA instr after the `if-condition instr's`
+        this->prevJump = true;
+        this->prevInstrs.push(jmp_instr); // [10/10/2024]: push at the end so next added SSA-instr will be set as the jump-location
+
+        BasicBlock *notThen = new BasicBlock(this->instrList);
+        if_parent->child2 = notThen;
+        notThen->parent = this->currBB; // [this->currBB (should) == then]
+        notThen->parent2 = if_parent;
+        this->currBB = notThen;
+
+        // [07/28/2024]: might need this here(?)
+        return if1; // [08/08/2024]: Good call; yes we should
+    }
+    // BasicBlock *ifStat_else = nullptr; // should use some similar logic to check for existence of [else block]
+    SSA *if2 = nullptr, *jmpIf_instr = nullptr;
+    // [09/20/2024]: if `else` exists, we need a jump at the end of `if` right?
+    jmpIf_instr = this->addSSA1(8, nullptr, nullptr); // [check=false(?)]
+        // [10/10/2024]: this is the last SSA of the if-BasicBlock right?
+    
+    next();
+
+    // [10/14/2024];
+    BasicBlock *else_blk = new BasicBlock(this->instrList);
+    if_parent->child2 = else_blk;
+    else_blk->parent = if_parent;
+    this->currBB = else_blk; // [10/14/2024]: again, similar to above we assume [p2_statSeq()] manipulates [this->currBB]
+
+    // [10/10/2024]: These instructions should start the else-BasicBlock right?
+    if2 = p2_statSeq(); // returns the 1st SSA instruction in the case which we jump to [case 2: if () == false]
+    #ifdef DEBUG
+        std::cout << "jmp_instr: " << jmp_instr->toString() << std::endl;
+    #endif
+    jmp_instr->set_operand2(if2);
+
+    // FI
+    this->CheckFor(Result(2, 21)); // check `fi`
+
+    // [10/14/2024];
+    BasicBlock *join_blk = new BasicBlock(then_blk, else_blk, this->VVs, this->instrList);
+    join_blk->parent = then_blk;
+    join_blk->parent2 = else_blk;
+    then_blk->child = join_blk;
+    else_blk->child = join_blk;
+    
+    this->currBB = join_blk;
+
+    // [Special Instruction]: phi() goes here
+    SSA *phi_instr = this->addSSA1(6, if1, if2); // [check=false]; Note - new [addSSA1()] does the same as below's commented out portion!
+
+    // [SECTION_A]
+    // 【10/10/2024】： Note that we can't [this->prevJump=true; this->prevInstrs.push(jmpIf_instr)] bc we set_operand1() rather than set_operand2()...see below
+    #ifdef DEBUG
+        std::cout << "jmpIf_instr: " << jmpIf_instr->toString() << std::endl;
+    #endif
+    jmpIf_instr->set_operand1(phi_instr); // set_operand1 since it's just a `bra` instr
+
+
+    // SSA *phi_instr = new SSA(6, if1, if2); // gives us location of where to continue [SSA instr's] based on outcome of [p_relation()]
+    // // this->SSA_instrs.push_back(phi_instr);
+    // {
+    //     SSA *tmpInstr = phi_instr;
+    //     phi_instr = this->addSSA1(phi_instr); // [check=false]
+    //     // SSA *addedInstr = this->addSSA(phi_instr);
+    
+    //     // [09/23/2024]: do something like this 
+    //     // - bc we made a change in [LinkedList::contains()] && [Parser::addSSA()]
+    //     if (tmpInstr != phi_instr) {
+    //         // implies our new phi-SSA is a dupe of a [phi] in our LinkedList,
+    //         // - so we didn't actually insert the new SSA we created
+    //         delete tmpInstr; // so we should do this(?)
+    //         tmpInstr = nullptr;
+    //     }
+    // }
+
     // [07/31/2024]: For now don't know what to do abt this (or if this is even right)
     return phi_instr; // [08/08/2024]: For now this is good
 }
@@ -787,20 +886,22 @@ SSA* Parser::p2_whileStatement() {
     // WHILE
     this->CheckFor(Result(2, 22)); // check `while`; Note: we only do this as a best practice and to consume the `while` token
     SSA *jmp_instr = p2_relation(); // WHILE: relation
-    // this->SSA_instrs.push_back(jmp_instr);
 
     // DO
     this->CheckFor(Result(2, 23)); // check `do`
 
-    // // previously: do something start here
-    // BasicBlock *while_body;
-    // BasicBlock body = BasicBlock(blk, this->instruction_list);
-    // while_body = &body;
-    // blk->children.push_back(while_body);
-    // while_body->children.push_back(blk); // technically a "child" since we loop back to it
-    // // previously: do something end here
+    BasicBlock *parent_blk = this->currBB;
+    BasicBlock *while_blk = new BasicBlock(this->instrList);
+    parent_blk->child = while_blk;
+    while_blk->parent = parent_blk;
+    while_blk->child = parent_blk; // [10/14/2024]: Circular...should we do this?
+    this->currBB = while_blk;
 
     SSA *while1 = p_statSeq(); // DO: relation
+
+    // [10/14/2024]: Do we need a SSA-instr that takes us back to the [cmp-instr]?
+    // - check video
+
     // this->SSA_instrs.push_back(while1); // returns first statement from statSeq in while
     #ifdef DEBUG
         std::cout << "[Parser::p_whileStatement()] pushes back: " << while1->toString() << std::endl;
@@ -809,12 +910,14 @@ SSA* Parser::p2_whileStatement() {
     // OD
     this->CheckFor(Result(2, 24)); // check `od`
 
-    // return while1; // [07/28/2024]: might need this here(?)
-    // [07/31/2024]: js matching [p_ifStatement()], for now don't know what to do abt this
-    
     // [09/20/2024]: Do this before we return. so that the next SSA instr added will be the new jump from [unsuccessful relation: while-loop]
     this->prevJump = true;
     this->prevInstrs.push(jmp_instr);
+
+    // [10/14/2024];
+    BasicBlock *afterWhile_blk = new BasicBlock(this->instrList);
+    afterWhile_blk->parent = parent_blk;
+    this->currBB = afterWhile_blk;
 
     return jmp_instr; // [08/08/2024]: This is good here; [jmp_instr] was pushed-back before returing from [p_relation()]
 }
@@ -836,21 +939,6 @@ SSA* Parser::p_return() {
     // this->SSA_instrs.push_back(ret);
     // ret = this->addSSA1(tmp, true);
     SSA *ret = this->addSSA1(16, retVal, nullptr, true);
-    // if (ret != tmp) {
-    //     delete tmp;
-    //     tmp = nullptr;
-    // }
-
-    // return ret; // [07/28/2024]: might need this here(?)
-
-
-    // // [07/19/2024] This probably needs revising
-    // if (value == -1) { // no expr (optional)
-    //     // previously: do something here (add [return] SSA?)
-    //     int op = SymbolTable::operator_table.at("ret");
-    //     this->instruction_list.at(op).InsertAtHead(SSA(op, {value}));
-    //     blk->instruction_list.at(op).InsertAtHead(SSA(op, {value}));
-    // }
 
     return ret; // [08/31/2024]: compilation stub
 }
@@ -861,17 +949,7 @@ SSA* Parser::p2_return() {
     #endif
     SSA *retVal = p_expr();
 
-    // SSA *ret = nullptr, *tmp = new SSA(16, retVal); // [SSA constructor] should handle checking of [retVal](nullptr)
-    // this->SSA_instrs.push_back(ret);
-    // ret = this->addSSA1(tmp, true);
     SSA *ret = this->addSSA1(16, retVal, nullptr, true);
-    
-    // if (ret != tmp) {
-    //     delete tmp;
-    //     tmp = nullptr;
-    // } else {
-    //     this->add_SSA_table(ret);
-    // }
     this->add_SSA_table(ret);
 
     return ret; // [10/02/2024]: compilation stub
@@ -965,9 +1043,9 @@ SSA* Parser::p_relation() {
     //     #endif
     // }
 
-    // #ifdef DEBUG
-    //     std::cout << "returning jmp_instr: " << jmp_instr->toString() << std::endl;
-    // #endif
+    #ifdef DEBUG
+        std::cout << "returning jmp_instr: " << jmp_instr->toString() << std::endl;
+    #endif
     
     return jmp_instr;
 }
@@ -989,13 +1067,11 @@ SSA* Parser::p_expr() { // Check For `+` && `-`
         next();
         SSA *y = p_expr();
         x = BuildIR(op, x, y); // ToDo: Create IR Block
+        this->addSSA1(x, true);
     }
-
-    // #ifdef DEBUG
-    //     std::cout << "[Parser::p_expr()]: returning: " << x->toString() << std::endl;
-    // #endif
-
-    this->addSSA1(x, true);
+    #ifdef DEBUG
+        std::cout << "[Parser::p_expr()]: returning: " << x->toString() << std::endl;
+    #endif
     return x;
 }
 
@@ -1011,14 +1087,13 @@ SSA* Parser::p_term() { // Check For `*` && `/`
         next();
         SSA *y = p_factor();
         x = BuildIR(op, x, y); // ToDo: Create IR Block
-        this->addSSA1(x, true);
         std::cout << "in while loop" << std::endl;
     }
-
     // [08/02/2024]: Segmentation Fault here (both CheckFor()'s should return false, DEBUG stmt should print (currently doesn't!))
-    // #ifdef DEBUG
-    //     std::cout << "[Parser::p_term()]: returning: " << x->toString() << std::endl;
-    // #endif
+    #ifdef DEBUG
+        std::cout << "[Parser::p_term()]: returning: ";
+        std::cout << x->toString() << std::endl;
+    #endif
     return x;
 }
 
@@ -1084,8 +1159,8 @@ SSA* Parser::p_factor() {
         exit(EXIT_FAILURE);
     }
 
-    // #ifdef DEBUG
-    //     std::cout << "[Parser::p_factor()]: returning: " << res->toString() << std::endl;
-    // #endif
+    #ifdef DEBUG
+        std::cout << "[Parser::p_factor()]: returning: " << res->toString() << std::endl;
+    #endif
     return res;
 }

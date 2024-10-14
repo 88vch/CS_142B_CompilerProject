@@ -15,14 +15,14 @@
 
 class FileReader {
 public:
-    FileReader(std::string in_file)
-        : file_name(in_file.c_str())
-    {
-        this->file_contents = "";
-        #ifdef DEBUG
-            std::cout << "[FileReader]: Read input. Got filename: " << this->file_name << std::endl;
-        #endif
-    }
+    // FileReader(std::string in_file)
+    //     : file_name(in_file.c_str())
+    // {
+    //     this->file_contents = "";
+    //     #ifdef DEBUG
+    //         std::cout << "[FileReader]: Read input. Got filename: " << this->file_name << std::endl;
+    //     #endif
+    // }
 
     FileReader(const char *in_file)
         : file_name(std::move(in_file))

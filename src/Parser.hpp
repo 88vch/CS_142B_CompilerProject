@@ -27,41 +27,6 @@ struct Func {
         #endif
         this->args = {};
         this->name = functionName;
-
-
-        // int split_idx = 0;
-        // for (char c : functionName) {
-        //     if (std::isalpha(c)) {
-        //         split_idx++;
-        //     } else { break; }
-        // }
-        // #ifdef DEBUG
-        //     std::cout << "functionName=[" << functionName << "]" << std::endl;
-        // #endif
-        // this->name = functionName.substr(0, split_idx);
-        // functionName = functionName.substr(split_idx, functionName.size() - this->name.size());
-    
-        // #ifdef DEBUG
-        //     std::cout << "split_idx=[" << split_idx << "], this->name=[" << this->name << "], functionName: [" << functionName << "]" << std::endl;
-        // #endif
-
-        // if (functionName[0] != '(') {
-        //     exit(EXIT_FAILURE); // error; expected arg-start-token `(`
-        // }
-
-        // const char *delim = ", ";
-        // this->args = {};
-        // functionName = functionName.substr(1, functionName.size() - 2);
-
-        // char *token = strtok(&functionName[0], delim);
-        // // Keep tokenizing the string until strtok returns NULL
-        // while (token != nullptr) {
-        //     std::cout << "Token: " << token << std::endl;
-        //     this->args.push_back(token);
-
-        //     // Get the next token
-        //     token = strtok(nullptr, delim);
-        // }
     }
 
     std::string name;
@@ -104,7 +69,7 @@ public:
         this->VVs = {};
         
         this->currBB = nullptr;
-        this->BB0 = new BasicBlock(true);
+        this->BB0 = new BasicBlock(this->instrList, true);
         this->startBB = nullptr;
         this->parentBB = this->BB0;
 
@@ -511,7 +476,11 @@ public:
         file.close();
     }
 
-    BasicBlock parse(); // IR BB-representation 
+    void reset() {
+        this->s_index = 0;
+    }
+
+    BasicBlock* parse(); // IR BB-representation 
     void parse_generate_SSA(); // generate all SSA Instructions
 private:
     Result sym;
@@ -531,7 +500,7 @@ private:
     // [09/02/2024]: Does this need to include the `const` SSA's? I don't think it should bc the const instr's only belong to BB0 (special)
     // current instruction list (copied for each BB)
     // [09/05/2024]: key=[SymbolTable::operator_table] values corresponding to specific SSA-instrs
-    std::unordered_map<int, LinkedList*> instrList; 
+    std::unordered_map<int, LinkedList*> instrList; // [10/14/2024]: Should change this to <int, int> as well...
     
     BasicBlock *currBB;
     BasicBlock *BB0; // [09/02/2024]: special BB always generated at the start. Contains const SSA-instrs
@@ -554,8 +523,8 @@ private:
     SSA* p2_statSeq();
     SSA* p2_statement(); 
     SSA* p2_assignment();
-    BasicBlock* p2_funcCall();
-    BasicBlock* p2_ifStatement();
+    SSA* p2_funcCall();
+    SSA* p2_ifStatement();
     SSA* p2_whileStatement();
     SSA* p2_return();
 

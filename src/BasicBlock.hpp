@@ -13,12 +13,12 @@
 class BasicBlock {
 public:
     // [09/03/2024]: How do we determine whether we have the special [const BB0] or not?
-    BasicBlock(bool isConst = false);
+    BasicBlock(std::unordered_map<int, LinkedList*> instrLst, bool isConst = false);
     // [09/27/2024]: Copied from above, probs use this cause we need to inherit the map (&& SSA DLL)
     // [09/02/2024]: Note - took away ssa_instructions[curr_instr_list]
     BasicBlock(std::unordered_map<int, int> DOM_vv_map, std::unordered_map<int, LinkedList*> instrLst, bool isConst = false);
     // special block: [join]; need phi function here
-    BasicBlock(BasicBlock *p1, BasicBlock *p2, std::unordered_map<int, int> DOM_vv_map);
+    BasicBlock(BasicBlock *p1, BasicBlock *p2, std::unordered_map<int, int> DOM_vv_map, std::unordered_map<int, LinkedList*> instrLst);
 
     ~BasicBlock() {
         #ifdef DEBUG

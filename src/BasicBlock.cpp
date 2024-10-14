@@ -3,7 +3,7 @@
 int BasicBlock::debugNum = 1;
 
 // [09/03/2024]: How do we determine whether we have the special [const BB0] or not?
-BasicBlock::BasicBlock(bool isConst) // [09/02/2024]: Note - took away ssa_instructions[curr_instr_list]
+BasicBlock::BasicBlock(std::unordered_map<int, LinkedList*> instrLst, bool isConst) // [09/02/2024]: Note - took away ssa_instructions[curr_instr_list]
 {
     this->blockNum = debugNum++;
 
@@ -15,7 +15,7 @@ BasicBlock::BasicBlock(bool isConst) // [09/02/2024]: Note - took away ssa_instr
     if (isConst) {
         this->constList = new LinkedList();
     } else {
-        this->instrList = {};
+        this->instrList = instrList;
         this->constList = nullptr;
     }
     this->newInstrs = {};
@@ -42,14 +42,14 @@ BasicBlock::BasicBlock(std::unordered_map<int, int> DOM_vv_map, std::unordered_m
     this->newInstrs = {};
 }
 // special block: [join]; need phi function here
-BasicBlock::BasicBlock(BasicBlock *p1, BasicBlock *p2, std::unordered_map<int, int> DOM_vv_map)
+BasicBlock::BasicBlock(BasicBlock *p1, BasicBlock *p2, std::unordered_map<int, int> DOM_vv_map, std::unordered_map<int, LinkedList*> instrLst)
 {
     this->blockNum = debugNum++;
 
     this->parent = p1;
     this->parent2 = p2;
     this->updated_varval_map = DOM_vv_map;
-    this->instrList = {};
+    this->instrList = instrList;
     this->child = nullptr;
     this->child2 = nullptr;
 
