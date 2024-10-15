@@ -64,7 +64,7 @@ SSA* Parser::p2_start() {
     // [09/24/2024]: This should be in our first non-const BB right (i.e. not BB0, but first after that)
     if (this->CheckFor(Result(2, 5), true)) { // check for `var` token
         #ifdef DEBUG
-            std::cout << "[Parser::parse()]: next token is [varDecl]" << std::endl;
+            std::cout << "[Parser::parse2()]: next token is [varDecl]" << std::endl;
         #endif
         next(); // consumes `var` token
         
@@ -72,7 +72,7 @@ SSA* Parser::p2_start() {
         p_varDecl(); // ends with `;` = end of varDecl (consume it in the func)
 
         #ifdef DEBUG
-            std::cout << "[Parser::parse()]: done parsing [varDecl]'s" << std::endl;
+            std::cout << "[Parser::parse2()]: done parsing [varDecl]'s" << std::endl;
         #endif
     }
 
@@ -155,7 +155,7 @@ SSA* Parser::p2_statSeq() {
     // prev_bb = this->currBB;
     // - the first statement should always use the initial BB: even if we have jumps, we always write an SSA first (cmp, bra, etc...)
     
-    SSA *first_SSA = nullptr; // the first SSA instr executed in the statement
+    SSA *first_SSA = p2_statement(); // the first SSA instr executed in the statement
 
     while (this->CheckFor(Result(2, 4), true)) { // if [optional] next token is ';', then we still have statements
         next();
@@ -199,7 +199,11 @@ SSA* Parser::p2_statSeq() {
         // #endif
     }
     #ifdef DEBUG
-        std::cout << "[Parser::p2_statSeq()] returning: " << first_SSA->toString() << std::endl;
+        if (first_SSA) {
+            std::cout << "[Parser::p2_statSeq()] returning: " << first_SSA->toString() << std::endl;
+        } else {
+            std::cout << "[Parser::p2_statSeq()] returning: nullptr!" << std::endl;
+        }
     #endif
     return first_SSA; // returning first [SSA_instr] in [p_statSeq()] so we know control flow
 }
@@ -252,11 +256,11 @@ SSA* Parser::p2_statement() {
     if (this->CheckFor(Result(2, 6), true)) {          // check `let`
         stmt = p2_assignment();
     } else if (this->CheckFor(Result(2, 25), true)) {  // check `call`
-        // stmt = p2_funcCall();
+        stmt = p2_funcCall();
     } else if (this->CheckFor(Result(2, 18), true)) {  // check `if`
-        // stmt = p2_ifStatement();
+        stmt = p2_ifStatement();
     } else if (this->CheckFor(Result(2, 22), true)) {  // check `while` 
-        // stmt = p2_whileStatement();
+        stmt = p2_whileStatement();
     } else if (this->CheckFor(Result(2, 28), true)) {  // check `return`
         stmt = p2_return();
     }
@@ -380,11 +384,18 @@ SSA* Parser::p2_assignment() {
                 std::cout << "ident exists with a definition: ident=" << ident << ", val=" << this->ssa_table.at(this->VVs.at(ident))->toString() << std::endl;
             #endif
 
-            this->currBB->instrList = this->instrList;
+            // [10/14/2024]: Since we're overwriting a pre-existing value, we should use a new BasicBlock (?)
+            // - is this valid?
+            this->currBB->instrList = this->instrList; // [10/14/2024]: Get the updated [instrList] up to this point
+            // this->currBB->setInstructionList(this->instrList);
+            #ifdef DEBUG
+                std::cout << "done creating new BasicBlock" << std::endl;
+            #endif
             this->parentBB = this->currBB;
             this->currBB = new BasicBlock(this->instrList);
             this->parentBB->child = this->currBB;
             this->currBB->parent = this->parentBB;
+
         }
     }
     next();
@@ -597,7 +608,114 @@ SSA* Parser::p_funcCall() {
 
 // [10/01/2024]: Do we need to define functions before they're called? 
 // - IM SCARED TO START THIS PART
-// BasicBlock* Parser::p2_funcCall() {}
+// ToDo: after generating the Dot & graph the first time
+SSA* Parser::p2_funcCall() {
+    SSA *res = nullptr;
+    #ifdef DEBUG
+        std::cout << "[Parser::p2_funcCall(" << this->sym.to_string() << ")]" << std::endl;
+    #endif
+
+    // check for `call`
+    if (this->CheckFor(Result(2, 25), true)) {
+        next(); 
+
+        // check UDF's that return void
+        Func f(this->sym.get_value());
+        next();
+        #ifdef DEBUG
+            std::cout << "\tcreated func f: [" << f.getName() << "]" << std::endl;
+        #endif
+        // [09/30/2024]: NOTE - do we need multiple SSA-instr's for read bc of the different input values that may come in from this function call?
+        // - we shouldn't because it doesn't take any values it's just the instruction for when we execute
+        if (f.name == "InputNum") {
+            this->CheckFor_udf_optional_paren();
+
+            res = this->addSSA1(23, nullptr, nullptr, true);
+            
+            #ifdef DEBUG
+                std::cout << "\tend of [InputNum()] got res: " << res->toString() << std::endl;
+            #endif
+        } else if (f.name == "OutputNum") {
+            int num;
+            // [09/22/2024]: But what are we supposed to do with the args?
+            // [08/31/2024]: ToDo: handle args for this to work
+            this->CheckFor(Result(2, 13)); // check for `(`
+            num = this->sym.get_value_literal();
+
+            #ifdef DEBUG
+                std::cout << "\tgot: [" << num << "]" << std::endl;
+            #endif
+
+            next();
+            this->CheckFor(Result(2, 14)); // check for `)`; sanity...irl could just call [next()]
+
+            // [09/02/2024] Do we need to compute the actual value? 
+            // - Or can we simply output the SSA-instruction corresponding to the value? (currently doing this)
+            #ifdef DEBUG
+                std::cout << "current [varVals] mapping looks like: " << std::endl;
+                this->printVVs();
+            #endif
+            if (this->VVs.find(num) != this->VVs.end()) {
+                res = this->addSSA1(24, this->ssa_table.at(this->VVs.at(num)), nullptr, true);
+            } else {
+                try {
+                    // [10/09/2024]: Can't modify constVal SSA call
+                    SSA *tmp = new SSA(0, num);
+                    res = this->addSSA1(tmp, true);
+                    if (res != tmp) {
+                        delete tmp;
+                        tmp = nullptr;
+                    }
+
+                    // tmp = new SSA(24, res);
+                    res = this->addSSA1(24, res, nullptr);
+                } catch(...) {
+                    std::cout << "could not recognize identifier corresponding to: [" << num << "]; exiting prematurely..." << std::endl;
+                    exit(EXIT_FAILURE);
+                }
+            }
+        } else if (f.name == "OutputNewLine") {
+            this->CheckFor_udf_optional_paren();
+            res = this->addSSA1(25, nullptr, nullptr, true);
+        } else {
+            // [09/02/2024]: User-Defined Function (?)
+            // check for optional `(`: determine whether a UD-function may/will have arguments or not
+            if (this->CheckFor(Result(2, 13), true)) {    
+                while (this->CheckFor(Result(2, 14), true) == false) { // while the next token is NOT `)`
+                    #ifdef DEBUG
+                        std::cout << "iterating through args, token looks like: [" << this->sym.to_string() << ", " << this->sym.to_string_literal() << "]" << std::endl;
+                    #endif
+                    f.args.push_back(this->sym.to_string());
+                    next();
+                }
+                this->CheckFor(Result(2, 14)); // check for `)`; sanity...irl could just call [next()]
+            } 
+            // [09/02/2024]: ToDo - call the function with the arguments (if they exist)
+        }
+    } else {
+        // check UDF's that return a num (or char?) 
+        // this->CheckFor(); // [08/27/2024]: Something like this?...
+        // [09/02/2024]: ORRRRR Don't they all start with the `call` token???? confirm this then delete this and js [CheckFor] `call`
+        
+        // [10/14/2024]: Should we create a new BasicBlock for it(?)
+        BasicBlock *parent_blk = this->currBB;
+        this->currBB = new BasicBlock(this->instrList);
+        this->currBB->parent = parent_blk;
+        parent_blk->child = this->currBB;
+
+        // [10/14/2024]: Create a new BasicBlock here (for after the function call?)
+        BasicBlock *func = this->currBB;
+        this->currBB = new BasicBlock(this->instrList);
+        this->currBB->parent = func;
+        func->child = this->currBB;
+    }
+
+
+    #ifdef DEBUG
+        std::cout << "\t[Parser::p_funcCall()] returning res: " << res->toString() << std::endl;
+    #endif
+    return res; // [08/31]2024]: stub (?)
+}
 
 // ToDo; [07/28/2024]: what exactly are we supposed to return???
 SSA* Parser::p_ifStatement() {
@@ -847,22 +965,19 @@ SSA* Parser::p_whileStatement() {
     // DO
     this->CheckFor(Result(2, 23)); // check `do`
 
-    // // previously: do something start here
-    // BasicBlock *while_body;
-    // BasicBlock body = BasicBlock(blk, this->instruction_list);
-    // while_body = &body;
-    // blk->children.push_back(while_body);
-    // while_body->children.push_back(blk); // technically a "child" since we loop back to it
-    // // previously: do something end here
-
-    SSA *while1 = p_statSeq(); // DO: relation
+    SSA *while1 = p2_statSeq(); // DO: relation
     // this->SSA_instrs.push_back(while1); // returns first statement from statSeq in while
-    #ifdef DEBUG
-        std::cout << "[Parser::p_whileStatement()] pushes back: " << while1->toString() << std::endl;
-    #endif
 
     // OD
     this->CheckFor(Result(2, 24)); // check `od`
+    
+    #ifdef DEBUG
+    if (while1) {
+        std::cout << "[Parser::p_whileStatement()] pushes back: " << while1->toString() << std::endl;
+    } else {
+        std::cout << "[Parser::p_whileStatement()] pushes back: nullptr!" << std::endl;
+    }
+    #endif
 
     // return while1; // [07/28/2024]: might need this here(?)
     // [07/31/2024]: js matching [p_ifStatement()], for now don't know what to do abt this
@@ -881,7 +996,7 @@ SSA* Parser::p2_whileStatement() {
     #endif
     // WHILE
     this->CheckFor(Result(2, 22)); // check `while`; Note: we only do this as a best practice and to consume the `while` token
-    SSA *jmp_instr = p2_relation(); // WHILE: relation
+    SSA *jmp_instr = p_relation(); // WHILE: relation
 
     // DO
     this->CheckFor(Result(2, 23)); // check `do`
@@ -893,7 +1008,7 @@ SSA* Parser::p2_whileStatement() {
     while_blk->child = parent_blk; // [10/14/2024]: Circular...should we do this?
     this->currBB = while_blk;
 
-    SSA *while1 = p_statSeq(); // DO: relation
+    SSA *while1 = p2_statSeq(); // DO: relation
 
     // [10/14/2024]: Do we need a SSA-instr that takes us back to the [cmp-instr]?
     // - check video
@@ -1044,10 +1159,6 @@ SSA* Parser::p_relation() {
     #endif
     
     return jmp_instr;
-}
-
-SSA* Parser::p2_relation() {
-    return this->prevInstr; // [10/06/2024]: compilation stub
 }
 
 // returns the corresponding value in [SymbolTable::symbol_table]

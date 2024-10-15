@@ -15,8 +15,12 @@ BasicBlock::BasicBlock(std::unordered_map<int, LinkedList*> instrLst, bool isCon
     if (isConst) {
         this->constList = new LinkedList();
     } else {
-        this->instrList = instrLst;
         this->constList = nullptr;
+
+        for (const auto &instr : instrLst) {
+            this->instrList.insert(instr);
+        }
+        this->instrList = instrLst;
     }
     this->newInstrs = {};
 }
