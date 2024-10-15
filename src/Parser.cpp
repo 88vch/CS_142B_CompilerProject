@@ -5,8 +5,6 @@
 // [09/03/2024]: Unable to pre-generate all SSA Instructions (bc some branch locations may be unknown still)
 // - need BasicBlock's (IR) to get a better idea of control-flow (-> CFG's)
 BasicBlock* Parser::parse() {
-    this->reset();
-
     this->SSA_start = this->p2_start();    
     
     return this->BB0; // stub
@@ -14,20 +12,18 @@ BasicBlock* Parser::parse() {
 
 
 // does error checking here
-void Parser::parse_generate_SSA() {
-    this->reset();
-    
-    // concerned with first 15 operators first
-    // ToDo: this is where we will use Recursive Descent [OldParser.*]
-    // - [RESUME HERE]!!!!!!
-    #ifdef DEBUG
-        std::cout << "[Parser::parse_generate_SSA()]" << std::endl;
-    #endif
-    this->SSA_start = this->p_start();
-    #ifdef DEBUG
-        std::cout << "Done InITIALLY Parsing, got [" << this->getInstrListSize() << "] SSA Instructions" << std::endl;
-    #endif
-}
+// void Parser::parse_generate_SSA() {
+//     // concerned with first 15 operators first
+//     // ToDo: this is where we will use Recursive Descent [OldParser.*]
+//     // - [RESUME HERE]!!!!!!
+//     #ifdef DEBUG
+//         std::cout << "[Parser::parse_generate_SSA()]" << std::endl;
+//     #endif
+//     this->SSA_start = this->p_start();
+//     #ifdef DEBUG
+//         std::cout << "Done InITIALLY Parsing, got [" << this->getInstrListSize() << "] SSA Instructions" << std::endl;
+//     #endif
+// }
 
 SSA* Parser::p_start() {
     #ifdef DEBUG

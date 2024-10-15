@@ -81,7 +81,8 @@ public:
         this->prevJump = false;
         this->prevInstr = nullptr;
 
-        next();
+        next(); // [10/14/2024]: Why do we do this?
+        // - load's first token into [this->sym]
     }
 
     ~Parser() {
@@ -476,10 +477,7 @@ public:
         file.close();
     }
 
-    void reset() {
-        this->s_index = 0;
-    }
-
+    SSA* p_start();
     BasicBlock* parse(); // IR BB-representation 
     void parse_generate_SSA(); // generate all SSA Instructions
 private:
@@ -534,7 +532,6 @@ private:
     BasicBlock* p2_factor();
 
     // Recursive Descent
-    SSA* p_start();
     void p_varDecl();
     SSA* p_statSeq();
     SSA* p_statement(); 
@@ -551,9 +548,9 @@ private:
 
     // peek & consume char
     inline void next() {
-        // #ifdef DEBUG
-        //     std::cout << "in [next(this->sym=" << this->sym.to_string_literal() << ")]" << std::endl;
-        // #endif
+        #ifdef DEBUG
+            std::cout << "in [next(this->sym=" << this->sym.to_string_literal() << ", this->s_index=" << this->s_index << ")]" << std::endl;
+        #endif
 
 
         if (this->s_index < this->source_len) {
@@ -563,15 +560,15 @@ private:
         }
 
         #ifdef DEBUG
-            std::cout << "\tmodified [this->sym] to: " << this->sym.to_string_literal() << std::endl;
+            std::cout << "\tmodified [this->sym] to: " << this->sym.to_string_literal() << ", this->s_index=" << this->s_index << std::endl;
         #endif
     }
 
     // consumes [non-optional's]
     inline bool CheckFor(Result expected_token, bool optional = false) {
-        // #ifdef DEBUG
-        //     std::cout << "Checking For [expected: " << expected_token.to_string() << "], [got: " << this->sym.to_string() << "]" << std::endl;
-        // #endif
+        #ifdef DEBUG
+            std::cout << "Checking For [expected: " << expected_token.to_string() << "], [got: " << this->sym.to_string() << "]" << std::endl;
+        #endif
         bool retVal = false;
         
         // Note: there might be some logic messed up abt this (relation: [expected_token, Result(2, -1)])

@@ -85,40 +85,41 @@ int main() {
     #ifdef DEBUG
         std::cout << "[Parser]: Before constructor" << std::endl;
     #endif
-    Parser parser(results);
+    Parser parser1(results);
     
     #ifdef DEBUG
         std::cout << "[Parser]: After constructor. Before FIRST [parse](SSA Generation)" << std::endl;
     #endif
-    // parser.parse_generate_SSA();
-    parser.parse();
+    parser1.p_start();
+    // parser.parse();
     #ifdef DEBUG
         std::cout << "[Parser]: After FIRST [parse.parse_generate_SSA()]" << std::endl;
     #endif
 
-    std::vector<SSA*> SSA_instrs = parser.getSSA();
+    std::vector<SSA*> SSA_instrs = parser1.getSSA();
     bool SSA_exists = fr.write_file_contents(parser1_f, SSA_instrs, "SSA Instructions");
     if (SSA_exists) { std::cout << "SSA Instructions have successfully been written to: " << parser1_f << "(size=[" << SSA_instrs.size() << "])" << std::endl; }
     else { std::cout << "Error occured when trying to write results!" << std::endl; }
 
-    std::unordered_map<std::string, SSA*> varVals = parser.getVarVal();
+    std::unordered_map<std::string, SSA*> varVals = parser1.getVarVal();
     bool vv = fr.write_file_contents(varVal_f, varVals, "Var-Val");
     if (st) { std::cout << "Results have successfully been written to: " << varVal_f << "(size=[" << varVals.size() << "])" << std::endl; }
     else { std::cout << "Error occured when trying to write results!" << std::endl; }
     
-    bool ll = fr.write_file_contents(linkedList_f, parser.instrListToString(), "LinkedList");
-    if (ll) { std::cout << "Results have successfully been written to: " << linkedList_f << "(size=[" << parser.getInstrListSize() << "])" << std::endl; }
+    bool ll = fr.write_file_contents(linkedList_f, parser1.instrListToString(), "LinkedList");
+    if (ll) { std::cout << "Results have successfully been written to: " << linkedList_f << "(size=[" << parser1.getInstrListSize() << "])" << std::endl; }
     else { std::cout << "Error occured when trying to write results!" << std::endl; }
 
     #ifdef DEBUG
         std::cout << "[Parser]: Before SECOND [parse](BasicBlock Generation)" << std::endl;
     #endif
-    parser.parse();
+    Parser parser2(results);
+    parser2.parse();
     #ifdef DEBUG
         std::cout << "[Parser]: After SECOND [parse.parse()]" << std::endl;
     #endif
 
-    parser.generateDOT();
+    parser2.generateDOT();
 
 
 
