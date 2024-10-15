@@ -90,7 +90,8 @@ int main() {
     #ifdef DEBUG
         std::cout << "[Parser]: After constructor. Before FIRST [parse](SSA Generation)" << std::endl;
     #endif
-    parser.parse_generate_SSA();
+    // parser.parse_generate_SSA();
+    parser.parse();
     #ifdef DEBUG
         std::cout << "[Parser]: After FIRST [parse.parse_generate_SSA()]" << std::endl;
     #endif
