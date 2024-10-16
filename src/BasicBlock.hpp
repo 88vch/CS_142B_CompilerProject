@@ -56,19 +56,20 @@ public:
         #endif
         
         // [09/20/2024]: We have to make deep copies lol
-        for (unsigned int i = 1; i < this->instrList.size(); i++) {
-            delete this->instrList.at(i);
-            // this->instrList.insert(std::pair<int, LinkedList*>(i, nullptr));
-        }
+        // for (unsigned int i = 1; i < this->instrList.size(); i++) {
+        //     delete this->instrList.at(i);
+        //     // this->instrList.insert(std::pair<int, LinkedList*>(i, nullptr));
+        // }
         
-        #ifdef DEBUG
-            std::cout << "\tin setInstructionList( lol ) post-erase" << std::endl;
-        #endif
+        // #ifdef DEBUG
+        //     std::cout << "\tin setInstructionList( lol ) post-erase" << std::endl;
+        // #endif
 
-        this->instrList.clear();
+        // this->instrList.clear();
         
         for (const auto &pair : curr_instr_lst) {
-            this->instrList.insert(pair);
+            // this->instrList.insert(pair);
+            this->instrList[pair.first] = new LinkedList(*pair.second);
         }
         // [09/02/2024]: VALIDATE that this makes a shallow copy (we only care abt the values, since we're going to continue to modify this [curr_instr_list])
         // this->instrList = curr_instr_lst;

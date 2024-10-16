@@ -8,19 +8,19 @@
 class Node {
 public:
     SSA *instr;
-    // Node *next;
+    Node *next;
     Node *prev;
 
     // Constructor
-    // Node() : instr(nullptr), next(nullptr), prev(nullptr) {}
-    Node() : instr(nullptr), prev(nullptr) {}
+    Node() : instr(nullptr), next(nullptr), prev(nullptr) {}
+    // Node() : instr(nullptr), prev(nullptr) {}
 
     ~Node() { 
         if (this->instr) {
             delete this->instr; 
         }
         this->instr = nullptr;
-        // this->next = nullptr; 
+        this->next = nullptr; 
         this->prev = nullptr; 
     }
 };
@@ -33,6 +33,16 @@ public:
     LinkedList() 
         : length(0) , head(nullptr), tail(nullptr)
     {
+    }
+
+    LinkedList(const LinkedList& other) {
+        Node *curr = other.tail;
+        
+        while (curr) {
+            this->InsertAtHead(curr->instr);
+
+            curr = curr->prev;
+        }
     }
     
     // [09/20/2024]: ToDo - create copy constructor
@@ -65,22 +75,22 @@ public:
     }
 
     // [10/03/2024]: Commenting out to make singly linked list
-    // void InsertAtHead(SSA *instruction) {
-    //     Node* newNode = new Node();
-    //     newNode->instr = instruction;
+    void InsertAtHead(SSA *instruction) {
+        Node* newNode = new Node();
+        newNode->instr = instruction;
 
-    //     // If the list is empty, make the new node as the head
-    //     if (head == nullptr) {
-    //         head = newNode;
-    //         tail = newNode;
-    //     } else {
-    //         // Otherwise, insert the new node after the current head
-    //         head->prev = newNode;
-    //         head->prev->next = head;
-    //         head = newNode;
-    //     }
-    //     length++;
-    // }
+        // If the list is empty, make the new node as the head
+        if (head == nullptr) {
+            head = newNode;
+            tail = newNode;
+        } else {
+            // Otherwise, insert the new node after the current head
+            head->prev = newNode;
+            head->prev->next = head;
+            head = newNode;
+        }
+        length++;
+    }
 
     void InsertAtTail(SSA *instruction) {
         #ifdef DEBUG
