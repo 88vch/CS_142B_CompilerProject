@@ -387,7 +387,13 @@ SSA* Parser::p2_assignment() {
             // [10/14/2024]: Since we're overwriting a pre-existing value, we should use a new BasicBlock (?)
             // - is this valid?
             // this->currBB->instrList = this->instrList; // [10/14/2024]: Get the updated [instrList] up to this point
-            // this->currBB->setInstructionList(this->instrList);
+            
+            #ifdef DEBUG
+                std::cout << "printing instrList first" << std::endl;
+            #endif
+            this->printInstrList();
+            
+            this->currBB->setInstructionList(this->instrList);
             #ifdef DEBUG
                 std::cout << "done creating new BasicBlock" << std::endl;
             #endif

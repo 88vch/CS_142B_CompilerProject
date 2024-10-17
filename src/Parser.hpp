@@ -96,7 +96,7 @@ public:
             //     std::cout << "deleting linked list [" << SymbolTable::operator_table_reversed.at(i) << "];" << std::endl;
             // #endif
             delete this->instrList.at(i);
-            this->instrList.insert(std::pair<int, LinkedList*>(i, nullptr));
+            this->instrList[i] = nullptr;
         }
         #ifdef DEBUG
             std::cout << "Done ~Parser()!!!" << std::endl;
