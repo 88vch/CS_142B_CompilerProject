@@ -17,10 +17,10 @@
 
 // class SymbolTable; // forward declaration (?)
 
-// std::string f_ext = ".ty";
-// std::string f_name = "nested_if_while";
+std::string f_ext = ".ty";
+std::string f_name = "nested_if_while";
 // std::string f_full = f_name + f_ext;
-// std::string in_f = "tst/" + f_name + f_ext;
+std::string in_f = "tst/" + f_name + f_ext;
 #define in_f "tst/nested_if_while.ty"
 
 int main() {
