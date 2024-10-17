@@ -55,7 +55,7 @@ struct Func {
 // Note: shouldn't need keywords bc we only care about computational code
 class Parser {
 public:
-    Parser(const std::vector<Result> &tkns)
+    Parser(const std::vector<Result> &tkns, bool blk = false)
     {
         this->source = tkns;
 
@@ -80,6 +80,8 @@ public:
         this->prevInstrs = std::stack<SSA *>();
         this->prevJump = false;
         this->prevInstr = nullptr;
+
+        this->block = blk;
 
         next(); // [10/14/2024]: Why do we do this?
         // - load's first token into [this->sym]
@@ -366,6 +368,7 @@ public:
     }
 
     // [10/09/2024]: ToDo - should check if [SSA] already exists in [this->ssa_table] 
+    // - specifically for [this->VVs]
     inline int add_SSA_table(SSA *toAdd) {
         ssa_table.insert(std::pair<int, SSA *>(ssa_table.size(), toAdd));
         ssa_table_reversed.insert(std::pair<SSA *, int>(toAdd, ssa_table.size() - 1));
@@ -481,6 +484,8 @@ public:
     BasicBlock* parse(); // IR BB-representation 
     void parse_generate_SSA(); // generate all SSA Instructions
 private:
+    bool block;
+
     Result sym;
     std::vector<Result> source;
     std::vector<SSA*> SSA_instrs; // [09/11/2024]: this is pretty much js for our testing/reference purposes now

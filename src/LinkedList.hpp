@@ -36,10 +36,16 @@ public:
     }
 
     LinkedList(const LinkedList& other) {
+        #ifdef DEBUG
+            std::cout << "[LinkedList::CopyConstructor]" << std::endl;
+        #endif
+
+
         Node *curr = other.tail;
         
         while (curr) {
-            this->InsertAtHead(curr->instr);
+            // [10/17/2024]: Note to copy a new SSA instr as well
+            this->InsertAtHead(new SSA(*(curr->instr)));
 
             curr = curr->prev;
         }
@@ -133,6 +139,11 @@ public:
     }
 
     void printList() const {
+        if (this->tail == nullptr) {
+            std::cout << std::endl;
+            return;
+        }
+
         // Node *curr = this->head;
         Node *curr = this->tail;
         // #ifdef DEBUG

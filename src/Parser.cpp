@@ -82,6 +82,11 @@ SSA* Parser::p2_start() {
     // [09/24/2024]: Not sure how to handle this
     // - big picture wise it's BB0->BB1->done; where BB1 is everything.
     this->startBB = new BasicBlock(this->instrList);
+    #ifdef DEBUG
+        std::cout << "created new BB with instrList: " << std::endl << "\t";
+        this->startBB->printInstrList();
+    #endif
+    
     this->currBB = this->startBB;
     this->BB0->child = this->startBB;
     this->startBB->parent = this->BB0;
@@ -299,14 +304,6 @@ SSA* Parser::p_assignment() {
 
     // EXPRESSION
     SSA *res = p_expr();
-    // if (res->get_constVal()) {
-    //     if (this->CheckConstExistence(*(res->get_constVal())) == nullptr) {
-    //         this->addSSA(res); // [09/30/2024]: Note - there's an additional check here (return's [nullptr || SSA *])
-    //     }
-    // } else {
-    //     if (this->CheckExistence(res->get_operator(), res->get_operand1(), res->get_operand2()) == nullptr) {
-    //     }
-    // }
 
     int VV_value = this->add_SSA_table(res);
     // [08/07/2024]: This still holds true (below); 
@@ -314,10 +311,7 @@ SSA* Parser::p_assignment() {
     // - Should not need to return any SSA value for this; will probably need more complexity when BB's are introduced
     // [07/28/2024]: Add [ident : value] mapping into [symbol_table], that's it.
     #ifdef DEBUG
-        std::cout << "in [Parser::p_assignment]: key=" << SymbolTable::symbol_table.at(ident) << ", current varVal value=";
-        // if (this->varVals.find(SymbolTable::symbol_table.at(ident)) != this->varVals.end()) {
-        //     std::cout << this->varVals.at(SymbolTable::symbol_table.at(ident))->toString() << std::endl;
-        // } 
+        std::cout << "in [Parser::p_assignment]: key=" << SymbolTable::symbol_table.at(ident) << ", current varVal value="; 
         
         if (this->VVs.find(ident) != this->VVs.end()) {
             std::cout << this->ssa_table.at(this->VVs.at(ident))->toString() << std::endl;
@@ -325,7 +319,6 @@ SSA* Parser::p_assignment() {
             std::cout << "none!" << std::endl;
         }
     #endif
-    // this->varVals.insert_or_assign(SymbolTable::symbol_table.at(ident), this->CheckExistence(instr->get_operator(), instr->get_operand1(), instr->get_operand2()));
     this->VVs.insert_or_assign(ident, VV_value);
     this->printVVs();
 
@@ -340,25 +333,6 @@ SSA* Parser::p_assignment() {
         std::cout << "[Parser::p_assignment()]: returning " << res->toString() << std::endl;
     #endif
     return res;
-
-    // [07/28/2024]: this will always be a new [SSA instr] bc it contains a path not simply a value (i.e. if the path has multiple ways to get there [think if/while-statements], the value will change depending on which route the path takes)
-    // SSA *constVal = nullptr;
-    // SSA tmp = SSA(0, res);
-    // constVal = &tmp;
-    // this->SSA_instrs.push_back(constVal);
-    // #ifdef DEBUG
-    //     std::cout << "\tcreated new assignment in SSA: [" << constVal->toString() << "]" << std::endl;
-    // #endif
-    // return constVal;
-
-    
-    // Old Code begin;
-    // if (blk->updated_varval_map.find(ident) == blk->updated_varval_map.end()) {
-    //     blk->updated_varval_map.insert({ident, value});
-    // } else {
-    //     blk->updated_varval_map[ident] = value;
-    // }
-    // Old Code end;
 }
 
 SSA* Parser::p2_assignment() {
@@ -393,12 +367,20 @@ SSA* Parser::p2_assignment() {
             #endif
             this->printInstrList();
             
+            
             this->currBB->setInstructionList(this->instrList);
+        
             #ifdef DEBUG
-                std::cout << "done creating new BasicBlock" << std::endl;
+                std::cout << "done setting InstrList for curr BB" << std::endl;
             #endif
             this->parentBB = this->currBB;
+            
             this->currBB = new BasicBlock(this->instrList);
+            #ifdef DEBUG
+                std::cout << "created new BB with instrList: " << std::endl << "\t";
+                this->currBB->printInstrList();
+            #endif
+
             this->parentBB->child = this->currBB;
             this->currBB->parent = this->parentBB;
 
@@ -705,13 +687,25 @@ SSA* Parser::p2_funcCall() {
         
         // [10/14/2024]: Should we create a new BasicBlock for it(?)
         BasicBlock *parent_blk = this->currBB;
+        
         this->currBB = new BasicBlock(this->instrList);
+        #ifdef DEBUG
+            std::cout << "created new BB with instrList: " << std::endl << "\t";
+            this->currBB->printInstrList();
+        #endif
+        
         this->currBB->parent = parent_blk;
         parent_blk->child = this->currBB;
 
         // [10/14/2024]: Create a new BasicBlock here (for after the function call?)
         BasicBlock *func = this->currBB;
+        
         this->currBB = new BasicBlock(this->instrList);
+        #ifdef DEBUG
+            std::cout << "created new BB with instrList: " << std::endl << "\t";
+            this->currBB->printInstrList();
+        #endif
+
         this->currBB->parent = func;
         func->child = this->currBB;
     }
@@ -728,27 +722,12 @@ SSA* Parser::p_ifStatement() {
     #ifdef DEBUG
         std::cout << "[Parser::p_ifStatement(" << this->sym.to_string() << ")]" << std::endl;
     #endif
-    /*
-    [07/19/2024] Thought about this:
-    ii) we could create the SSA instr WITH the empty position,
-    then fill it once we see a corresponding `else`
-    - I think this might be better
-
-    Note: the curr instr list here DOMinates all 3 following blocks for [if-statement][then, else, && join]
-    */
     // IF
     this->CheckFor(Result(2, 18)); // check `if`; Note: we only do this as a best practice and to consume the `if` token
     SSA *jmp_instr = p_relation(); // IF: relation
 
     // THEN
     this->CheckFor(Result(2, 19)); // check `then`
-
-    // // previously: do something start here
-    // BasicBlock *ifStat_then;
-    // BasicBlock if_then = BasicBlock(blk, nullptr, this->instruction_list);
-    // ifStat_then = &if_then;
-    // blk->children.push_back(ifStat_then);
-    // // previously: do something end here
 
     SSA *if1 = p_statSeq(); // returns the 1st SSA instruction 
 
@@ -772,19 +751,12 @@ SSA* Parser::p_ifStatement() {
         // [07/28/2024]: might need this here(?)
         return if1; // [08/08/2024]: Good call; yes we should
     }
-    // BasicBlock *ifStat_else = nullptr; // should use some similar logic to check for existence of [else block]
     SSA *if2 = nullptr, *jmpIf_instr = nullptr;
     // [09/20/2024]: if `else` exists, we need a jump at the end of `if` right?
     jmpIf_instr = this->addSSA1(8, nullptr, nullptr); // [check=false(?)]
         // [10/10/2024]: this is the last SSA of the if-BasicBlock right?
     
     next();
-
-    // // previously: do something start here
-    // BasicBlock if_else = BasicBlock(blk, this->instruction_list);
-    // ifStat_else = &if_else;
-    // blk->children.push_back(ifStat_else);
-    // // previously: do something end here
 
     // [10/10/2024]: These instructions should start the else-BasicBlock right?
     if2 = p_statSeq(); // returns the 1st SSA instruction in the case which we jump to [case 2: if () == false]
@@ -806,37 +778,6 @@ SSA* Parser::p_ifStatement() {
     #endif
     jmpIf_instr->set_operand1(phi_instr); // set_operand1 since it's just a `bra` instr
 
-
-    // SSA *phi_instr = new SSA(6, if1, if2); // gives us location of where to continue [SSA instr's] based on outcome of [p_relation()]
-    // // this->SSA_instrs.push_back(phi_instr);
-    // {
-    //     SSA *tmpInstr = phi_instr;
-    //     phi_instr = this->addSSA1(phi_instr); // [check=false]
-    //     // SSA *addedInstr = this->addSSA(phi_instr);
-    
-    //     // [09/23/2024]: do something like this 
-    //     // - bc we made a change in [LinkedList::contains()] && [Parser::addSSA()]
-    //     if (tmpInstr != phi_instr) {
-    //         // implies our new phi-SSA is a dupe of a [phi] in our LinkedList,
-    //         // - so we didn't actually insert the new SSA we created
-    //         delete tmpInstr; // so we should do this(?)
-    //         tmpInstr = nullptr;
-    //     }
-    // }
-
-
-    // return phi_instr; // [07/28/2024]: might need this here(?)
-
-    // // previously: do something start here
-    // BasicBlock *join_ptr;
-    // BasicBlock join = BasicBlock(ifStat_then, ifStat_else, blk->updated_varval_map, this->instruction_list);
-    // join_ptr = &join;
-    // ifStat_then->children.push_back(join_ptr);
-    // ifStat_else->children.push_back(join_ptr);
-    // // previously: do something end here
-
-    // return join_ptr; // [07/28/2024]: might need this here(?)
-    // [07/31/2024]: For now don't know what to do abt this (or if this is even right)
     return phi_instr; // [08/08/2024]: For now this is good
 }
 
@@ -861,6 +802,11 @@ SSA* Parser::p2_ifStatement() {
 
     // [10/14/2024];
     BasicBlock *then_blk = new BasicBlock(this->instrList);
+    #ifdef DEBUG
+        std::cout << "created new BB with instrList: " << std::endl << "\t";
+        then_blk->printInstrList();
+    #endif
+
     then_blk->parent = this->currBB;
     this->currBB->child = then_blk;
     BasicBlock *if_parent = this->currBB;
@@ -886,6 +832,11 @@ SSA* Parser::p2_ifStatement() {
         this->prevInstrs.push(jmp_instr); // [10/10/2024]: push at the end so next added SSA-instr will be set as the jump-location
 
         BasicBlock *notThen = new BasicBlock(this->instrList);
+        #ifdef DEBUG
+            std::cout << "created new BB with instrList: " << std::endl << "\t";
+            notThen->printInstrList();
+        #endif
+        
         if_parent->child2 = notThen;
         notThen->parent = this->currBB; // [this->currBB (should) == then]
         notThen->parent2 = if_parent;
@@ -904,6 +855,11 @@ SSA* Parser::p2_ifStatement() {
 
     // [10/14/2024];
     BasicBlock *else_blk = new BasicBlock(this->instrList);
+    #ifdef DEBUG
+        std::cout << "created new BB with instrList: " << std::endl << "\t";
+        else_blk->printInstrList();
+    #endif
+
     if_parent->child2 = else_blk;
     else_blk->parent = if_parent;
     this->currBB = else_blk; // [10/14/2024]: again, similar to above we assume [p2_statSeq()] manipulates [this->currBB]
@@ -920,6 +876,11 @@ SSA* Parser::p2_ifStatement() {
 
     // [10/14/2024];
     BasicBlock *join_blk = new BasicBlock(then_blk, else_blk, this->VVs, this->instrList);
+    #ifdef DEBUG
+        std::cout << "created new BB with instrList: " << std::endl << "\t";
+        join_blk->printInstrList();
+    #endif
+    
     join_blk->parent = then_blk;
     join_blk->parent2 = else_blk;
     then_blk->child = join_blk;
@@ -971,7 +932,7 @@ SSA* Parser::p_whileStatement() {
     // DO
     this->CheckFor(Result(2, 23)); // check `do`
 
-    SSA *while1 = p2_statSeq(); // DO: relation
+    SSA *while1 = p_statSeq(); // DO: relation
     // this->SSA_instrs.push_back(while1); // returns first statement from statSeq in while
 
     // OD
@@ -1007,12 +968,19 @@ SSA* Parser::p2_whileStatement() {
     // DO
     this->CheckFor(Result(2, 23)); // check `do`
 
+    // [10/17/2024]: BasicBlock Excerpt BEIGNN
     BasicBlock *parent_blk = this->currBB;
     BasicBlock *while_blk = new BasicBlock(this->instrList);
+    #ifdef DEBUG
+        std::cout << "created new BB with instrList: " << std::endl << "\t";
+        while_blk->printInstrList();
+    #endif
+    
     parent_blk->child = while_blk;
     while_blk->parent = parent_blk;
     while_blk->child = parent_blk; // [10/14/2024]: Circular...should we do this?
     this->currBB = while_blk;
+    // END
 
     SSA *while1 = p2_statSeq(); // DO: relation
 
@@ -1021,7 +989,11 @@ SSA* Parser::p2_whileStatement() {
 
     // this->SSA_instrs.push_back(while1); // returns first statement from statSeq in while
     #ifdef DEBUG
-        std::cout << "[Parser::p_whileStatement()] pushes back: " << while1->toString() << std::endl;
+        if (while1) {
+            std::cout << "[Parser::p2_whileStatement()] first statSeq instr returned: " << while1->toString() << std::endl;
+        } else {
+            std::cout << "[Parser::p2_whileStatement()] first statSeq instr returned: nullptr!" << std::endl;;
+        }
     #endif
 
     // OD
@@ -1033,6 +1005,11 @@ SSA* Parser::p2_whileStatement() {
 
     // [10/14/2024];
     BasicBlock *afterWhile_blk = new BasicBlock(this->instrList);
+    #ifdef DEBUG
+        std::cout << "created new BB with instrList: " << std::endl << "\t";
+        afterWhile_blk->printInstrList();
+    #endif
+    
     afterWhile_blk->parent = parent_blk;
     this->currBB = afterWhile_blk;
 
@@ -1266,7 +1243,9 @@ SSA* Parser::p_factor() {
         this->CheckFor(Result(2, 14)); // be sure to consume the `)`
     } else if (this->CheckFor(Result(2, 25), true)) { // check [funcCall]
         // next(); // consume `call`; [09/02/2024]: NOTE: we don't want to consume this token bc [p_funcCall] relies on it!
-        res = p_funcCall(); // [09/02/2024]: Assume funcCall (or it's respective function) will consume the closing [this->sym] Result token
+        if (this->block) { res = p2_funcCall(); } 
+        else { res = p_funcCall(); }
+        // [09/02/2024]: Assume funcCall (or it's respective function) will consume the closing [this->sym] Result token
     } else {
         std::cout << "Error: factor expected: [ident || number || `(` expression `)` || funcCall], got: [" << this->sym.to_string() << "]! exiting prematurely..." << std::endl;
         exit(EXIT_FAILURE);
