@@ -100,6 +100,14 @@ public:
             delete this->instrList.at(i);
             this->instrList[i] = nullptr;
         }
+
+        // Then delete the SSA instructions themselves (note ~LinkedList() doesn't do this bc we delete BB LinkedLists too there...)
+        for (SSA *instr : this->SSA_instrs) {
+            delete instr;
+            instr = nullptr;
+        }
+        this->SSA_instrs.clear();
+
         #ifdef DEBUG
             std::cout << "Done ~Parser()!!!" << std::endl;
         #endif

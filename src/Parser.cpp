@@ -972,7 +972,7 @@ SSA* Parser::p2_whileStatement() {
     BasicBlock *parent_blk = this->currBB;
     BasicBlock *while_blk = new BasicBlock(this->instrList);
     #ifdef DEBUG
-        std::cout << "created new BB with instrList: " << std::endl << "\t";
+        std::cout << "created new BB with instrList: " << std::endl;
         while_blk->printInstrList();
     #endif
     

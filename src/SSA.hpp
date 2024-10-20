@@ -128,6 +128,7 @@ public:
         return SymbolTable::operator_table_reversed.at(this->op);
     }
 
+    // [10/18/2024]: What's wrong here??? Why is it segfaulting？
     std::string toString() const {
         std::string x_val = (this->x) ? "[SSA]: " + std::to_string(this->x->get_debugNum()) : "[SSA]: null";
         std::string y_val = (this->y) ? "[SSA]: " + std::to_string(this->y->get_debugNum()) : "[SSA]: null";

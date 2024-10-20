@@ -8,19 +8,20 @@
 class Node {
 public:
     SSA *instr;
-    Node *next;
+    // Node *next;
     Node *prev;
 
     // Constructor
-    Node() : instr(nullptr), next(nullptr), prev(nullptr) {}
-    // Node() : instr(nullptr), prev(nullptr) {}
+    // Node() : instr(nullptr), next(nullptr), prev(nullptr) {}
+    Node() : instr(nullptr), prev(nullptr) {}
 
-    ~Node() { 
-        if (this->instr) {
-            delete this->instr; 
-        }
+    ~Node() {
+        // [10/19/2024]: If we only have references (from [Parser::instrList]), then we shouldn't delete the SSA instr here, rather in [Parser] 
+        // if (this->instr) {
+        //     delete this->instr; 
+        // }
         this->instr = nullptr;
-        this->next = nullptr; 
+        // this->next = nullptr; 
         this->prev = nullptr; 
     }
 };
@@ -28,30 +29,27 @@ public:
 class LinkedList {
 public:
     int length;
+    // Node *tail;
     Node *head, *tail;
     
     LinkedList() 
         : length(0) , head(nullptr), tail(nullptr)
+        // : length(0) , tail(nullptr)
     {
     }
 
+    // [09/20/2024]: ToDo - create copy constructor
     LinkedList(const LinkedList& other) {
-        #ifdef DEBUG
-            std::cout << "[LinkedList::CopyConstructor]" << std::endl;
-        #endif
-
-
         Node *curr = other.tail;
         
         while (curr) {
             // [10/17/2024]: Note to copy a new SSA instr as well
-            this->InsertAtHead(new SSA(*(curr->instr)));
+            this->InsertAtHead(curr->instr);
 
             curr = curr->prev;
         }
     }
     
-    // [09/20/2024]: ToDo - create copy constructor
     
     ~LinkedList() {
         #ifdef DEBUG
@@ -92,7 +90,7 @@ public:
         } else {
             // Otherwise, insert the new node after the current head
             head->prev = newNode;
-            head->prev->next = head;
+            // head->prev->next = head;
             head = newNode;
         }
         length++;
@@ -106,7 +104,7 @@ public:
         newNode->instr = instruction;
 
         // If the list is empty, make the new node as the head
-        if (this->head == nullptr) {
+        if (this->tail == nullptr) {
             this->head = newNode;
             this->tail = newNode;
         } else {

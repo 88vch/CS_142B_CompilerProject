@@ -21,13 +21,14 @@ BasicBlock::BasicBlock(std::unordered_map<int, LinkedList*> instrLst, bool isCon
 
         for (const auto &instr : instrLst) {
             this->instrList.insert({instr.first, new LinkedList(*(instr.second))});
+            // this->instrList.insert(instr);
         }
         // this->instrList = instrLst;
     }
     this->newInstrs = {};
 
     #ifdef DEBUG
-        std::cout << "got [instrList] looks like:" << std::endl << "\t";
+        std::cout << "new BasicBlock; got [instrList; size=" << this->instrList.size() << ", " << instrLst.size() << "] looks like:" << std::endl;
         this->printInstrList();
     #endif
 }
@@ -49,6 +50,7 @@ BasicBlock::BasicBlock(std::unordered_map<int, int> DOM_vv_map, std::unordered_m
     } else {
         for (const auto &instr : instrLst) {
             this->instrList.insert({instr.first, new LinkedList(*(instr.second))});
+            // this->instrList.insert(instr);
         }
         // this->instrList = instrLst;
         
@@ -57,7 +59,7 @@ BasicBlock::BasicBlock(std::unordered_map<int, int> DOM_vv_map, std::unordered_m
     this->newInstrs = {};
 
     #ifdef DEBUG
-        std::cout << "got [instrList] looks like:" << std::endl << "\t";
+        std::cout << "new BasicBlock; got [instrList; size=" << this->instrList.size() << ", " << instrLst.size() << "] looks like:" << std::endl;
         this->printInstrList();
     #endif
 }
@@ -72,6 +74,7 @@ BasicBlock::BasicBlock(BasicBlock *p1, BasicBlock *p2, std::unordered_map<int, i
     
     for (const auto &instr : instrLst) {
         this->instrList.insert({instr.first, new LinkedList(*(instr.second))});
+        // this->instrList.insert(instr);
     }
     // this->instrList = instrLst;
     
@@ -81,7 +84,7 @@ BasicBlock::BasicBlock(BasicBlock *p1, BasicBlock *p2, std::unordered_map<int, i
     this->newInstrs = {};
 
     #ifdef DEBUG
-        std::cout << "got [instrList] looks like:" << std::endl << "\t";
+        std::cout << "new BasicBlock; got [instrList; size=" << this->instrList.size() << ", " << instrLst.size() << "] looks like:" << std::endl;
         this->printInstrList();
     #endif
 }

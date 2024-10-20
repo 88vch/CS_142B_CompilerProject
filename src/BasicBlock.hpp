@@ -51,7 +51,7 @@ public:
 
     void printInstrList() const {
         std::cout << "[instrA]:\n\tinstrA1, instrA2, instrA3, ..." << std::endl;
-        for (unsigned int i = 1; i < SymbolTable::operator_table.size() - 1; i++) {
+        for (unsigned int i = 1; i < SymbolTable::operator_table.size(); i++) {
             std::cout << "[" << SymbolTable::operator_table_reversed.at(i) << "]: " << std::endl << "\t";
             if (this->instrList.find(i) != this->instrList.end()) {
                 this->instrList.at(i)->printList();
