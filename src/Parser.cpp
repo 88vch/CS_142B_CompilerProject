@@ -446,7 +446,7 @@ SSA* Parser::p2_assignment() {
     #endif
     // this->SSA_instrs.push_back(value);
     #ifdef DEBUG
-        std::cout << "[Parser::p_assignment()]: returning " << ret->toString() << std::endl;
+        std::cout << "[Parser::p2_assignment()]: returning " << ret->toString() << std::endl;
     #endif
 
     // [10/01/2024]: Don't we need to assign [this->VVs] to this->currBB first?
