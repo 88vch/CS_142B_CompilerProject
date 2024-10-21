@@ -70,8 +70,8 @@ public:
         
         this->currBB = nullptr;
         this->BB0 = new BasicBlock(this->instrList, true);
-        this->startBB = nullptr;
-        this->parentBB = this->BB0;
+        // this->startBB = nullptr;
+        // this->parentBB = this->BB0;
 
         for (unsigned int i = 1; i < SymbolTable::operator_table.size(); i++) {
             this->instrList.insert({i, new LinkedList()});
@@ -270,6 +270,23 @@ public:
         return ret;
     }
 
+    inline void checkPrevJmp(SSA *instr) {
+        if (this->prevJump) {
+            // [09/22/2024]: Assumption - [this->prevInstr] is alr in the instrList
+            this->prevInstr = this->prevInstrs.top();
+            
+            #ifdef DEBUG
+                std::cout << "\tprevJump exists with prevInstr: [" << this->prevInstr->toString() << "]!" << std::endl;
+            #endif
+            
+            this->prevInstr->set_operand2(instr);
+
+            this->prevJump = false;
+            this->prevInstr = nullptr;
+            this->prevInstrs.pop();
+        }
+    }
+
     inline SSA* addSSA1(int op, SSA *x = nullptr, SSA *y = nullptr, bool check = false) {
         SSA *tmp = new SSA(op, x, y);
         SSA *res = this->addSSA1(tmp, check);
@@ -354,24 +371,14 @@ public:
             this->instrList.at(instr->get_operator())->InsertAtTail(instr);
         }
 
-        if (this->prevJump) {
-            #ifdef DEBUG
-                std::cout << "\tprevJump exists!" << std::endl;
-            #endif
-            // [09/22/2024]: Assumption - [this->prevInstr] is alr in the instrList
-            this->prevInstr = this->prevInstrs.top();
-            this->prevInstr->set_operand2(instr);
-
-            this->prevJump = false;
-            this->prevInstr = nullptr;
-            this->prevInstrs.pop();
-        }
+        // [10.20.2024]: Modification
+        this->checkPrevJmp(instr);
 
         // this->currBB->setInstructionList(this->instrList);
         
         // [10/02/2024]: maintain last instr here as well
         // - THIS DOESN'T FEEL RIGHT THOUGH...
-        this->prevInstr = retVal; 
+        // this->prevInstr = retVal; 
         return retVal;
     }
 
@@ -452,16 +459,18 @@ public:
         std::string res = "diagraph G {\n";
         std::string c_res = "";
 
-        int i = 0;
+        int BB_inc = 0;
         BasicBlock *curr = this->BB0;
 
         while (curr != nullptr) {
-            res += "\tbb" + std::to_string(i) + " [shape=record, label=\"";
+            res += "\tbb" + std::to_string(BB_inc) + " [shape=record, label=\"";
 
-            c_res += curr->toDOT();
+            c_res = curr->toDOT();
 
             res += c_res + "\"];\n";
             curr = curr->child;
+
+            BB_inc++;
         }
 
         res += "}";
@@ -515,8 +524,8 @@ private:
     
     BasicBlock *currBB;
     BasicBlock *BB0; // [09/02/2024]: special BB always generated at the start. Contains const SSA-instrs
-    BasicBlock *startBB; // first result obj generated from this file
-    BasicBlock *parentBB; // most recent BasicBlock (or 2nd most [if/while])
+    // BasicBlock *startBB; // first result obj generated from this file
+    // BasicBlock *parentBB; // most recent BasicBlock (or 2nd most [if/while])
 
     bool prevJump;
     SSA *prevInstr;

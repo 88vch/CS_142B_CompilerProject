@@ -232,7 +232,7 @@ public:
         }
 
         // Write content to the file
-        file << tableName << ";" << std::endl << "[KEYWORD/TERMINAL Literal]: \t[SymbolTable INT_VAL]" << std::endl;
+        file << tableName << ";" << std::endl << "[KEYWORD/TERMINAL Literal]: \t[SSA Instruction]" << std::endl;
         for (const auto &pair : content) { 
             if ((pair.first).length() > 7) {
                 file << "[" << pair.first << "]" << ": \t\t\t\t\t[" << pair.second->toString() << "]" << std::endl;

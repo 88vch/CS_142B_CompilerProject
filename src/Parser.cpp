@@ -81,15 +81,17 @@ SSA* Parser::p2_start() {
 
     // [09/24/2024]: Not sure how to handle this
     // - big picture wise it's BB0->BB1->done; where BB1 is everything.
-    this->startBB = new BasicBlock(this->instrList);
-    #ifdef DEBUG
-        std::cout << "created new BB with instrList: " << std::endl << "\t";
-        this->startBB->printInstrList();
-    #endif
+    // this->startBB = new BasicBlock(this->instrList);
+    // #ifdef DEBUG
+    //     std::cout << "created new BB with instrList: " << std::endl << "\t";
+    //     this->startBB->printInstrList();
+    // #endif
     
-    this->currBB = this->startBB;
-    this->BB0->child = this->startBB;
-    this->startBB->parent = this->BB0;
+    // this->currBB = this->startBB;
+    // this->BB0->child = this->startBB;
+    // this->startBB->parent = this->BB0;
+
+    this->currBB = new BasicBlock(this->instrList);
     SSA *statSeq = p2_statSeq();
 
     this->CheckFor(Result(2, 16)); // check for `}`
@@ -172,36 +174,22 @@ SSA* Parser::p2_statSeq() {
 
         first_SSA = p2_statement();
 
-        if (this->prevJump) {
-            this->prevInstr->set_operand2(first_SSA);
-
-            #ifdef DEBUG
-                std::cout << "prevInstr [" << this->prevInstr->toString() << "] has been updated with new [y] operand (2)!" << std::endl;
-            #endif
-
-            this->prevJump = false;
-            this->prevInstr = nullptr;
-        }
-
-        // if (curr_bb != prev_bb) {
-        //     prev_bb->child = curr_bb;
-        //     curr_bb->parent = prev_bb;
-        // }
-
-        // if (curr_bb == nullptr) { // [curr_bb] = nullptr indicates that this was the last stmt and it js had a `;` too (last stmt `;` is optional)
+        // [10.21.2024]: We might not need this at all? 
+        // - reason: specific recursive functions should handle when we addSSA1()
+        // if (this->prevJump) {
         //     #ifdef DEBUG
-        //         std::cout << "curr_bb returned nullptr!" << std::endl;
+        //         std::cout << "prevInstr before update: [" << this->prevInstr->toString() << "]" << std::endl;
         //     #endif
-        //     break;
+        //     this->prevInstr->set_operand2(first_SSA);
+
+        //     #ifdef DEBUG
+        //         std::cout << "prevInstr [" << this->prevInstr->toString() << "] has been updated with new [y] operand (2)!" << std::endl;
+        //     #endif
+
+        //     this->prevJump = false;
+        //     this->prevInstr = nullptr;
         // }
 
-        // prev_bb = curr_bb;
-        // this->currBB = curr_bb; // [09/27/2024]: implicitly gets passed into all the functions
-
-        // [07/28/2024]: Should be doing something with [curr_bb] here.
-        // #ifdef DEBUG
-        //     std::cout << "[curr_bb] returned: " << curr_bb->toString() << std::endl;
-        // #endif
     }
     #ifdef DEBUG
         if (first_SSA) {
@@ -373,17 +361,26 @@ SSA* Parser::p2_assignment() {
             #ifdef DEBUG
                 std::cout << "done setting InstrList for curr BB" << std::endl;
             #endif
-            this->parentBB = this->currBB;
-            
-            this->currBB = new BasicBlock(this->instrList);
+
+            // [10.21.2024]: Replaced below
+            this->currBB->child = new BasicBlock(this->instrList);
+            this->currBB->child->parent = this->currBB;
+            this->currBB = this->currBB->child;
             #ifdef DEBUG
                 std::cout << "created new BB with instrList: " << std::endl << "\t";
                 this->currBB->printInstrList();
             #endif
 
-            this->parentBB->child = this->currBB;
-            this->currBB->parent = this->parentBB;
+            // [10.21.2024]: Old modifications
+            // this->parentBB = this->currBB;
+            // this->currBB = new BasicBlock(this->instrList);
+            // #ifdef DEBUG
+            //     std::cout << "created new BB with instrList: " << std::endl << "\t";
+            //     this->currBB->printInstrList();
+            // #endif
 
+            // this->parentBB->child = this->currBB;
+            // this->currBB->parent = this->parentBB;
         }
     }
     next();
@@ -686,28 +683,37 @@ SSA* Parser::p2_funcCall() {
         // [09/02/2024]: ORRRRR Don't they all start with the `call` token???? confirm this then delete this and js [CheckFor] `call`
         
         // [10/14/2024]: Should we create a new BasicBlock for it(?)
-        BasicBlock *parent_blk = this->currBB;
-        
-        this->currBB = new BasicBlock(this->instrList);
+        // BasicBlock *parent_blk = this->currBB;
+        // this->currBB = new BasicBlock(this->instrList);
+        // #ifdef DEBUG
+        //     std::cout << "created new BB with instrList: " << std::endl << "\t";
+        //     this->currBB->printInstrList();
+        // #endif        
+        // this->currBB->parent = parent_blk;
+        // parent_blk->child = this->currBB;
+
+        this->currBB->child = new BasicBlock(this->instrList);
+        this->currBB->child->parent = this->currBB;
+        this->currBB = this->currBB->child;
         #ifdef DEBUG
             std::cout << "created new BB with instrList: " << std::endl << "\t";
             this->currBB->printInstrList();
         #endif
-        
-        this->currBB->parent = parent_blk;
-        parent_blk->child = this->currBB;
+
+        // [10.20.2024]: TODO function call...ASAP
 
         // [10/14/2024]: Create a new BasicBlock here (for after the function call?)
-        BasicBlock *func = this->currBB;
-        
-        this->currBB = new BasicBlock(this->instrList);
+        this->currBB->child = new BasicBlock(this->instrList);
+        this->currBB->child->parent = this->currBB;
+        this->currBB = this->currBB->child;
+        // BasicBlock *func = this->currBB;
+        // this->currBB = new BasicBlock(this->instrList);
         #ifdef DEBUG
             std::cout << "created new BB with instrList: " << std::endl << "\t";
             this->currBB->printInstrList();
         #endif
-
-        this->currBB->parent = func;
-        func->child = this->currBB;
+        // this->currBB->parent = func;
+        // func->child = this->currBB;
     }
 
 
@@ -753,7 +759,7 @@ SSA* Parser::p_ifStatement() {
     }
     SSA *if2 = nullptr, *jmpIf_instr = nullptr;
     // [09/20/2024]: if `else` exists, we need a jump at the end of `if` right?
-    jmpIf_instr = this->addSSA1(8, nullptr, nullptr); // [check=false(?)]
+    jmpIf_instr = this->addSSA1(8, nullptr, nullptr); // bra instruction; [check=false(?)]
         // [10/10/2024]: this is the last SSA of the if-BasicBlock right?
     
     next();
@@ -807,10 +813,11 @@ SSA* Parser::p2_ifStatement() {
         then_blk->printInstrList();
     #endif
 
-    then_blk->parent = this->currBB;
-    this->currBB->child = then_blk;
     BasicBlock *if_parent = this->currBB;
-    this->currBB = then_blk; // [10/14/2024]: Assume [p2_statSeq()] manipulates [this->currBB]
+    then_blk->parent = if_parent;
+    if_parent->child = then_blk;
+    // if_parent = then_blk; // [10/14/2024]: Assume [p2_statSeq()] manipulates [this->currBB]
+    this->currBB = this->currBB->child;
 
     SSA *if1 = p2_statSeq(); // returns the 1st SSA instruction 
 
@@ -838,12 +845,18 @@ SSA* Parser::p2_ifStatement() {
         #endif
         
         if_parent->child2 = notThen;
-        notThen->parent = this->currBB; // [this->currBB (should) == then]
+        notThen->parent = then_blk; // [this->currBB (should) == then]
+        then_blk->child = notThen;
         notThen->parent2 = if_parent;
         this->currBB = notThen;
 
+        // [10.21.2024]: We may need [phi()] here...
+
         // [07/28/2024]: might need this here(?)
-        return if1; // [08/08/2024]: Good call; yes we should
+        // return if1; // [08/08/2024]: Good call; yes we should
+        
+        //[10.21.2024]: Isn't this actually the first instruction?
+        return jmp_instr;
     }
     // BasicBlock *ifStat_else = nullptr; // should use some similar logic to check for existence of [else block]
     SSA *if2 = nullptr, *jmpIf_instr = nullptr;
@@ -888,7 +901,7 @@ SSA* Parser::p2_ifStatement() {
     
     this->currBB = join_blk;
 
-    // [Special Instruction]: phi() goes here
+    // [Special Instructions]: phi() goes here
     SSA *phi_instr = this->addSSA1(6, if1, if2); // [check=false]; Note - new [addSSA1()] does the same as below's commented out portion!
 
     // [SECTION_A]
@@ -896,25 +909,7 @@ SSA* Parser::p2_ifStatement() {
     #ifdef DEBUG
         std::cout << "jmpIf_instr: " << jmpIf_instr->toString() << std::endl;
     #endif
-    jmpIf_instr->set_operand1(phi_instr); // set_operand1 since it's just a `bra` instr
-
-
-    // SSA *phi_instr = new SSA(6, if1, if2); // gives us location of where to continue [SSA instr's] based on outcome of [p_relation()]
-    // // this->SSA_instrs.push_back(phi_instr);
-    // {
-    //     SSA *tmpInstr = phi_instr;
-    //     phi_instr = this->addSSA1(phi_instr); // [check=false]
-    //     // SSA *addedInstr = this->addSSA(phi_instr);
-    
-    //     // [09/23/2024]: do something like this 
-    //     // - bc we made a change in [LinkedList::contains()] && [Parser::addSSA()]
-    //     if (tmpInstr != phi_instr) {
-    //         // implies our new phi-SSA is a dupe of a [phi] in our LinkedList,
-    //         // - so we didn't actually insert the new SSA we created
-    //         delete tmpInstr; // so we should do this(?)
-    //         tmpInstr = nullptr;
-    //     }
-    // }
+    jmpIf_instr->set_operand1(phi_instr); // set_operand[1] since it's just a `bra` instr
 
     // [07/31/2024]: For now don't know what to do abt this (or if this is even right)
     return phi_instr; // [08/08/2024]: For now this is good
@@ -979,7 +974,8 @@ SSA* Parser::p2_whileStatement() {
     parent_blk->child = while_blk;
     while_blk->parent = parent_blk;
     while_blk->child = parent_blk; // [10/14/2024]: Circular...should we do this?
-    this->currBB = while_blk;
+    // this->currBB = while_blk;
+    this->currBB = this->currBB->child; // [10.21.2024]: same as right above
     // END
 
     SSA *while1 = p2_statSeq(); // DO: relation
@@ -1011,7 +1007,9 @@ SSA* Parser::p2_whileStatement() {
     #endif
     
     afterWhile_blk->parent = parent_blk;
-    this->currBB = afterWhile_blk;
+    parent_blk->child2 = afterWhile_blk;
+    // this->currBB = afterWhile_blk;
+    this->currBB = this->currBB->child2; // [10.21.2024]: Same as above
 
     return jmp_instr; // [08/08/2024]: This is good here; [jmp_instr] was pushed-back before returing from [p_relation()]
 }
