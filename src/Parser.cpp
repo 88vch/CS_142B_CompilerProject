@@ -59,6 +59,11 @@ SSA* Parser::p2_start() {
     #ifdef DEBUG
         std::cout << "[Parser::p2_start(" << this->sym.to_string() << ")]" << std::endl;
     #endif
+    this->currBB = new BasicBlock();
+    #ifdef DEBUG
+        std::cout << "created new BB (p2-start)" << std::endl;
+    #endif
+
     this->CheckFor(Result(2, 29)); // consumes `main` token
 
     // [09/24/2024]: This should be in our first non-const BB right (i.e. not BB0, but first after that)
@@ -79,19 +84,6 @@ SSA* Parser::p2_start() {
     // [09/05/2024]: ToDo - check for [function start] token
     this->CheckFor(Result(2, 15)); // check for `{`
 
-    // [09/24/2024]: Not sure how to handle this
-    // - big picture wise it's BB0->BB1->done; where BB1 is everything.
-    // this->startBB = new BasicBlock(this->instrList);
-    // #ifdef DEBUG
-    //     std::cout << "created new BB with instrList: " << std::endl << "\t";
-    //     this->startBB->printInstrList();
-    // #endif
-    
-    // this->currBB = this->startBB;
-    // this->BB0->child = this->startBB;
-    // this->startBB->parent = this->BB0;
-
-    this->currBB = new BasicBlock(this->instrList);
     SSA *statSeq = p2_statSeq();
 
     this->CheckFor(Result(2, 16)); // check for `}`
@@ -154,7 +146,7 @@ SSA* Parser::p_statSeq() {
 // - should return the first BasicBlock that was created here
 SSA* Parser::p2_statSeq() {
     #ifdef DEBUG
-        std::cout << "[Parser::p2_statSeq(" << this->sym.to_string() << ")]: found a statement to parse" << std::endl;
+        std::cout << "[Parser::p2_statSeq(" << this->sym.to_string() << ", this->currBB=" << this->currBB->toString() << ")]: found a statement to parse" << std::endl;
     #endif
     // BasicBlock *curr_bb = nullptr, *prev_bb = nullptr;
     // BasicBlock *first = p2_statement(); // ends with `;` = end of statement
@@ -355,25 +347,41 @@ SSA* Parser::p2_assignment() {
             #endif
             this->printInstrList();
             
-            
-            this->currBB->setInstructionList(this->instrList);
+            // [10.22.2024]: If we assume [this->currBB] already has updated [instrList], we shouldn't need this here
+            // this->currBB->setInstructionList(this->instrList);
         
+            // #ifdef DEBUG
+            //     std::cout << "done setting InstrList for curr BB" << std::endl;
+            // #endif
+
             #ifdef DEBUG
-                std::cout << "done setting InstrList for curr BB" << std::endl;
+                std::cout << "done printing InstrList; About to create child BB!" << std::endl;
+                std::cout << "[this->currBB] looks like: ";
+                if (this->currBB) {
+                    std::cout << this->currBB->toString() << std::endl;
+                } else {
+                    std::cout << "nullptr!" << std::endl;
+                }
             #endif
 
             // [10.21.2024]: Replaced below
-            this->currBB->child = new BasicBlock(this->instrList);
+            this->currBB->child = new BasicBlock();
+            #ifdef DEBUG
+                std::cout << "created new BasicBlock() " << std::endl;
+            #endif
             this->currBB->child->parent = this->currBB;
             this->currBB = this->currBB->child;
             #ifdef DEBUG
-                std::cout << "created new BB with instrList: " << std::endl << "\t";
-                this->currBB->printInstrList();
+                std::cout << "created new BB (new assignment)" << std::endl;
             #endif
+            // #ifdef DEBUG
+            //     std::cout << "created new BB with instrList: " << std::endl << "\t";
+            //     this->currBB->printInstrList();
+            // #endif
 
             // [10.21.2024]: Old modifications
             // this->parentBB = this->currBB;
-            // this->currBB = new BasicBlock(this->instrList);
+            // this->currBB = new BasicBlock();
             // #ifdef DEBUG
             //     std::cout << "created new BB with instrList: " << std::endl << "\t";
             //     this->currBB->printInstrList();
@@ -684,7 +692,7 @@ SSA* Parser::p2_funcCall() {
         
         // [10/14/2024]: Should we create a new BasicBlock for it(?)
         // BasicBlock *parent_blk = this->currBB;
-        // this->currBB = new BasicBlock(this->instrList);
+        // this->currBB = new BasicBlock();
         // #ifdef DEBUG
         //     std::cout << "created new BB with instrList: " << std::endl << "\t";
         //     this->currBB->printInstrList();
@@ -692,26 +700,32 @@ SSA* Parser::p2_funcCall() {
         // this->currBB->parent = parent_blk;
         // parent_blk->child = this->currBB;
 
-        this->currBB->child = new BasicBlock(this->instrList);
+        this->currBB->child = new BasicBlock();
         this->currBB->child->parent = this->currBB;
         this->currBB = this->currBB->child;
         #ifdef DEBUG
-            std::cout << "created new BB with instrList: " << std::endl << "\t";
-            this->currBB->printInstrList();
+            std::cout << "created new BB (pre-funcCall)" << std::endl;
         #endif
+        // #ifdef DEBUG
+        //     std::cout << "created new BB with instrList: " << std::endl << "\t";
+        //     this->currBB->printInstrList();
+        // #endif
 
         // [10.20.2024]: TODO function call...ASAP
 
         // [10/14/2024]: Create a new BasicBlock here (for after the function call?)
-        this->currBB->child = new BasicBlock(this->instrList);
+        this->currBB->child = new BasicBlock();
         this->currBB->child->parent = this->currBB;
         this->currBB = this->currBB->child;
         // BasicBlock *func = this->currBB;
-        // this->currBB = new BasicBlock(this->instrList);
+        // this->currBB = new BasicBlock();
         #ifdef DEBUG
-            std::cout << "created new BB with instrList: " << std::endl << "\t";
-            this->currBB->printInstrList();
+            std::cout << "created new BB (post-funcCall)" << std::endl;
         #endif
+        // #ifdef DEBUG
+        //     std::cout << "created new BB with instrList: " << std::endl << "\t";
+        //     this->currBB->printInstrList();
+        // #endif
         // this->currBB->parent = func;
         // func->child = this->currBB;
     }
@@ -807,14 +821,17 @@ SSA* Parser::p2_ifStatement() {
     this->CheckFor(Result(2, 19)); // check `then`
 
     // [10.21.2024]: Store a temp version of [this->instrList] rn if need join later
-    std::unordered_map<int, LinkedList*> tmpLst = this->copyInstrList();
+    // std::unordered_map<int, LinkedList*> tmpLst = this->copyInstrList();
 
     // [10/14/2024];
-    BasicBlock *then_blk = new BasicBlock(this->instrList);
+    BasicBlock *then_blk = new BasicBlock();
     #ifdef DEBUG
-        std::cout << "created new BB with instrList: " << std::endl << "\t";
-        then_blk->printInstrList();
+        std::cout << "created new BB (then)" << std::endl;
     #endif
+    // #ifdef DEBUG
+    //     std::cout << "created new BB with instrList: " << std::endl << "\t";
+    //     then_blk->printInstrList();
+    // #endif
 
     BasicBlock *if_parent = this->currBB;
     then_blk->parent = if_parent;
@@ -841,11 +858,14 @@ SSA* Parser::p2_ifStatement() {
         this->prevJump = true;
         this->prevInstrs.push(jmp_instr); // [10/10/2024]: push at the end so next added SSA-instr will be set as the jump-location
 
-        BasicBlock *notThen = new BasicBlock(this->instrList);
+        BasicBlock *notThen = new BasicBlock();
         #ifdef DEBUG
-            std::cout << "created new BB with instrList: " << std::endl << "\t";
-            notThen->printInstrList();
+            std::cout << "created new BB (not-then)" << std::endl;
         #endif
+        // #ifdef DEBUG
+        //     std::cout << "created new BB with instrList: " << std::endl << "\t";
+        //     notThen->printInstrList();
+        // #endif
         
         if_parent->child2 = notThen;
         notThen->parent = then_blk; // [this->currBB (should) == then]
@@ -870,11 +890,14 @@ SSA* Parser::p2_ifStatement() {
     next();
 
     // [10/14/2024];
-    BasicBlock *else_blk = new BasicBlock(this->instrList);
+    BasicBlock *else_blk = new BasicBlock();
     #ifdef DEBUG
-        std::cout << "created new BB with instrList: " << std::endl << "\t";
-        else_blk->printInstrList();
+        std::cout << "created new BB (else)" << std::endl;
     #endif
+    // #ifdef DEBUG
+    //     std::cout << "created new BB with instrList: " << std::endl << "\t";
+    //     else_blk->printInstrList();
+    // #endif
 
     if_parent->child2 = else_blk;
     else_blk->parent = if_parent;
@@ -891,15 +914,19 @@ SSA* Parser::p2_ifStatement() {
     this->CheckFor(Result(2, 21)); // check `fi`
 
     // [10.21.2024]: Repalce below(?)
-    BasicBlock *join_blk = new BasicBlock(then_blk, else_blk, this->VVs, tmpLst);
+    BasicBlock *join_blk = new BasicBlock(then_blk, else_blk, this->VVs);
 
     // [10/14/2024];
     // BasicBlock *join_blk = new BasicBlock(then_blk, else_blk, this->VVs, this->instrList);
     
     #ifdef DEBUG
-        std::cout << "created new BB with instrList: " << std::endl << "\t";
-        join_blk->printInstrList();
+        std::cout << "created new BB (join)" << std::endl;
     #endif
+
+    // #ifdef DEBUG
+    //     std::cout << "created new BB with instrList: " << std::endl << "\t";
+    //     join_blk->printInstrList();
+    // #endif
     
     join_blk->parent = then_blk;
     join_blk->parent2 = else_blk;
@@ -972,11 +999,16 @@ SSA* Parser::p2_whileStatement() {
 
     // [10/17/2024]: BasicBlock Excerpt BEIGNN
     BasicBlock *parent_blk = this->currBB;
-    BasicBlock *while_blk = new BasicBlock(this->instrList);
+    BasicBlock *while_blk = new BasicBlock();
+    
     #ifdef DEBUG
-        std::cout << "created new BB with instrList: " << std::endl;
-        while_blk->printInstrList();
+        std::cout << "created new BB (while)" << std::endl;
     #endif
+
+    // #ifdef DEBUG
+    //     std::cout << "created new BB with instrList: " << std::endl;
+    //     while_blk->printInstrList();
+    // #endif
     
     parent_blk->child = while_blk;
     while_blk->parent = parent_blk;
@@ -1007,16 +1039,23 @@ SSA* Parser::p2_whileStatement() {
     this->prevInstrs.push(jmp_instr);
 
     // [10/14/2024];
-    BasicBlock *afterWhile_blk = new BasicBlock(this->instrList);
+    BasicBlock *afterWhile_blk = new BasicBlock();
+    
     #ifdef DEBUG
-        std::cout << "created new BB with instrList: " << std::endl << "\t";
-        afterWhile_blk->printInstrList();
+        std::cout << "created new BB after-While" << std::endl;
     #endif
+    
+    // #ifdef DEBUG
+    //     std::cout << "created new BB with instrList: " << std::endl << "\t";
+    //     afterWhile_blk->printInstrList();
+    // #endif
     
     afterWhile_blk->parent = parent_blk;
     parent_blk->child2 = afterWhile_blk;
-    // this->currBB = afterWhile_blk;
-    this->currBB = this->currBB->child2; // [10.21.2024]: Same as above
+    
+    // [10.22.2024]: Somehow after [p2_statSeq()], this->currBB gets changed? So we just reset it here...is this ok/right/valid???
+    this->currBB = afterWhile_blk;
+    // this->currBB = this->currBB->child2; // [10.21.2024]: Same as above
 
     return jmp_instr; // [08/08/2024]: This is good here; [jmp_instr] was pushed-back before returing from [p_relation()]
 }

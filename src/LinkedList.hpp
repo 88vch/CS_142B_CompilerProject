@@ -1,54 +1,33 @@
 #ifndef LINKED_LIST_HPP
 #define LINKED_LIST_HPP
 
-#include "SSA.hpp"
+#include "Node.hpp"
 
 #define DEBUG
-
-class Node {
-public:
-    SSA *instr;
-    // Node *next;
-    Node *prev;
-
-    // Constructor
-    // Node() : instr(nullptr), next(nullptr), prev(nullptr) {}
-    Node() : instr(nullptr), prev(nullptr) {}
-
-    ~Node() {
-        // [10/19/2024]: If we only have references (from [Parser::instrList]), then we shouldn't delete the SSA instr here, rather in [Parser] 
-        // if (this->instr) {
-        //     delete this->instr; 
-        // }
-        this->instr = nullptr;
-        // this->next = nullptr; 
-        this->prev = nullptr; 
-    }
-};
   
 class LinkedList {
 public:
     int length;
-    // Node *tail;
-    Node *head, *tail;
+    Node *tail;
+    // Node *head, *tail;
     
     LinkedList() 
-        : length(0) , head(nullptr), tail(nullptr)
-        // : length(0) , tail(nullptr)
+        // : length(0) , head(nullptr), tail(nullptr)
+        : length(0) , tail(nullptr)
     {
     }
 
     // [09/20/2024]: ToDo - create copy constructor
-    LinkedList(const LinkedList& other) {
-        Node *curr = other.tail;
+    // LinkedList(const LinkedList& other) {
+    //     Node *curr = other.tail;
         
-        while (curr) {
-            // [10/17/2024]: Note to copy a new SSA instr as well
-            this->InsertAtHead(curr->instr);
+    //     while (curr) {
+    //         // [10/17/2024]: Note to copy a new SSA instr as well
+    //         this->InsertAtHead(curr->instr);
 
-            curr = curr->prev;
-        }
-    }
+    //         curr = curr->prev;
+    //     }
+    // }
     
     
     ~LinkedList() {
@@ -69,7 +48,7 @@ public:
         }
 
         // if (head) { delete head; }
-        head = nullptr;
+        // head = nullptr;
         // if (tail) { delete tail; }
         tail = nullptr;
         
@@ -79,22 +58,22 @@ public:
     }
 
     // [10/03/2024]: Commenting out to make singly linked list
-    void InsertAtHead(SSA *instruction) {
-        Node* newNode = new Node();
-        newNode->instr = instruction;
+    // void InsertAtHead(SSA *instruction) {
+    //     Node* newNode = new Node();
+    //     newNode->instr = instruction;
 
-        // If the list is empty, make the new node as the head
-        if (head == nullptr) {
-            head = newNode;
-            tail = newNode;
-        } else {
-            // Otherwise, insert the new node after the current head
-            head->prev = newNode;
-            // head->prev->next = head;
-            head = newNode;
-        }
-        length++;
-    }
+    //     // If the list is empty, make the new node as the head
+    //     if (head == nullptr) {
+    //         head = newNode;
+    //         tail = newNode;
+    //     } else {
+    //         // Otherwise, insert the new node after the current head
+    //         head->prev = newNode;
+    //         // head->prev->next = head;
+    //         head = newNode;
+    //     }
+    //     length++;
+    // }
 
     void InsertAtTail(SSA *instruction) {
         #ifdef DEBUG
@@ -103,9 +82,13 @@ public:
         Node* newNode = new Node();
         newNode->instr = instruction;
 
+        #ifdef DEBUG
+            std::cout << "\tcreated new node" << std::endl;
+        #endif
+
         // If the list is empty, make the new node as the head
         if (this->tail == nullptr) {
-            this->head = newNode;
+            // this->head = newNode;
             this->tail = newNode;
         } else {
             // Otherwise, insert the new node after the current tail
@@ -113,7 +96,12 @@ public:
             newNode->prev = this->tail;
             this->tail = newNode;
         }
-        length++;
+
+        this->length++;
+        
+        #ifdef DEBUG
+            std::cout << "\tdone inserting at tail" << std::endl;
+        #endif
     }
 
     SSA* contains(SSA *instruction) const {
@@ -121,7 +109,8 @@ public:
         Node *curr = this->tail; // [10/03/2024]: making compare start at tail to compare from 'most recently added instr'
 
         // while (curr != tail) {
-        while (curr != this->head) {
+        // while (curr != this->head) {
+        while (curr) {
             // ToDo: Revise this! [Old Version]; 
             // if (SSA::compare(curr->instr, instruction)) {
             //     return true;
@@ -151,9 +140,9 @@ public:
         while (curr) {
             std::cout << curr->instr->toString();
             // if (curr != this->tail) {
-            if (curr != this->head) {
+            // if (curr != this->head) {
                 std::cout << ", " << std::endl << "\t";
-            }
+            // }
             // curr = curr->next;
             curr = curr->prev;
         }
@@ -171,9 +160,9 @@ public:
         while (curr) {
             lst += curr->instr->toString();
             // if (curr != this->tail) {
-            if (curr != this->head) {
+            // if (curr != this->head) {
                 lst += ", \n\t";
-            }
+            // }
             // curr = curr->next;
             curr = curr->prev;
         }

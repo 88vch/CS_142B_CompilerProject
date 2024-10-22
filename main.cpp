@@ -30,18 +30,22 @@ std::string in_f = "tst/" + f_name + f_ext;
 // Note: check if [
 //     when we look for an existing SSA, 
 //     we only check our existing instructions that dominate this block bc 
-//     we only care about dominating instructions] (make sure we're not checking the entire LL or SSA-instr's that aren't DOM this current one)
+//     we only care about dominating instructions
+//  ] (ensure that we're not checking the entire LL or SSA-instr's that aren't DOM this current one)
 
+// [10.22.2024]: Still IP; why not just create the join-blk at the same time (i.e. before the if-else statSeq())?
 // Note: join-blk's [instrList] should NOT contain the added SSA-instructions from the if & else statements!
 // - bc neither one path dominates the join-blk
 
+// [10.22.2024]: Removed
 // Note: if we have no use for (SSA_instr->child ptr [in Parser::instrList(?)]), then we should delete it
 // - seems like prof doesn't use it in his videos
+
+// TODO;
 // - also good to ensure that we're only checking DOM instructions!
 
+// [10.22.2024]: Removed
 // Note: maybe we don't need [head && tail] in [LinkedList]. maybe just [tail] is enough (?)
-
-// oops one more thing
 
 int main() {
     std::string symbolTable_f = "res/_SymbolTable_result.txt";

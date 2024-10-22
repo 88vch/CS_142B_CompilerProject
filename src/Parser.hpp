@@ -39,7 +39,8 @@ public:
         this->VVs = {};
         
         this->currBB = nullptr;
-        this->BB0 = new BasicBlock(this->instrList, true);
+        // this->BB0 = new BasicBlock(this->instrList, true);
+        this->BB0 = new BasicBlock(true);
         // this->startBB = nullptr;
         // this->parentBB = this->BB0;
 
@@ -169,7 +170,7 @@ public:
         }
         SSA *ret = nullptr;
 
-        if (this->BB0->constList->head == nullptr) {
+        if (this->BB0->constList->tail == nullptr) {
             return nullptr;
         }
 
@@ -245,15 +246,21 @@ public:
     // - , which implies that our BB-destructor should be changed accordingly
     // - , and brings up the possibility for the removal of [this->instrList] in [Parser]
     //      - if we could just keep it between the BB's wouldn't that be even better (?)
-    inline std::unordered_map<int, LinkedList*> copyInstrList() const {
-        std::unordered_map<int, LinkedList*> res = {};
+    // [10.22.2024]: ok so revised; we'll keep it only in Parser (remove from BB's)
+    // - and only keep a vector<Node*> in BB but those Node* point to prev-SSA-instrs
+    // -, so it's kinda like we have an artificial LinkedList but not really
+    
+    // -, concern is placed on the [BasicBlock::constList] since we don't know how we will map / check instructions?...ignoring for now :(
+    
+    // inline std::unordered_map<int, LinkedList*> copyInstrList() const {
+    //     std::unordered_map<int, LinkedList*> res = {};
 
-        for (const auto &pair : this->instrList) {
-            res.insert({pair.first, new LinkedList(*pair.second)});
-        }
+    //     for (const auto &pair : this->instrList) {
+    //         res.insert({pair.first, new LinkedList(*pair.second)});
+    //     }
 
-        return res;
-    }
+    //     return res;
+    // }
 
     inline void checkPrevJmp(SSA *instr) {
         if (this->prevJump) {
@@ -354,6 +361,20 @@ public:
                 std::cout << "\tinstr op == " << instr->get_operator() << std::endl;
             #endif
             this->instrList.at(instr->get_operator())->InsertAtTail(instr);
+            
+            if (this->block) {
+                #ifdef DEBUG
+                    if (this->currBB) {
+                        std::cout << "currBB looks like: " << this->currBB->toString() << std::endl;
+                    } else {
+                        std::cout << "currBB looks like: nullptr!" << std::endl;
+                    }
+                #endif
+                this->currBB->newInstrs.push_back(instr);
+                #ifdef DEBUG
+                    std::cout << "done pushing into [currBB]'s [newInstrs]" << std::endl;
+                #endif
+            }
         }
 
         // [10.20.2024]: Modification
@@ -415,6 +436,10 @@ public:
             std::cout << "[" << SymbolTable::operator_table_reversed.at(i) << "]: " << std::endl << "\t";
             this->instrList.at(i)->printList();
         } 
+
+        #ifdef DEBUG
+            std::cout << "done printing [this->instrList]" << std::endl;
+        #endif
     }
 
     std::string instrListToString() const {
