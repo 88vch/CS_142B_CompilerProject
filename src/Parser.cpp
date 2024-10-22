@@ -806,6 +806,9 @@ SSA* Parser::p2_ifStatement() {
     // THEN
     this->CheckFor(Result(2, 19)); // check `then`
 
+    // [10.21.2024]: Store a temp version of [this->instrList] rn if need join later
+    std::unordered_map<int, LinkedList*> tmpLst = this->copyInstrList();
+
     // [10/14/2024];
     BasicBlock *then_blk = new BasicBlock(this->instrList);
     #ifdef DEBUG
@@ -887,8 +890,12 @@ SSA* Parser::p2_ifStatement() {
     // FI
     this->CheckFor(Result(2, 21)); // check `fi`
 
+    // [10.21.2024]: Repalce below(?)
+    BasicBlock *join_blk = new BasicBlock(then_blk, else_blk, this->VVs, tmpLst);
+
     // [10/14/2024];
-    BasicBlock *join_blk = new BasicBlock(then_blk, else_blk, this->VVs, this->instrList);
+    // BasicBlock *join_blk = new BasicBlock(then_blk, else_blk, this->VVs, this->instrList);
+    
     #ifdef DEBUG
         std::cout << "created new BB with instrList: " << std::endl << "\t";
         join_blk->printInstrList();
