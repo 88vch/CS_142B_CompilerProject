@@ -355,12 +355,16 @@ public:
                 std::cout << "\tinstr op == 0 (const)" << std::endl;
             #endif
             // [09/20/2024]: new constList specifically for [this->BB0]
-            this->BB0->constList->InsertAtTail(instr);
+            // [10.23.2024]: [LinkedList::InsertAtTail()] returns [Node*]
+            if (this->block) {
+                this->currBB->newInstrs.push_back(this->BB0->constList->InsertAtTail(instr));
+            } else {
+                this->BB0->constList->InsertAtTail(instr);
+            }
         } else {
             #ifdef DEBUG
                 std::cout << "\tinstr op == " << instr->get_operator() << std::endl;
             #endif
-            this->instrList.at(instr->get_operator())->InsertAtTail(instr);
             
             if (this->block) {
                 #ifdef DEBUG
@@ -370,10 +374,13 @@ public:
                         std::cout << "currBB looks like: nullptr!" << std::endl;
                     }
                 #endif
-                this->currBB->newInstrs.push_back(instr);
+                // [10.23.2024]: [LinkedList::InsertAtTail()] returns [Node*]
+                this->currBB->newInstrs.push_back(this->instrList.at(instr->get_operator())->InsertAtTail(instr));
                 #ifdef DEBUG
                     std::cout << "done pushing into [currBB]'s [newInstrs]" << std::endl;
                 #endif
+            } else {
+                this->instrList.at(instr->get_operator())->InsertAtTail(instr);
             }
         }
 

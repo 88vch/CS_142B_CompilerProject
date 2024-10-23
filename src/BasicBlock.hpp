@@ -142,8 +142,8 @@ public:
         
         res += "\nnewInstrs: ";
         if (!this->newInstrs.empty()) {
-            for (const auto &instr : this->newInstrs) {
-                res += instr->toString() + ", ";
+            for (const auto &node : this->newInstrs) {
+                res += node->instr->toString() + ", ";
             }
         } else {
             res += "none!";
@@ -159,7 +159,7 @@ public:
     std::unordered_map<int, int> updated_varval_map; // [variable (sym_table val) : value]
     // an ssa instruction: std::vector<int>
     // [#: debugging] [operation] [operand(s)]
-    std::vector<SSA*> newInstrs;
+    std::vector<Node*> newInstrs;
     LinkedList *constList;
     // std::unordered_map<int, LinkedList*> instrList; // [10.22.2024]: May not need this 
 

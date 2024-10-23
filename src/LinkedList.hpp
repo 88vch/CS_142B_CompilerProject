@@ -75,7 +75,7 @@ public:
     //     length++;
     // }
 
-    void InsertAtTail(SSA *instruction) {
+    Node* InsertAtTail(SSA *instruction) {
         #ifdef DEBUG
             std::cout << "inserting new SSA (" << instruction->toString() << ") at tail" << std::endl;
         #endif
@@ -102,6 +102,8 @@ public:
         #ifdef DEBUG
             std::cout << "\tdone inserting at tail" << std::endl;
         #endif
+
+        return newNode;
     }
 
     SSA* contains(SSA *instruction) const {

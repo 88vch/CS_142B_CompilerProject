@@ -177,8 +177,8 @@ std::string BasicBlock::toDOT() const {
 
     res += "BB" + std::to_string(this->blockNum) + " | {";
 
-    for (const auto &instr : this->newInstrs) {
-        res += instr->toDOT() + "|";
+    for (const auto &node : this->newInstrs) {
+        res += node->instr->toDOT() + "|";
     }
     res.pop_back();
     res += "}";
