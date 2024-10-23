@@ -398,9 +398,18 @@ SSA* Parser::p2_assignment() {
 
     // EXPRESSION
     SSA *ret = nullptr, *value = p_expr();
+
+    if (value->get_constVal()) {
+        ret = this->CheckConstExistence(*(value->get_constVal()));
+    } else {
+        ret = this->CheckExistence(value->get_operator(), value->get_operand1(), value->get_operand2());
+    }
+
+    if (!ret) {
+        ret = this->addSSA1(value, true);
+    }
     
     // [10.23.2024]: ToDo -- something shoudl change here(?)
-    int VV_value = this->add_SSA_table(value);
     // ret = this->addSSA1(value, true);
 
     // todo: if SSA instr already exists, no need to create new entry in [add_SSA_table()]
@@ -414,11 +423,25 @@ SSA* Parser::p2_assignment() {
     //     }
     // }
 
+    
+
     if (ret != value) {
         #ifdef DEBUG
-            std::cout << "SSA instr already exists!, using that instead!" << std::endl;
+            std::cout << "SSA instr already exists (got ret: " << ret->toString() << ")!, using that instead!" << std::endl;
         #endif
+        if (this->VVs.find(ident) != this->VVs.end()) {
+            #ifdef DEBUG
+                std::cout << "key=" << SymbolTable::symbol_table.at(ident) << ", current varVal value=";
+            #endif
+            std::cout << this->ssa_table.at(this->VVs.at(ident))->toString() << std::endl;
+        } else {
+            std::cout << "sike i lied! none!" << std::endl;
+        }
     } else {
+        #ifdef DEBUG
+            std::cout << "inserting new VV mapping" << std::endl;
+        #endif
+
         // int VV_value = this->add_SSA_table(value);
         
         // - ToDo: replace with <int, int>
@@ -426,33 +449,8 @@ SSA* Parser::p2_assignment() {
         this->VVs.insert_or_assign(ident, this->add_SSA_table(value)); 
     }
 
-
-    // [08/07/2024]: This still holds true (below); 
-    // - [ident] should correspond to [SymbolTable::symbol_table] key with the value being the [value]; stoi(value)
-    // - Should not need to return any SSA value for this; will probably need more complexity when BB's are introduced
-    // [07/28/2024]: Add [ident : value] mapping into [symbol_table], that's it.
-    #ifdef DEBUG
-        std::cout << "in [Parser::p2_assignment]: key=" << SymbolTable::symbol_table.at(ident) << ", current varVal value=";
-        // if (this->varVals.find(SymbolTable::symbol_table.at(ident)) != this->varVals.end()) {
-        //     std::cout << this->varVals.at(SymbolTable::symbol_table.at(ident))->toString() << std::endl;
-        // }
-        
-        if (this->VVs.find(ident) != this->VVs.end()) {
-            std::cout << this->ssa_table.at(this->VVs.at(ident))->toString() << std::endl;
-        } else {
-            std::cout << "none!" << std::endl;
-        }
-    #endif
-    // this->currBB->updated_varval_map.insert_or_assign(SymbolTable::symbol_table.at(ident), value);
     this->printVVs();
-
-
-    // [08/07/2024]: Revised; wtf was i trying to say down there???
-    #ifdef DEBUG
-        std::cout << "inserted new var-val mapping: {" << SymbolTable::symbol_table.at(ident) << ", " << ret->toString() << "}" << std::endl;
-        std::cout << "value addr: " << &ret << "; value toString(): " << ret->toString() << std::endl;
-    #endif
-    // this->SSA_instrs.push_back(value);
+    
     #ifdef DEBUG
         std::cout << "[Parser::p2_assignment()]: returning " << ret->toString() << std::endl;
     #endif
