@@ -182,6 +182,11 @@ public:
             exit(EXIT_FAILURE);
         }
     }
+
+    static void resetDebug() {
+        curr_instr_num = 1;
+        curr_const_num = -1;
+    }
 private:
     // [Old Version]
     // std::vector<int> instr;

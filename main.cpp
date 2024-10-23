@@ -54,8 +54,11 @@ int main() {
     std::string tokenize_f = "res/Tokenizer_results.txt";
     std::string results_f = "res/Results_results.txt";
     std::string parser1_f = "res/Parser1_results.txt";
-    std::string varVal_f = "res/VarVal_results.txt";
-    std::string linkedList_f = "res/LinkedList_results.txt";
+    std::string parser2_f = "res/Parser2_results.txt";
+    std::string varVal1_f = "res/VarVal1_results.txt";
+    std::string varVal2_f = "res/VarVal2_results.txt";
+    std::string linkedList1_f = "res/LinkedList1_results.txt";
+    std::string linkedList2_f = "res/LinkedList2_results.txt";
 
 
     const std::string out_f = "res/Lexer_results.txt";
@@ -120,23 +123,24 @@ int main() {
         std::cout << "[Parser]: After FIRST [parse.parse_generate_SSA()]" << std::endl;
     #endif
 
-    std::vector<SSA*> SSA_instrs = parser1.getSSA();
-    bool SSA_exists = fr.write_file_contents(parser1_f, SSA_instrs, "SSA Instructions");
-    if (SSA_exists) { std::cout << "SSA Instructions have successfully been written to: " << parser1_f << "(size=[" << SSA_instrs.size() << "])" << std::endl; }
+    std::vector<SSA*> SSA_instrs1 = parser1.getSSA();
+    bool SSA_exists1 = fr.write_file_contents(parser1_f, SSA_instrs1, "SSA Instructions");
+    if (SSA_exists1) { std::cout << "SSA Instructions have successfully been written to: " << parser1_f << "(size=[" << SSA_instrs1.size() << "])" << std::endl; }
     else { std::cout << "Error occured when trying to write results!" << std::endl; }
 
-    std::unordered_map<std::string, SSA*> varVals = parser1.getVarVal();
-    bool vv = fr.write_file_contents(varVal_f, varVals, "Var-Val");
-    if (st) { std::cout << "Results have successfully been written to: " << varVal_f << "(size=[" << varVals.size() << "])" << std::endl; }
+    std::unordered_map<std::string, SSA*> varVals1 = parser1.getVarVal();
+    bool vv1 = fr.write_file_contents(varVal1_f, varVals1, "Var-Val");
+    if (st) { std::cout << "Results have successfully been written to: " << varVal1_f << "(size=[" << varVals1.size() << "])" << std::endl; }
     else { std::cout << "Error occured when trying to write results!" << std::endl; }
     
-    bool ll = fr.write_file_contents(linkedList_f, parser1.instrListToString(), "LinkedList");
-    if (ll) { std::cout << "Results have successfully been written to: " << linkedList_f << "(size=[" << parser1.getInstrListSize() << "])" << std::endl; }
+    bool ll1 = fr.write_file_contents(linkedList1_f, parser1.instrListToString(), "LinkedList");
+    if (ll1) { std::cout << "Results have successfully been written to: " << linkedList1_f << "(size=[" << parser1.getInstrListSize() << "])" << std::endl; }
     else { std::cout << "Error occured when trying to write results!" << std::endl; }
 
     #ifdef DEBUG
         std::cout << "[Parser]: Before SECOND [parse](BasicBlock Generation)" << std::endl;
     #endif
+    SSA::resetDebug();
     Parser parser2(results);
     parser2.parse();
     #ifdef DEBUG
@@ -145,6 +149,19 @@ int main() {
 
     parser2.generateDOT();
 
+    std::vector<SSA*> SSA_instrs2 = parser2.getSSA();
+    bool SSA_exists2 = fr.write_file_contents(parser2_f, SSA_instrs2, "SSA Instructions");
+    if (SSA_exists2) { std::cout << "SSA Instructions have successfully been written to: " << parser2_f << "(size=[" << SSA_instrs2.size() << "])" << std::endl; }
+    else { std::cout << "Error occured when trying to write results!" << std::endl; }
+
+    std::unordered_map<std::string, SSA*> varVals2 = parser2.getVarVal();
+    bool vv2 = fr.write_file_contents(varVal2_f, varVals2, "Var-Val");
+    if (st) { std::cout << "Results have successfully been written to: " << varVal2_f << "(size=[" << varVals2.size() << "])" << std::endl; }
+    else { std::cout << "Error occured when trying to write results!" << std::endl; }
+    
+    bool ll2 = fr.write_file_contents(linkedList2_f, parser2.instrListToString(), "LinkedList");
+    if (ll2) { std::cout << "Results have successfully been written to: " << linkedList2_f << "(size=[" << parser2.getInstrListSize() << "])" << std::endl; }
+    else { std::cout << "Error occured when trying to write results!" << std::endl; }
 
 
     // node::computation *root = parser.head();

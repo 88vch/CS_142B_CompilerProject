@@ -399,7 +399,10 @@ SSA* Parser::p2_assignment() {
     // EXPRESSION
     SSA *ret = nullptr, *value = p_expr();
     
-    ret = this->addSSA1(value, true);
+    // [10.23.2024]: ToDo -- something shoudl change here(?)
+    int VV_value = this->add_SSA_table(value);
+    // ret = this->addSSA1(value, true);
+
     // todo: if SSA instr already exists, no need to create new entry in [add_SSA_table()]
     // if (value->get_constVal()) {
     //     if (this->CheckConstExistence(*(value->get_constVal())) == nullptr) {
@@ -655,10 +658,11 @@ SSA* Parser::p2_funcCall() {
                     // [10/09/2024]: Can't modify constVal SSA call
                     SSA *tmp = new SSA(0, num);
                     res = this->addSSA1(tmp, true);
-                    if (res != tmp) {
-                        delete tmp;
-                        tmp = nullptr;
-                    }
+                    // if (res != tmp) {
+                    //     delete tmp;
+                    //     tmp = nullptr;
+                    // }
+                    tmp = nullptr;
 
                     // tmp = new SSA(24, res);
                     res = this->addSSA1(24, res, nullptr);
@@ -1201,7 +1205,10 @@ SSA* Parser::p_expr() { // Check For `+` && `-`
         next();
         SSA *y = p_expr();
         x = BuildIR(op, x, y); // ToDo: Create IR Block
-        this->addSSA1(x, true);
+        x = this->addSSA1(x, true);
+        #ifdef DEBUG
+            std::cout << "x has now been updated to: " << x->toString() << std::endl;
+        #endif
     }
     #ifdef DEBUG
         std::cout << "[Parser::p_expr()]: returning: " << x->toString() << std::endl;
@@ -1242,18 +1249,23 @@ SSA* Parser::p_factor() {
         #endif
         SSA *tmp = new SSA(0, this->sym.get_value_literal());
         res = this->addSSA1(tmp, true);
-        if (res != tmp) {
-            delete tmp;
-            tmp = nullptr;
 
-            #ifdef DEBUG
-                std::cout << "\t[const] val EXISTS in [this->instrList], using pre-existing-SSA instruction: [" << res->toString() << "]" << std::endl;
-            #endif
-        } else {
-            #ifdef DEBUG
-                std::cout << "\t[const] val dne in [this->instrList], created new-SSA instruction: [" << res->toString() << "]" << std::endl;
-            #endif
-        }
+        // [10.23.2024]: Shouldn't need this if we handle deletion in [this->addSSA1()]
+        // if (res != tmp) {
+        //     delete tmp;
+        //     tmp = nullptr;
+
+        //     #ifdef DEBUG
+        //         std::cout << "\t[const] val EXISTS in [this->instrList], using pre-existing-SSA instruction: [" << res->toString() << "]" << std::endl;
+        //     #endif
+        // } else {
+        //     #ifdef DEBUG
+        //         std::cout << "\t[const] val dne in [this->instrList], created new-SSA instruction: [" << res->toString() << "]" << std::endl;
+        //     #endif
+        // }
+
+        // [10.23.2024]: it'll get handled, & either way we won't need tmp anymore so assigning it to [nullptr] is fine here
+        tmp = nullptr; 
         
         // [07/26/2024]: return the SSA for the const value
         // 1) check if value already exists as a const SSA

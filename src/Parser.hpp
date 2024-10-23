@@ -280,11 +280,11 @@ public:
     }
 
     inline SSA* addSSA1(int op, SSA *x = nullptr, SSA *y = nullptr, bool check = false) {
+        // [10.23.2024]: Assume addSSA1() handles deletion properly...
         SSA *tmp = new SSA(op, x, y);
         SSA *res = this->addSSA1(tmp, check);
-        if (tmp != res) {
-            delete tmp;
-        }
+        
+        tmp = nullptr;
         return res;
     }
         
@@ -295,7 +295,6 @@ public:
             std::cout << "in addSSA1(instr=" << instr->toString() << ", check=" << check << ")" << std::endl;
         #endif
         // [10/05/2024]: todo refactor addSSA() with additional prameter to determine if need to check for existence
-        // SSA *ret = nullptr;
         if (instr->get_constVal()) {
             #ifdef DEBUG
                 std::cout << "\tinstr is const" << std::endl;
@@ -303,13 +302,13 @@ public:
             if (check) {
                 SSA *tmp = this->CheckConstExistence(*(instr->get_constVal())); 
                 if (tmp == nullptr) {
-                    // ret = this->addSSA(instr);
                     instr = this->addSSA(instr);
                 } else {
                     #ifdef DEBUG
-                        std::cout << "instr exists already: " << tmp->toString() << std::endl;
+                        std::cout << "instr(" << instr->toString() << ") exists already: " << tmp->toString() << std::endl;
                     #endif
-                    // instr = this->addSSA(instr);
+                    // [10.23.2024]: CAN WE DO THIS???
+                    delete instr;
                     instr = tmp;
                 }
             } else {
@@ -325,13 +324,18 @@ public:
             if (check) {
                 SSA *tmp = this->CheckExistence(instr->get_operator(), instr->get_operand1(), instr->get_operand2());
                 if (tmp == nullptr) {
-                    // ret = this->addSSA(instr);
                     instr = this->addSSA(instr);
                 } else {
                     #ifdef DEBUG
-                        std::cout << "instr exists already: " << tmp->toString() << std::endl;
+                        std::cout << "instr(" << instr->toString() << ") exists already: " << tmp->toString() << std::endl;
                     #endif
+                    // [10.23.2024]: CAN WE DO THIS???
+                    delete instr;
                     instr = tmp;
+
+                    #ifdef DEBUG
+                        std::cout << "instr is now: " << instr->toString() << std::endl;
+                    #endif
                 }
             } else {
                 #ifdef DEBUG
@@ -340,13 +344,14 @@ public:
                 instr = this->addSSA(instr);
             }
         }
-        // return ret;
+
+        #ifdef DEBUG
+            std::cout << "returning this->addSSA1() instr=" << instr->toString() << std::endl;
+        #endif
         return instr;
     }
 
     inline SSA* addSSA(SSA *instr) {
-        SSA *retVal = instr;
-
         #ifdef DEBUG
             std::cout << "\t[Parser::addSSA(instr=" << instr->toString() << ")]" << std::endl;
         #endif
@@ -388,11 +393,9 @@ public:
         this->checkPrevJmp(instr);
 
         // this->currBB->setInstructionList(this->instrList);
-        
-        // [10/02/2024]: maintain last instr here as well
-        // - THIS DOESN'T FEEL RIGHT THOUGH...
-        // this->prevInstr = retVal; 
-        return retVal;
+
+        this->SSA_instrs.push_back(instr);
+        return instr;
     }
 
     // [10/09/2024]: ToDo - should check if [SSA] already exists in [this->ssa_table] 
