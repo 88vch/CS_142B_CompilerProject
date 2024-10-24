@@ -165,23 +165,6 @@ SSA* Parser::p2_statSeq() {
             // 2) when we have the ability to attatch (link) the newly created BB and old one (i.e. this->newBB->parent = this->oldBB)
 
         first_SSA = p2_statement();
-
-        // [10.21.2024]: We might not need this at all? 
-        // - reason: specific recursive functions should handle when we addSSA1()
-        // if (this->prevJump) {
-        //     #ifdef DEBUG
-        //         std::cout << "prevInstr before update: [" << this->prevInstr->toString() << "]" << std::endl;
-        //     #endif
-        //     this->prevInstr->set_operand2(first_SSA);
-
-        //     #ifdef DEBUG
-        //         std::cout << "prevInstr [" << this->prevInstr->toString() << "] has been updated with new [y] operand (2)!" << std::endl;
-        //     #endif
-
-        //     this->prevJump = false;
-        //     this->prevInstr = nullptr;
-        // }
-
     }
     #ifdef DEBUG
         if (first_SSA) {
@@ -442,11 +425,27 @@ SSA* Parser::p2_assignment() {
             std::cout << "inserting new VV mapping" << std::endl;
         #endif
 
+        int table_int = this->add_SSA_table(value);
+
+        if (this->VVs.find(ident) != this->VVs.end()) {
+            BasicBlock *blk = (this->currBB->child2) ? this->currBB->child2 : this->currBB->child;
+            BasicBlock *parent = this->currBB;
+            this->currBB = blk; // [10.24.2024]: So that [this->addSSA()] will add SSA-instr into proper BasicBlock
+
+            // this will add to currBB's [newInstrs]
+            SSA *phi_instr = this->addSSA1(6, this->ssa_table.at(this->VVs.at(ident)), this->ssa_table.at(table_int), true);
+            this->currBB = parent;
+
+            #ifdef DEBUG
+                std::cout << "new phi-SSA: " << phi_instr->toString() << std::endl;
+            #endif
+        }
+
         // int VV_value = this->add_SSA_table(value);
         
         // - ToDo: replace with <int, int>
         // this->varVals.insert_or_assign(SymbolTable::symbol_table.at(ident), value); 
-        this->VVs.insert_or_assign(ident, this->add_SSA_table(value)); 
+        this->VVs.insert_or_assign(ident, table_int); 
     }
 
     this->printVVs();
@@ -951,10 +950,20 @@ SSA* Parser::p2_ifStatement() {
     #ifdef DEBUG
         std::cout << "jmpIf_instr: " << jmpIf_instr->toString() << std::endl;
         // std::cout << "created new phi-instr: " << phi_instr->toString() << std::endl;
+        std::cout << "trying to set operand1 (join_blk->newInstrs.front()->instr): ";
+        if (!join_blk->newInstrs.empty()) {
+            std::cout << join_blk->newInstrs.front()->instr->toString() << std::endl;
+        } else {
+            std::cout << "no node exists!" << std::endl;
+        }
     #endif
     // [10.24.2024]: Does this work?
     // jmpIf_instr->set_operand1(phi_instr);
-    jmpIf_instr->set_operand1(join_blk->newInstrs.front()->instr); // set_operand[1] since it's just a `bra` instr
+    if (!join_blk->newInstrs.empty()) {
+        jmpIf_instr->set_operand1(join_blk->newInstrs.front()->instr); // set_operand[1] since it's just a `bra` instr
+    } else {
+        this->prevInstrs.push(jmpIf_instr);
+    }
 
     // [07/31/2024]: For now don't know what to do abt this (or if this is even right)
     // return phi_instr; // [08/08/2024]: For now this is good
@@ -1012,22 +1021,24 @@ SSA* Parser::p2_whileStatement() {
     // [10/17/2024]: BasicBlock Excerpt BEIGNN
     BasicBlock *parent_blk = this->currBB;
     BasicBlock *while_blk = new BasicBlock();
-    
     #ifdef DEBUG
         std::cout << "created new BB (while)" << std::endl;
     #endif
-
-    // #ifdef DEBUG
-    //     std::cout << "created new BB with instrList: " << std::endl;
-    //     while_blk->printInstrList();
-    // #endif
     
     parent_blk->child = while_blk;
     while_blk->parent = parent_blk;
     while_blk->child = parent_blk; // [10/14/2024]: Circular...should we do this?
-    // this->currBB = while_blk;
-    this->currBB = this->currBB->child; // [10.21.2024]: same as right above
+    this->currBB = while_blk;
+    // this->currBB = this->currBB->child; // [10.21.2024]: same as right above
     // END
+
+    // [10.24.2024]: Moved
+    BasicBlock *afterWhile_blk = new BasicBlock();
+    afterWhile_blk->parent = parent_blk;
+    parent_blk->child2 = afterWhile_blk;
+    #ifdef DEBUG
+        std::cout << "created new BB after-While" << std::endl;
+    #endif
 
     SSA *while1 = p2_statSeq(); // DO: relation
 
@@ -1051,19 +1062,18 @@ SSA* Parser::p2_whileStatement() {
     this->prevInstrs.push(jmp_instr);
 
     // [10/14/2024];
-    BasicBlock *afterWhile_blk = new BasicBlock();
-    
-    #ifdef DEBUG
-        std::cout << "created new BB after-While" << std::endl;
-    #endif
+    // BasicBlock *afterWhile_blk = new BasicBlock();
+    // #ifdef DEBUG
+    //     std::cout << "created new BB after-While" << std::endl;
+    // #endif
     
     // #ifdef DEBUG
     //     std::cout << "created new BB with instrList: " << std::endl << "\t";
     //     afterWhile_blk->printInstrList();
     // #endif
     
-    afterWhile_blk->parent = parent_blk;
-    parent_blk->child2 = afterWhile_blk;
+    // afterWhile_blk->parent = parent_blk;
+    // parent_blk->child2 = afterWhile_blk;
     
     // [10.22.2024]: Somehow after [p2_statSeq()], this->currBB gets changed? So we just reset it here...is this ok/right/valid???
     this->currBB = afterWhile_blk;

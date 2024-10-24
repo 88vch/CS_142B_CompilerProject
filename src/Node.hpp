@@ -9,6 +9,7 @@ public:
     // Constructor
     // Node() : instr(nullptr), next(nullptr), prev(nullptr) {}
     Node() : instr(nullptr), prev(nullptr) {}
+    Node(SSA *in) : instr(in), prev(nullptr) {}
 
     ~Node() {
         // [10/19/2024]: If we only have references (from [Parser::instrList]), then we shouldn't delete the SSA instr here, rather in [Parser] 

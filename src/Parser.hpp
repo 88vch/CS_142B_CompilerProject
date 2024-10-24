@@ -273,9 +273,14 @@ public:
             
             this->prevInstr->set_operand2(instr);
 
-            this->prevJump = false;
+            // this->prevJump = false;
             this->prevInstr = nullptr;
             this->prevInstrs.pop();
+
+            // [10.24.2024]: trying something out...
+            if (this->prevInstrs.empty()) {
+                this->prevJump = false;
+            }
         }
     }
 
