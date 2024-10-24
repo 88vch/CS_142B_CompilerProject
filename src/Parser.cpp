@@ -841,6 +841,14 @@ SSA* Parser::p2_ifStatement() {
     // if_parent = then_blk; // [10/14/2024]: Assume [p2_statSeq()] manipulates [this->currBB]
     this->currBB = this->currBB->child;
 
+    // [10.24.2024]: ?
+    BasicBlock *join_blk = new BasicBlock(this->VVs);
+    #ifdef DEBUG
+        std::cout << "created new BB (join)" << std::endl;
+    #endif
+    join_blk->parent = then_blk;
+    then_blk->child = join_blk;
+
     SSA *if1 = p2_statSeq(); // returns the 1st SSA instruction 
 
     // [Optional] ELSE
@@ -860,22 +868,23 @@ SSA* Parser::p2_ifStatement() {
         this->prevJump = true;
         this->prevInstrs.push(jmp_instr); // [10/10/2024]: push at the end so next added SSA-instr will be set as the jump-location
 
-        BasicBlock *notThen = new BasicBlock();
-        #ifdef DEBUG
-            std::cout << "created new BB (not-then)" << std::endl;
-        #endif
+        // BasicBlock *notThen = new BasicBlock();
+        // #ifdef DEBUG
+        //     std::cout << "created new BB (not-then)" << std::endl;
+        // #endif
         // #ifdef DEBUG
         //     std::cout << "created new BB with instrList: " << std::endl << "\t";
         //     notThen->printInstrList();
         // #endif
         
-        if_parent->child2 = notThen;
-        notThen->parent = then_blk; // [this->currBB (should) == then]
-        then_blk->child = notThen;
-        notThen->parent2 = if_parent;
-        this->currBB = notThen;
-
-        // [10.21.2024]: We may need [phi()] here...
+        if_parent->child2 = join_blk;
+        join_blk->parent2 = if_parent;
+        this->currBB = join_blk; // [10.24.2024]: same as [this->currBB = this->currBB->child;]?
+        
+        // notThen->parent = then_blk; // [this->currBB (should) == then]
+        // then_blk->child = notThen;
+        // notThen->parent2 = if_parent;
+        // this->currBB = notThen;
 
         // [07/28/2024]: might need this here(?)
         // return if1; // [08/08/2024]: Good call; yes we should
@@ -915,22 +924,18 @@ SSA* Parser::p2_ifStatement() {
     // FI
     this->CheckFor(Result(2, 21)); // check `fi`
 
-    // [10.21.2024]: Repalce below(?)
-    BasicBlock *join_blk = new BasicBlock(then_blk, else_blk, this->VVs);
+    // // [10.21.2024]: Repalce below(?)
+    // BasicBlock *join_blk = new BasicBlock(then_blk, else_blk, this->VVs);
 
     // [10/14/2024];
     // BasicBlock *join_blk = new BasicBlock(then_blk, else_blk, this->VVs, this->instrList);
-    
-    #ifdef DEBUG
-        std::cout << "created new BB (join)" << std::endl;
-    #endif
 
     // #ifdef DEBUG
     //     std::cout << "created new BB with instrList: " << std::endl << "\t";
     //     join_blk->printInstrList();
     // #endif
     
-    join_blk->parent = then_blk;
+    // join_blk->parent = then_blk; // [10.24.2024]: already did this earlier
     join_blk->parent2 = else_blk;
     then_blk->child = join_blk;
     else_blk->child = join_blk;
@@ -938,18 +943,22 @@ SSA* Parser::p2_ifStatement() {
     this->currBB = join_blk;
 
     // [Special Instructions]: phi() goes here
-    SSA *phi_instr = this->addSSA1(6, if1, if2); // [check=false]; Note - new [addSSA1()] does the same as below's commented out portion!
+    // - [10.24.2024]: i don't think it does xD
+    // SSA *phi_instr = this->addSSA1(6, if1, if2); // [check=false]; Note - new [addSSA1()] does the same as below's commented out portion!
 
     // [SECTION_A]
     // 【10/10/2024】： Note that we can't [this->prevJump=true; this->prevInstrs.push(jmpIf_instr)] bc we set_operand1() rather than set_operand2()...see below
     #ifdef DEBUG
         std::cout << "jmpIf_instr: " << jmpIf_instr->toString() << std::endl;
-        std::cout << "created new phi-instr: " << phi_instr->toString() << std::endl;
+        // std::cout << "created new phi-instr: " << phi_instr->toString() << std::endl;
     #endif
-    jmpIf_instr->set_operand1(phi_instr); // set_operand[1] since it's just a `bra` instr
+    // [10.24.2024]: Does this work?
+    // jmpIf_instr->set_operand1(phi_instr);
+    jmpIf_instr->set_operand1(join_blk->newInstrs.front()->instr); // set_operand[1] since it's just a `bra` instr
 
     // [07/31/2024]: For now don't know what to do abt this (or if this is even right)
-    return phi_instr; // [08/08/2024]: For now this is good
+    // return phi_instr; // [08/08/2024]: For now this is good
+    return jmpIf_instr; // [10.24.2024]: ?
 }
 
 SSA* Parser::p_whileStatement() {
