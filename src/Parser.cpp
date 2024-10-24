@@ -771,7 +771,7 @@ SSA* Parser::p_ifStatement() {
         this->prevInstrs.push(jmp_instr); // [10/10/2024]: push at the end so next added SSA-instr will be set as the jump-location
 
         // [07/28/2024]: might need this here(?)
-        return if1; // [08/08/2024]: Good call; yes we should
+        return jmp_instr; // [08/08/2024]: Good call; yes we should
     }
     SSA *if2 = nullptr, *jmpIf_instr = nullptr;
     // [09/20/2024]: if `else` exists, we need a jump at the end of `if` right?
@@ -944,6 +944,7 @@ SSA* Parser::p2_ifStatement() {
     // 【10/10/2024】： Note that we can't [this->prevJump=true; this->prevInstrs.push(jmpIf_instr)] bc we set_operand1() rather than set_operand2()...see below
     #ifdef DEBUG
         std::cout << "jmpIf_instr: " << jmpIf_instr->toString() << std::endl;
+        std::cout << "created new phi-instr: " << phi_instr->toString() << std::endl;
     #endif
     jmpIf_instr->set_operand1(phi_instr); // set_operand[1] since it's just a `bra` instr
 
