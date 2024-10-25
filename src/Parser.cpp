@@ -379,83 +379,35 @@ SSA* Parser::p2_assignment() {
     // ASSIGNMENT
     this->CheckFor(Result(2, 7)); // check for `<-`
 
-    // EXPRESSION
-    SSA *ret = nullptr, *value = p_expr();
+    // EXPRESSION; [10.24.2024]: Slightly refactored...
+    SSA *value = p_expr();
 
-    if (value->get_constVal()) {
-        ret = this->CheckConstExistence(*(value->get_constVal()));
-    } else {
-        ret = this->CheckExistence(value->get_operator(), value->get_operand1(), value->get_operand2());
-    }
+    int table_int = this->add_SSA_table(value);
 
-    if (!ret) {
-        ret = this->addSSA1(value, true);
+    if (this->VVs.find(ident) != this->VVs.end()) {
+        BasicBlock *blk = (this->currBB->child2) ? this->currBB->child2 : this->currBB->child;
+        BasicBlock *parent = this->currBB;
+        this->currBB = blk; // [10.24.2024]: So that [this->addSSA()] will add SSA-instr into proper BasicBlock
+
+        // this will add to currBB's [newInstrs]
+        SSA *phi_instr = this->addSSA1(6, this->ssa_table.at(this->VVs.at(ident)), this->ssa_table.at(table_int), true);
+        this->currBB = parent;
+
+        #ifdef DEBUG
+            std::cout << "new phi-SSA: " << phi_instr->toString() << std::endl;
+        #endif
     }
     
-    // [10.23.2024]: ToDo -- something shoudl change here(?)
-    // ret = this->addSSA1(value, true);
-
-    // todo: if SSA instr already exists, no need to create new entry in [add_SSA_table()]
-    // if (value->get_constVal()) {
-    //     if (this->CheckConstExistence(*(value->get_constVal())) == nullptr) {
-    //         ret = this->addSSA(value);
-    //     }
-    // } else {
-    //     if (this->CheckExistence(value->get_operator(), value->get_operand1(), value->get_operand2()) == nullptr) {
-    //         ret = this->addSSA(value);
-    //     }
-    // }
-
-    
-
-    if (ret != value) {
-        #ifdef DEBUG
-            std::cout << "SSA instr already exists (got ret: " << ret->toString() << ")!, using that instead!" << std::endl;
-        #endif
-        if (this->VVs.find(ident) != this->VVs.end()) {
-            #ifdef DEBUG
-                std::cout << "key=" << SymbolTable::symbol_table.at(ident) << ", current varVal value=";
-            #endif
-            std::cout << this->ssa_table.at(this->VVs.at(ident))->toString() << std::endl;
-        } else {
-            std::cout << "sike i lied! none!" << std::endl;
-        }
-    } else {
-        #ifdef DEBUG
-            std::cout << "inserting new VV mapping" << std::endl;
-        #endif
-
-        int table_int = this->add_SSA_table(value);
-
-        if (this->VVs.find(ident) != this->VVs.end()) {
-            BasicBlock *blk = (this->currBB->child2) ? this->currBB->child2 : this->currBB->child;
-            BasicBlock *parent = this->currBB;
-            this->currBB = blk; // [10.24.2024]: So that [this->addSSA()] will add SSA-instr into proper BasicBlock
-
-            // this will add to currBB's [newInstrs]
-            SSA *phi_instr = this->addSSA1(6, this->ssa_table.at(this->VVs.at(ident)), this->ssa_table.at(table_int), true);
-            this->currBB = parent;
-
-            #ifdef DEBUG
-                std::cout << "new phi-SSA: " << phi_instr->toString() << std::endl;
-            #endif
-        }
-
-        // int VV_value = this->add_SSA_table(value);
-        
-        // - ToDo: replace with <int, int>
-        // this->varVals.insert_or_assign(SymbolTable::symbol_table.at(ident), value); 
-        this->VVs.insert_or_assign(ident, table_int); 
-    }
+    this->VVs.insert_or_assign(ident, table_int); 
 
     this->printVVs();
     
     #ifdef DEBUG
-        std::cout << "[Parser::p2_assignment()]: returning " << ret->toString() << std::endl;
+        std::cout << "[Parser::p2_assignment()]: returning " << value->toString() << std::endl;
     #endif
 
     // [10/01/2024]: Don't we need to assign [this->VVs] to this->currBB first?
-    return ret;
+    return value;
 }
 
 // ToDo: after generating the Dot & graph the first time
