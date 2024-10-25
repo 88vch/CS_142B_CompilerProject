@@ -1,4 +1,7 @@
 # **To Do;**
+**[10.25.2024]**
+generate dot(png): dot -Tpng graph.dot -o graph.png
+
 **[10/03/2024]**
 linked-list
 - most recenly added SSA-stmt should be searched first (i.e. placed at head), OR maintain a ptr at end of each LL (turn it into a LL which iterates from tail to head) and search from tail

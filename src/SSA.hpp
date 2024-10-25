@@ -162,6 +162,10 @@ public:
             res += " (" + std::to_string(this->y->get_operator()) + ")";
         }
 
+        if (this->constVal) {
+            res += " (" + std::to_string(*(this->constVal)) + ")";
+        }
+
         return res;
     }
 

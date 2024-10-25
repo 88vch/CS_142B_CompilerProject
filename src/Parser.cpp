@@ -60,6 +60,8 @@ SSA* Parser::p2_start() {
         std::cout << "[Parser::p2_start(" << this->sym.to_string() << ")]" << std::endl;
     #endif
     this->currBB = new BasicBlock();
+    this->BB0->child = this->currBB;
+    this->currBB->parent = this->BB0;
     #ifdef DEBUG
         std::cout << "created new BB (p2-start)" << std::endl;
     #endif
@@ -347,16 +349,19 @@ SSA* Parser::p2_assignment() {
                 }
             #endif
 
-            // [10.21.2024]: Replaced below
-            this->currBB->child = new BasicBlock();
-            #ifdef DEBUG
-                std::cout << "created new BasicBlock() " << std::endl;
-            #endif
-            this->currBB->child->parent = this->currBB;
-            this->currBB = this->currBB->child;
-            #ifdef DEBUG
-                std::cout << "created new BB (new assignment)" << std::endl;
-            #endif
+            if (!(this->currBB->child || this->currBB->child2)) {
+                // [10.21.2024]: Replaced below
+                this->currBB->child = new BasicBlock();
+                this->currBB->child->parent = this->currBB;
+                #ifdef DEBUG
+                    std::cout << "created new BB (new assignment)" << std::endl;
+                #endif
+            } else {
+                #ifdef DEBUG
+                    std::cout << "child bb exissts" << std::endl;
+                #endif
+            }
+
             // #ifdef DEBUG
             //     std::cout << "created new BB with instrList: " << std::endl << "\t";
             //     this->currBB->printInstrList();
@@ -915,6 +920,9 @@ SSA* Parser::p2_ifStatement() {
         jmpIf_instr->set_operand1(join_blk->newInstrs.front()->instr); // set_operand[1] since it's just a `bra` instr
     } else {
         this->prevInstrs.push(jmpIf_instr);
+        #ifdef DEBUG
+            std::cout << "join_blk had no newInstrs! pushing [jmpIf_instr] onto [this->prevInstrs]" << std::endl;
+        #endif
     }
 
     // [07/31/2024]: For now don't know what to do abt this (or if this is even right)

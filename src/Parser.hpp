@@ -2,6 +2,7 @@
 #define PARSER_HPP
 
 #include <stack>
+#include <queue>
 #include <vector>
 #include <sstream>
 #include <cstring>
@@ -368,6 +369,9 @@ public:
             // [10.23.2024]: [LinkedList::InsertAtTail()] returns [Node*]
             if (this->block) {
                 this->currBB->newInstrs.push_back(this->BB0->constList->InsertAtTail(instr));
+                #ifdef DEBUG
+                    std::cout << "done pushing into [currBB]'s [newInstrs]" << std::endl;
+                #endif
             } else {
                 this->BB0->constList->InsertAtTail(instr);
             }
@@ -481,21 +485,38 @@ public:
     }
 
     inline std::string BBtoDOT() const {
-        std::string res = "diagraph G {\n";
+        std::string res = "digraph G {\n\trankdir=TB;\n\n";
         std::string c_res = "";
 
-        int BB_inc = 0;
+        // block definitions
         BasicBlock *curr = this->BB0;
 
         while (curr != nullptr) {
-            res += "\tbb" + std::to_string(BB_inc) + " [shape=record, label=\"";
+            res += "\tbb" + std::to_string(curr->blockNum) + " [shape=record, label=\"";
 
             c_res = curr->toDOT();
 
             res += c_res + "\"];\n";
             curr = curr->child;
+        }
 
-            BB_inc++;
+        // edge connections
+        curr = nullptr;
+        res += "\n\n";
+        std::queue<BasicBlock *> tmp;
+        tmp.push(this->BB0);
+
+        while (!tmp.empty()) {
+            curr = tmp.front();
+            if (curr->child) {
+                res += "\tbb" + std::to_string(curr->blockNum) +  "-> bb" + std::to_string(curr->child->blockNum) + ";\n";
+                tmp.push(curr->child);
+            }
+            if (curr->child2) {
+                res += "\tbb" + std::to_string(curr->blockNum) +  "-> bb" + std::to_string(curr->child2->blockNum) + ";\n";
+                tmp.push(curr->child2);
+            }
+            tmp.pop();
         }
 
         res += "}";

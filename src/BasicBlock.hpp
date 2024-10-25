@@ -41,6 +41,11 @@ public:
             this->constList = nullptr;
         }
 
+        if (this->constPtr) {
+            delete this->constPtr;
+            this->constPtr = nullptr;
+        }
+
         // for (unsigned int i = 1; i < this->instrList.size() - 1; i++) {
         //     if (this->instrList.find(i) != this->instrList.end()) {
         //         delete this->instrList.at(i);
