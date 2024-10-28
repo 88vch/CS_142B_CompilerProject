@@ -400,11 +400,21 @@ SSA* Parser::p2_assignment() {
 
     // EXPRESSION; [10.24.2024]: Slightly refactored...
     SSA *value = p_expr();
-
+    value = this->addSSA1(value->get_operator(), value->get_operand1(), value->get_operand2(), true);
+    
     int table_int = this->add_SSA_table(value);
     
     BasicBlock *blk = (this->currBB->child2) ? this->currBB->child2 : this->currBB->child; // 10.28.2024: theres a reason to check child2 first (i think phi or smtn)
     // this->VVs = blk->varVals;
+    
+    #ifdef DEBUG
+        std::cout << "done p2_assignment value [p_expr()] returned: " << value->toString() << std::endl;
+        if (blk) {
+            std::cout << "using blk: " << blk->toString() << std::endl;
+        } else {
+            std::cout << "blk: nullptr!" << std::endl;
+        }
+    #endif
 
     if (blk->varVals.find(ident) != blk->varVals.end()) {
         BasicBlock *parent = this->currBB;

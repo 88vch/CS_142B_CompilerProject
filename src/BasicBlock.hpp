@@ -154,6 +154,15 @@ public:
             res += "none!";
         }
 
+        res += "\nvarVals: ";
+        if (!this->varVals.empty()) {
+            for (const auto &pair : this->varVals) {
+                res += "\n\tident: " + std::to_string(pair.first) + ", value: " + std::to_string(pair.second);
+            }
+        } else {
+            res += "none!";
+        }
+
         return res;
     }
 
