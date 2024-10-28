@@ -155,7 +155,7 @@ public:
     }
 
     std::string listToString() const {
-        std::string lst = "";
+        std::string lst = "\t";
         // Node *curr = this->head;
         Node *curr = this->tail;
 

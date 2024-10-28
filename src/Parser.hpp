@@ -54,6 +54,7 @@ public:
         this->prevInstr = nullptr;
 
         this->block = blk;
+        // this->blocksSeen = {};
 
         next(); // [10/14/2024]: Why do we do this?
         // - load's first token into [this->sym]
@@ -484,30 +485,77 @@ public:
         return size;
     }
 
-    inline std::string BBtoDOT() const {
+    inline void printBlocks(BasicBlock *curr, std::vector<BasicBlock *>blocksSeen) {
+        blocksSeen.push_back(curr);
+
+        std::cout << curr->toString() << std::endl;
+        if ((curr->child) && (std::find(blocksSeen.begin(), blocksSeen.end(), curr->child) == blocksSeen.end())) {
+            this->printBlocks(curr->child, blocksSeen);
+        }
+        if ((curr->child2) && (std::find(blocksSeen.begin(), blocksSeen.end(), curr->child2) == blocksSeen.end())) {
+            this->printBlocks(curr->child2, blocksSeen);
+        }
+    }
+
+    inline std::string generateBlocks(BasicBlock *curr, std::string res, std::vector<BasicBlock *>blocksSeen) {
+        blocksSeen.push_back(curr);
+
+        res += "\tbb" + std::to_string(curr->blockNum) + " [shape=record, label=\"" + curr->toDOT() + "\"];\n";
+        #ifdef DEBUG
+            std::cout << "updated res: " << res << std::endl << std::endl;
+        #endif
+
+        if ((curr->child) && (std::find(blocksSeen.begin(), blocksSeen.end(), curr->child) == blocksSeen.end())) {
+            res = this->generateBlocks(curr->child, res, blocksSeen);
+        }
+        if ((curr->child2) && (std::find(blocksSeen.begin(), blocksSeen.end(), curr->child2) == blocksSeen.end())) {
+            res = this->generateBlocks(curr->child2, res, blocksSeen);
+        }
+
+        return res;
+    } 
+
+    inline std::string BBtoDOT() {
         std::string res = "digraph G {\n\trankdir=TB;\n\n";
         std::string c_res = "";
 
         // block definitions
-        BasicBlock *curr = this->BB0;
+        // for (BasicBlock *blk : this->blocksSeen) {
+        //     blk = nullptr;
+        // }
+        std::vector<BasicBlock *> blks = {};
+        #ifdef DEBUG
+            std::cout << "entering [generateBlocks]..." << std::endl;
+        #endif
+        res = this->generateBlocks(this->BB0, res, blks);
 
-        while (curr != nullptr) {
-            res += "\tbb" + std::to_string(curr->blockNum) + " [shape=record, label=\"";
+        // BasicBlock *curr = this->BB0;
 
-            c_res = curr->toDOT();
+        // while (curr != nullptr) {
+        //     res += "\tbb" + std::to_string(curr->blockNum) + " [shape=record, label=\"" + curr->toDOT() + "\"];\n";
+        //     curr = curr->child;
+        // }
 
-            res += c_res + "\"];\n";
-            curr = curr->child;
-        }
+        #ifdef DEBUG
+            std::cout << "done creating block definitions res: " << res << std::endl;
+        #endif
 
         // edge connections
-        curr = nullptr;
+        BasicBlock *curr = nullptr;
         res += "\n\n";
         std::queue<BasicBlock *> tmp;
+        std::vector<BasicBlock *> seen = {};
         tmp.push(this->BB0);
 
         while (!tmp.empty()) {
             curr = tmp.front();
+            if (std::find(seen.begin(), seen.end(), curr) == seen.end()) {
+                seen.push_back(curr);
+            } else { // [10.27.2024]: only add if we haven't seen this [BasicBlock] before
+                tmp.pop();
+                continue;
+            }
+
             if (curr->child) {
                 res += "\tbb" + std::to_string(curr->blockNum) +  "-> bb" + std::to_string(curr->child->blockNum) + ";\n";
                 tmp.push(curr->child);
@@ -520,10 +568,19 @@ public:
         }
 
         res += "}";
+
+        #ifdef DEBUG
+            std::cout << "done creating edge-connections defintiions; returning from 'BBtoDOT'" << std::endl;
+        #endif
+
         return res;
     }
 
-    inline void generateDOT() const {
+    inline void generateDOT() {
+        #ifdef DEBUG
+            std::cout << "generating DOT..." << std::endl;
+        #endif
+
         // Open the file for writing
         std::ofstream file("res/DOT.dot");
 
@@ -533,14 +590,26 @@ public:
             exit(EXIT_FAILURE); // Return false to indicate failure
         }
 
+        #ifdef DEBUG
+            std::cout << "file was opened successfullly" << std::endl;
+        #endif
+
         // Get content
         std::string content = this->BBtoDOT();
+
+        #ifdef DEBUG
+            std::cout << "got content" << std::endl;
+        #endif
 
         // Write content to the file
         file << content;
 
         // Close the file
         file.close();
+
+        #ifdef DEBUG    
+            std::cout << "done generating..." << std::endl;
+        #endif
     }
 
     SSA* p_start();

@@ -91,6 +91,14 @@ SSA* Parser::p2_start() {
     this->CheckFor(Result(2, 16)); // check for `}`
     this->CheckFor(Result(2, 30)); // check for `.`
 
+    #ifdef DEBUG
+        std::cout << "done parsing p2! printing basicblocks: " << std::endl;
+        {
+            std::vector<BasicBlock *>tmp = {};
+            this->printBlocks(this->BB0, tmp);
+        }
+    #endif
+
     return statSeq;
 }
 

@@ -3,6 +3,7 @@
 #include <string>
 #include <fstream>
 #include <sstream>
+#include <unistd.h>
 
 #include "src/SymbolTable.hpp"
 #include "src/FileReader.hpp"
@@ -108,37 +109,36 @@ int main() {
     if (res) { std::cout << "Results have successfully been written to: " << results_f << "(size=[" << results.size() << "])" << std::endl; }
     else { std::cout << "Error occured when trying to write results!" << std::endl; }
 
-    // OLD: Lexer, NEW: Parser
-    // Lexer lexer = Lexer(contents);
-    // std::vector<TOKEN> tokens = lexer.lex();
-    #ifdef DEBUG
-        std::cout << "[Parser]: Before constructor" << std::endl;
-    #endif
-    Parser parser1(results);
+    // [10.26.2024]: Parser1
+    // #ifdef DEBUG
+    //     std::cout << "[Parser]: Before constructor" << std::endl;
+    // #endif
+    // Parser parser1(results);
     
-    #ifdef DEBUG
-        std::cout << "[Parser]: After constructor. Before FIRST [parse](SSA Generation)" << std::endl;
-    #endif
-    parser1.p_start();
-    // parser.parse();
-    #ifdef DEBUG
-        std::cout << "[Parser]: After FIRST [parse.parse_generate_SSA()]" << std::endl;
-    #endif
+    // #ifdef DEBUG
+    //     std::cout << "[Parser]: After constructor. Before FIRST [parse](SSA Generation)" << std::endl;
+    // #endif
+    // parser1.p_start();
+    // // parser.parse();
+    // #ifdef DEBUG
+    //     std::cout << "[Parser]: After FIRST [parse.parse_generate_SSA()]" << std::endl;
+    // #endif
 
-    std::vector<SSA*> SSA_instrs1 = parser1.getSSA();
-    bool SSA_exists1 = fr.write_file_contents(parser1_f, SSA_instrs1, "SSA Instructions");
-    if (SSA_exists1) { std::cout << "SSA Instructions have successfully been written to: " << parser1_f << "(size=[" << SSA_instrs1.size() << "])" << std::endl; }
-    else { std::cout << "Error occured when trying to write results!" << std::endl; }
+    // std::vector<SSA*> SSA_instrs1 = parser1.getSSA();
+    // bool SSA_exists1 = fr.write_file_contents(parser1_f, SSA_instrs1, "SSA Instructions");
+    // if (SSA_exists1) { std::cout << "SSA Instructions have successfully been written to: " << parser1_f << "(size=[" << SSA_instrs1.size() << "])" << std::endl; }
+    // else { std::cout << "Error occured when trying to write results!" << std::endl; }
 
-    std::unordered_map<std::string, SSA*> varVals1 = parser1.getVarVal();
-    bool vv1 = fr.write_file_contents(varVal1_f, varVals1, "Var-Val");
-    if (st) { std::cout << "Results have successfully been written to: " << varVal1_f << "(size=[" << varVals1.size() << "])" << std::endl; }
-    else { std::cout << "Error occured when trying to write results!" << std::endl; }
+    // std::unordered_map<std::string, SSA*> varVals1 = parser1.getVarVal();
+    // bool vv1 = fr.write_file_contents(varVal1_f, varVals1, "Var-Val");
+    // if (st) { std::cout << "Results have successfully been written to: " << varVal1_f << "(size=[" << varVals1.size() << "])" << std::endl; }
+    // else { std::cout << "Error occured when trying to write results!" << std::endl; }
     
-    bool ll1 = fr.write_file_contents(linkedList1_f, parser1.instrListToString(), "LinkedList");
-    if (ll1) { std::cout << "Results have successfully been written to: " << linkedList1_f << "(size=[" << parser1.getInstrListSize() << "])" << std::endl; }
-    else { std::cout << "Error occured when trying to write results!" << std::endl; }
+    // bool ll1 = fr.write_file_contents(linkedList1_f, parser1.instrListToString(), "LinkedList");
+    // if (ll1) { std::cout << "Results have successfully been written to: " << linkedList1_f << "(size=[" << parser1.getInstrListSize() << "])" << std::endl; }
+    // else { std::cout << "Error occured when trying to write results!" << std::endl; }
 
+    // [10.26.2024]: Parser2
     #ifdef DEBUG
         std::cout << "[Parser]: Before SECOND [parse](BasicBlock Generation)" << std::endl;
     #endif
@@ -165,11 +165,12 @@ int main() {
     if (ll2) { std::cout << "Results have successfully been written to: " << linkedList2_f << "(size=[" << parser2.getInstrListSize() << "])" << std::endl; }
     else { std::cout << "Error occured when trying to write results!" << std::endl; }
 
-    #ifdef DEBUG
-        std::cout << "waiting for 5" << std::endl;
-    #endif
-    int *time = new int(5);
-    wait(time);
+    // #ifdef DEBUG
+    //     std::cout << "waiting for 5" << std::endl;
+    // #endif
+    // int *time = new int(5);
+    // wait(time);
+    sleep(2.5);
     system("dot -Tpng res/DOT.dot -o DOT.png");
 
     return 0;

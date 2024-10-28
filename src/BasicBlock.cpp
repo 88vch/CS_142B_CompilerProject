@@ -5,7 +5,7 @@
 
 #define DEBUG
 
-int BasicBlock::debugNum = 1;
+int BasicBlock::debugNum = 0;
 
 // // [09/03/2024]: How do we determine whether we have the special [const BB0] or not?
 // BasicBlock::BasicBlock(std::unordered_map<int, LinkedList*> instrLst, bool isConst) // [09/02/2024]: Note - took away ssa_instructions[curr_instr_list]

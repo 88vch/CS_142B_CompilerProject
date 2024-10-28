@@ -133,7 +133,7 @@ public:
     // }
 
     std::string toString() const {
-        std::string res = "";
+        std::string res = "BB" + std::to_string(this->blockNum) + ": ";
 
         if (this->constList) 
         {
@@ -148,7 +148,7 @@ public:
         res += "\nnewInstrs: ";
         if (!this->newInstrs.empty()) {
             for (const auto &node : this->newInstrs) {
-                res += node->instr->toString() + ", ";
+                res += "\n\t" + node->instr->toString() + ", ";
             }
         } else {
             res += "none!";
