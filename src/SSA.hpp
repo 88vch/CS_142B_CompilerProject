@@ -155,11 +155,11 @@ public:
         res += std::to_string(this->debug_num) + ":" + this->opToString();
 
         if (this->x) {
-            res += " (" + std::to_string(this->x->get_operator()) + ")";
+            res += " (" + std::to_string(this->x->get_debugNum()) + ")";
         }
 
         if (this->y) {
-            res += " (" + std::to_string(this->y->get_operator()) + ")";
+            res += " (" + std::to_string(this->y->get_debugNum()) + ")";
         }
 
         if (this->constVal) {

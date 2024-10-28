@@ -59,7 +59,7 @@ SSA* Parser::p2_start() {
     #ifdef DEBUG
         std::cout << "[Parser::p2_start(" << this->sym.to_string() << ")]" << std::endl;
     #endif
-    this->currBB = new BasicBlock();
+    this->currBB = new BasicBlock(this->BB0->varVals);
     this->BB0->child = this->currBB;
     this->currBB->parent = this->BB0;
     #ifdef DEBUG
@@ -325,13 +325,14 @@ SSA* Parser::p2_assignment() {
         // exit(EXIT_FAILURE);
 
     } else {
-        // [10/02/2024]: Check if it's already defined before (if so then we need a new BasicBlock!)
-        if (this->VVs.find(ident) != this->VVs.end()) {
+        // [10/02/2024]: Check if it's already defined before (if so then we need a new BB!)
+        // if (this->VVs.find(ident) != this->VVs.end()) {
+        if (this->currBB->varVals.find(ident) != this->currBB->varVals.end()) {
             #ifdef DEBUG
-                std::cout << "ident exists with a definition: ident=" << ident << ", val=" << this->ssa_table.at(this->VVs.at(ident))->toString() << std::endl;
+                std::cout << "ident exists with a definition: ident=" << ident << ", val=" << this->ssa_table.at(this->currBB->varVals.at(ident))->toString() << std::endl;
             #endif
 
-            // [10/14/2024]: Since we're overwriting a pre-existing value, we should use a new BasicBlock (?)
+            // [10/14/2024]: Since we're overwriting a pre-existing value, we should use a new BB (?)
             // - is this valid?
             // this->currBB->instrList = this->instrList; // [10/14/2024]: Get the updated [instrList] up to this point
             
@@ -357,16 +358,21 @@ SSA* Parser::p2_assignment() {
                 }
             #endif
 
-            if (!(this->currBB->child || this->currBB->child2)) {
-                // [10.21.2024]: Replaced below
-                this->currBB->child = new BasicBlock();
+            if (this->currBB->child == nullptr) {
+                this->currBB->child = new BasicBlock(this->currBB->varVals);
                 this->currBB->child->parent = this->currBB;
+                #ifdef DEBUG
+                    std::cout << "created new BB (new assignment)" << std::endl;
+                #endif
+            } else if (this->currBB->child2 == nullptr) {
+                this->currBB->child2 = new BasicBlock(this->currBB->varVals);
+                this->currBB->child2->parent = this->currBB;
                 #ifdef DEBUG
                     std::cout << "created new BB (new assignment)" << std::endl;
                 #endif
             } else {
                 #ifdef DEBUG
-                    std::cout << "child bb exissts" << std::endl;
+                    std::cout << "child bb exissts: " << this->currBB->child->toString() << ", " << this->currBB->child2->toString() << std::endl;
                 #endif
             }
 
@@ -396,22 +402,32 @@ SSA* Parser::p2_assignment() {
     SSA *value = p_expr();
 
     int table_int = this->add_SSA_table(value);
+    
+    BasicBlock *blk = (this->currBB->child2) ? this->currBB->child2 : this->currBB->child; // 10.28.2024: theres a reason to check child2 first (i think phi or smtn)
+    // this->VVs = blk->varVals;
 
-    if (this->VVs.find(ident) != this->VVs.end()) {
-        BasicBlock *blk = (this->currBB->child2) ? this->currBB->child2 : this->currBB->child;
+    if (blk->varVals.find(ident) != blk->varVals.end()) {
         BasicBlock *parent = this->currBB;
         this->currBB = blk; // [10.24.2024]: So that [this->addSSA()] will add SSA-instr into proper BasicBlock
 
         // this will add to currBB's [newInstrs]
-        SSA *phi_instr = this->addSSA1(6, this->ssa_table.at(this->VVs.at(ident)), this->ssa_table.at(table_int), true);
+        SSA *phi_instr = this->addSSA1(6, this->ssa_table.at(blk->varVals.at(ident)), this->ssa_table.at(table_int), true);
+        
+        // [10.28.2024]: Update BasicBlock's VV
+        int phi_table_int = this->add_SSA_table(phi_instr);
+        int old_ident_val = blk->varVals.at(ident);
+        this->currBB->varVals.insert_or_assign(ident, phi_table_int);
         this->currBB = parent;
+
+        // [10.28.2024]: TODO - propagate update down to while-body BB
+        // this->propagateUpdate(old_ident_val, phi_table_int);
 
         #ifdef DEBUG
             std::cout << "new phi-SSA: " << phi_instr->toString() << std::endl;
         #endif
+    } else {
+        blk->varVals.insert_or_assign(ident, table_int); 
     }
-    
-    this->VVs.insert_or_assign(ident, table_int); 
 
     this->printVVs();
     
@@ -483,12 +499,12 @@ SSA* Parser::p_funcCall() {
                 std::cout << "current [varVals] mapping looks like: " << std::endl;
                 this->printVVs();
             #endif
-            if (this->VVs.find(num) != this->VVs.end()) {
+            if (this->currBB->varVals.find(num) != this->currBB->varVals.end()) {
                 // res = this->varVals.at(num);
                 // std::cout << res->toString() << std::endl;
                 
                 // SSA *tmp = new SSA(24, this->ssa_table.at(this->VVs.at(num)));
-                res = this->addSSA1(24, this->ssa_table.at(this->VVs.at(num)), nullptr, true);
+                res = this->addSSA1(24, this->ssa_table.at(this->currBB->varVals.at(num)), nullptr, true);
                 // if (res != tmp) {
                 //     delete tmp;
                 //     tmp = nullptr;
@@ -613,8 +629,8 @@ SSA* Parser::p2_funcCall() {
                 std::cout << "current [varVals] mapping looks like: " << std::endl;
                 this->printVVs();
             #endif
-            if (this->VVs.find(num) != this->VVs.end()) {
-                res = this->addSSA1(24, this->ssa_table.at(this->VVs.at(num)), nullptr, true);
+            if (this->currBB->varVals.find(num) != this->currBB->varVals.end()) {
+                res = this->addSSA1(24, this->ssa_table.at(this->currBB->varVals.at(num)), nullptr, true);
             } else {
                 try {
                     // [10/09/2024]: Can't modify constVal SSA call
@@ -656,7 +672,7 @@ SSA* Parser::p2_funcCall() {
         // this->CheckFor(); // [08/27/2024]: Something like this?...
         // [09/02/2024]: ORRRRR Don't they all start with the `call` token???? confirm this then delete this and js [CheckFor] `call`
         
-        // [10/14/2024]: Should we create a new BasicBlock for it(?)
+        // [10/14/2024]: Should we create a new BB for it(?)
         // BasicBlock *parent_blk = this->currBB;
         // this->currBB = new BasicBlock();
         // #ifdef DEBUG
@@ -666,7 +682,7 @@ SSA* Parser::p2_funcCall() {
         // this->currBB->parent = parent_blk;
         // parent_blk->child = this->currBB;
 
-        this->currBB->child = new BasicBlock();
+        this->currBB->child = new BasicBlock(this->currBB->varVals);
         this->currBB->child->parent = this->currBB;
         this->currBB = this->currBB->child;
         #ifdef DEBUG
@@ -679,8 +695,8 @@ SSA* Parser::p2_funcCall() {
 
         // [10.20.2024]: TODO function call...ASAP
 
-        // [10/14/2024]: Create a new BasicBlock here (for after the function call?)
-        this->currBB->child = new BasicBlock();
+        // [10/14/2024]: Create a new BB here (for after the function call?)
+        this->currBB->child = new BasicBlock(this->currBB->varVals);
         this->currBB->child->parent = this->currBB;
         this->currBB = this->currBB->child;
         // BasicBlock *func = this->currBB;
@@ -790,7 +806,7 @@ SSA* Parser::p2_ifStatement() {
     // std::unordered_map<int, LinkedList*> tmpLst = this->copyInstrList();
 
     // [10/14/2024];
-    BasicBlock *then_blk = new BasicBlock();
+    BasicBlock *then_blk = new BasicBlock(this->currBB->varVals);
     #ifdef DEBUG
         std::cout << "created new BB (then)" << std::endl;
     #endif
@@ -806,7 +822,7 @@ SSA* Parser::p2_ifStatement() {
     this->currBB = this->currBB->child;
 
     // [10.24.2024]: ?
-    BasicBlock *join_blk = new BasicBlock(this->VVs);
+    BasicBlock *join_blk = new BasicBlock(this->currBB->varVals);
     #ifdef DEBUG
         std::cout << "created new BB (join)" << std::endl;
     #endif
@@ -814,6 +830,7 @@ SSA* Parser::p2_ifStatement() {
     then_blk->child = join_blk;
 
     SSA *if1 = p2_statSeq(); // returns the 1st SSA instruction 
+    // [10.28.2024]: Guess we don't rlly need to jmp to this since its directly after the cmp
 
     // [Optional] ELSE
     // if (this->CheckFor(Result(2, 20), true)) { // check `else`
@@ -865,7 +882,7 @@ SSA* Parser::p2_ifStatement() {
     next();
 
     // [10/14/2024];
-    BasicBlock *else_blk = new BasicBlock();
+    BasicBlock *else_blk = new BasicBlock(this->currBB->varVals);
     #ifdef DEBUG
         std::cout << "created new BB (else)" << std::endl;
     #endif
@@ -988,7 +1005,7 @@ SSA* Parser::p2_whileStatement() {
 
     // [10/17/2024]: BasicBlock Excerpt BEIGNN
     BasicBlock *parent_blk = this->currBB;
-    BasicBlock *while_blk = new BasicBlock();
+    BasicBlock *while_blk = new BasicBlock(this->currBB->varVals);
     #ifdef DEBUG
         std::cout << "created new BB (while)" << std::endl;
     #endif
@@ -1001,7 +1018,7 @@ SSA* Parser::p2_whileStatement() {
     // END
 
     // [10.24.2024]: Moved
-    BasicBlock *afterWhile_blk = new BasicBlock();
+    BasicBlock *afterWhile_blk = new BasicBlock(this->currBB->varVals);
     afterWhile_blk->parent = parent_blk;
     parent_blk->child2 = afterWhile_blk;
     #ifdef DEBUG
@@ -1273,11 +1290,11 @@ SSA* Parser::p_factor() {
         next(); // [08/05/2024]: we can consume the [const-val]?
     } else if (this->sym.get_kind_literal() == 1) { // check [ident]
         // if (this->varVals.find(this->sym.get_value()) == this->varVals.end()) {
-        if (this->VVs.find(this->sym.get_value_literal()) == this->VVs.end()) {
+        if (this->currBB->varVals.find(this->sym.get_value_literal()) == this->currBB->varVals.end()) {
             std::cout << "Error: p_factor(ident) expected a defined variable (in [varVals]), got: [" << this->sym.to_string() << "]! exiting prematurely..." << std::endl;
             exit(EXIT_FAILURE);
         }
-        res = this->ssa_table.at(this->VVs.at(this->sym.get_value_literal()));
+        res = this->ssa_table.at(this->currBB->varVals.at(this->sym.get_value_literal()));
         next(); // [08/08/2024]: must consume the [ident]?
     } else if (this->CheckFor(Result(2, 13), true)) { // check [`(` expression `)`]
         next(); // consume `(`

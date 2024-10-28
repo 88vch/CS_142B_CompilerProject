@@ -36,12 +36,13 @@ public:
         this->s_index = 0;
         this->source_len = tkns.size();
         this->SSA_instrs = {};
-        // this->varVals = {};
-        this->VVs = {};
         
         this->currBB = nullptr;
         // this->BB0 = new BasicBlock(this->instrList, true);
         this->BB0 = new BasicBlock(true);
+        if (blk) {
+            this->VVs = this->BB0->varVals;
+        }
         // this->startBB = nullptr;
         // this->parentBB = this->BB0;
 
@@ -570,7 +571,7 @@ public:
         res += "}";
 
         #ifdef DEBUG
-            std::cout << "done creating edge-connections defintiions; returning from 'BBtoDOT'" << std::endl;
+            std::cout << "done creating edge-connections defintiions; returning from 'BBtoDOT' res looks like: " << res << std::endl << std::endl;
         #endif
 
         return res;

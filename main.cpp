@@ -22,7 +22,7 @@ std::string f_ext = ".ty";
 std::string f_name = "nested_if_while";
 // std::string f_full = f_name + f_ext;
 std::string in_f = "tst/" + f_name + f_ext;
-#define in_f "tst/nested_if_while.ty"
+#define in_f "tst/simple_instrs.ty"
 
 // [10.23.2024]: Silly rabbit
 
@@ -165,12 +165,6 @@ int main() {
     if (ll2) { std::cout << "Results have successfully been written to: " << linkedList2_f << "(size=[" << parser2.getInstrListSize() << "])" << std::endl; }
     else { std::cout << "Error occured when trying to write results!" << std::endl; }
 
-    // #ifdef DEBUG
-    //     std::cout << "waiting for 5" << std::endl;
-    // #endif
-    // int *time = new int(5);
-    // wait(time);
-    sleep(2.5);
     system("dot -Tpng res/DOT.dot -o DOT.png");
 
     return 0;

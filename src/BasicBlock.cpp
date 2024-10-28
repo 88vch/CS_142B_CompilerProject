@@ -115,6 +115,7 @@ BasicBlock::BasicBlock(bool isConst)
         this->constPtr = nullptr;
     }
     this->newInstrs = {};
+    this->varVals = {};
 
     // #ifdef DEBUG
     //     std::cout << "new BasicBlock; got [instrList; size=" << this->instrList.size() << ", " << instrLst.size() << "] looks like:" << std::endl;
@@ -133,7 +134,7 @@ BasicBlock::BasicBlock(std::unordered_map<int, int> DOM_vv_map, bool isConst)
     this->parent2 = nullptr;
     this->child = nullptr;
     this->child2 = nullptr;
-    this->updated_varval_map = DOM_vv_map;
+    this->varVals = DOM_vv_map;
 
     if (isConst) {
         this->constList = new LinkedList();
@@ -155,7 +156,7 @@ BasicBlock::BasicBlock(BasicBlock *p1, BasicBlock *p2, std::unordered_map<int, i
 
     this->parent = p1;
     this->parent2 = p2;
-    this->updated_varval_map = DOM_vv_map;
+    this->varVals = DOM_vv_map;
     
     this->child = nullptr;
     this->child2 = nullptr;
