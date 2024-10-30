@@ -88,9 +88,13 @@ public:
         return false;
     }
     bool compare(SSA *s) const {
-        if ((this->debug_num > 0) && (this->op == s->get_operator()) && 
+        if (
+            ((this->debug_num > 0) && (this->op == s->get_operator()) && 
             (this->x != nullptr && (this->x == s->get_operand1())) && 
-            (this->y != nullptr && (this->y == s->get_operand2()))) {
+            (this->y != nullptr && (this->y == s->get_operand2()))) 
+            ||
+            ((this->debug_num < 0) && (this->constVal != nullptr && (this->constVal == s->get_constVal())))
+            ) {
             return true;
         }
         return false;

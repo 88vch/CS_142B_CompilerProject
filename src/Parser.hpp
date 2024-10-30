@@ -315,9 +315,14 @@ public:
                     #ifdef DEBUG
                         std::cout << "instr(" << instr->toString() << ") exists already: " << tmp->toString() << std::endl;
                     #endif
-                    // [10.23.2024]: CAN WE DO THIS???
-                    delete instr;
-                    instr = tmp;
+                    if (instr->compare(tmp) == false) {
+                        #ifdef DEBUG
+                            std::cout << "deleting instr!" << std::endl;
+                        #endif
+                        // [10.23.2024]: CAN WE DO THIS???
+                        delete instr;
+                        instr = tmp;
+                    }
                 }
             } else {
                 #ifdef DEBUG

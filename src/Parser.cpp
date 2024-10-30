@@ -309,6 +309,7 @@ SSA* Parser::p_assignment() {
 }
 
 SSA* Parser::p2_assignment() {
+    bool overwrite = false;
     #ifdef DEBUG
         std::cout << "[Parser::p2_assignment(" << this->sym.to_string() << ")]" << std::endl;
     #endif
@@ -318,80 +319,64 @@ SSA* Parser::p2_assignment() {
     // IDENT: not checking for a specific since this is a [variable]
     int ident = SymbolTable::identifiers.at(this->sym.get_value()); // unused for now
 
+    // [10.29.2024]: todo - update [this->varDeclarations] to only include BB's? (and inherit from parent)?
     // - validate that [variable] has been declared
+    // - emit warning but continue nevertheless
     if (this->varDeclarations.find(ident) == this->varDeclarations.end()) {
         // [Assumption]: we don't require variables, x, to be declared (i.e. `let x;`) before they are defined, we'll emit a warning encouraging that tho
         std::cout << "Warning: var [" << this->sym.to_string() << "] hasn't been declared!" << std::endl;
         // exit(EXIT_FAILURE);
 
-    } else {
-        // [10/02/2024]: Check if it's already defined before (if so then we need a new BB!)
-        // if (this->VVs.find(ident) != this->VVs.end()) {
-        if (this->currBB->varVals.find(ident) != this->currBB->varVals.end()) {
-            #ifdef DEBUG
-                std::cout << "ident exists with a definition: ident=" << ident << ", val=" << this->ssa_table.at(this->currBB->varVals.at(ident))->toString() << std::endl;
-            #endif
+    }
 
-            // [10/14/2024]: Since we're overwriting a pre-existing value, we should use a new BB (?)
-            // - is this valid?
-            // this->currBB->instrList = this->instrList; // [10/14/2024]: Get the updated [instrList] up to this point
-            
-            #ifdef DEBUG
-                std::cout << "printing instrList first" << std::endl;
-            #endif
-            this->printInstrList();
-            
-            // [10.22.2024]: If we assume [this->currBB] already has updated [instrList], we shouldn't need this here
-            // this->currBB->setInstructionList(this->instrList);
-        
-            // #ifdef DEBUG
-            //     std::cout << "done setting InstrList for curr BB" << std::endl;
-            // #endif
+    // [10/02/2024]: Check if it's already defined before (if so then we need a new BB!)
+    // if (this->VVs.find(ident) != this->VVs.end()) {
+    if (this->currBB->varVals.find(ident) != this->currBB->varVals.end()) {
+        #ifdef DEBUG
+            std::cout << "ident exists with a definition: ident=" << ident << ", val=" << this->ssa_table.at(this->currBB->varVals.at(ident))->toString() << std::endl;
+            std::cout << "printing instrList first" << std::endl;
+        #endif
+        this->printInstrList();
 
-            #ifdef DEBUG
-                std::cout << "done printing InstrList; About to create child BB!" << std::endl;
-                std::cout << "[this->currBB] looks like: ";
-                if (this->currBB) {
-                    std::cout << this->currBB->toString() << std::endl;
-                } else {
-                    std::cout << "nullptr!" << std::endl;
-                }
-            #endif
-
-            if (this->currBB->child == nullptr) {
-                this->currBB->child = new BasicBlock(this->currBB->varVals);
-                this->currBB->child->parent = this->currBB;
-                #ifdef DEBUG
-                    std::cout << "created new BB (new assignment)" << std::endl;
-                #endif
-            } else if (this->currBB->child2 == nullptr) {
-                this->currBB->child2 = new BasicBlock(this->currBB->varVals);
-                this->currBB->child2->parent = this->currBB;
-                #ifdef DEBUG
-                    std::cout << "created new BB (new assignment)" << std::endl;
-                #endif
+        #ifdef DEBUG
+            std::cout << "About to create child BB, [this->currBB] looks like: \n\t";
+            if (this->currBB) {
+                std::cout << this->currBB->toString() << std::endl;
             } else {
-                #ifdef DEBUG
-                    std::cout << "child bb exissts: " << this->currBB->child->toString() << ", " << this->currBB->child2->toString() << std::endl;
-                #endif
+                std::cout << "nullptr!" << std::endl;
             }
+        #endif
 
-            // #ifdef DEBUG
-            //     std::cout << "created new BB with instrList: " << std::endl << "\t";
-            //     this->currBB->printInstrList();
-            // #endif
+        // [10.29.2024]: suppose we only use [bb->child] for new assignment bb's 
+        // - save [bb->child2] for if-else, && while-loops?
+        if (this->currBB->child == nullptr) {
+            this->currBB->child = new BasicBlock(this->currBB->varVals);
+            this->currBB->child->parent = this->currBB;
 
-            // [10.21.2024]: Old modifications
-            // this->parentBB = this->currBB;
-            // this->currBB = new BasicBlock();
-            // #ifdef DEBUG
-            //     std::cout << "created new BB with instrList: " << std::endl << "\t";
-            //     this->currBB->printInstrList();
-            // #endif
+            this->currBB = this->currBB->child;
+            #ifdef DEBUG
+                std::cout << "created new BB (new assignment)" << std::endl;
+            #endif
+        } else {
+            BasicBlock *prevChild = this->currBB->child;
 
-            // this->parentBB->child = this->currBB;
-            // this->currBB->parent = this->parentBB;
+            this->currBB->child = new BasicBlock(this->currBB->varVals);
+            this->currBB->child->parent = this->currBB;
+            this->currBB->child->child = prevChild;
+
+            prevChild->varVals = this->currBB->varVals;
+            prevChild->parent = this->currBB->child;
+
+            this->currBB = this->currBB->child;
+            #ifdef DEBUG
+                std::cout << "child bb's exissts: " << this->currBB->child->toString() << std::endl;
+            #endif
         }
+
+        overwrite = true;  // 10.29.2024: if this assignment would overwrite a previous varVal mapping
+        #ifdef DEBUG
+            std::cout << "overwrite=true; current BB: " << this->currBB->toString() << std::endl;
+        #endif
     }
     next();
 
@@ -400,33 +385,52 @@ SSA* Parser::p2_assignment() {
 
     // EXPRESSION; [10.24.2024]: Slightly refactored...
     SSA *value = p_expr();
-    value = this->addSSA1(value->get_operator(), value->get_operand1(), value->get_operand2(), true);
+    #ifdef DEBUG
+        std::cout << "[Parser::p_expr()] returned: " << value->toString() << std::endl;
+        std::cout << "current BB: " << this->currBB->toString() << std::endl;
+    #endif
+    // [10.29.2024]: Maybe we don't need to add into SSA here?
+    if (!value->get_constVal()) {
+        value = this->addSSA1(value->get_operator(), value->get_operand1(), value->get_operand2(), true);
+    }
     
     int table_int = this->add_SSA_table(value);
     
-    BasicBlock *blk = (this->currBB->child2) ? this->currBB->child2 : this->currBB->child; // 10.28.2024: theres a reason to check child2 first (i think phi or smtn)
-    // this->VVs = blk->varVals;
+    // 10.29.2024: if this assignment would overwrite a previous varVal mapping
+    if (overwrite && this->currBB->child){ // [overwrite==true] should indicate we have a child bb right?
+        // then lets use the new child bb we created
+        // BasicBlock *blk = this->currBB->child;
+        
+        // 10.28.2024: theres a reason to check child2 first (i think phi or smtn)
+        // 10.29.2024: idk using [child] for now...
+        // this->VVs = blk->varVals;
     
-    #ifdef DEBUG
-        std::cout << "done p2_assignment value [p_expr()] returned: " << value->toString() << std::endl;
-        if (blk) {
-            std::cout << "using blk: " << blk->toString() << std::endl;
-        } else {
-            std::cout << "blk: nullptr!" << std::endl;
-        }
-    #endif
+        #ifdef DEBUG
+            std::cout << "done p2_assignment value [p_expr()] returned: " << value->toString() << std::endl;
+            // if (blk) {
+            //     std::cout << "using blk: " << blk->toString() << std::endl;
+            // } else {
+            //     std::cout << "blk: nullptr!" << std::endl;
+            // }
+        #endif
 
-    if (blk->varVals.find(ident) != blk->varVals.end()) {
-        BasicBlock *parent = this->currBB;
-        this->currBB = blk; // [10.24.2024]: So that [this->addSSA()] will add SSA-instr into proper BasicBlock
+        // if (blk->varVals.find(ident) != blk->varVals.end()) {
+        BasicBlock *parent = this->currBB->parent;
+        // this->currBB = blk; // [10.24.2024]: So that [this->addSSA()] will add SSA-instr into proper BasicBlock
+        this->currBB = this->currBB->child; // [10.29.2024]: to follow the loop (IFF ONE EXISTS!)
 
         // this will add to currBB's [newInstrs]
-        SSA *phi_instr = this->addSSA1(6, this->ssa_table.at(blk->varVals.at(ident)), this->ssa_table.at(table_int), true);
+        SSA *phi_instr = this->addSSA1(6, this->ssa_table.at(this->currBB->varVals.at(ident)), this->ssa_table.at(table_int), true);
         
         // [10.28.2024]: Update BasicBlock's VV
         int phi_table_int = this->add_SSA_table(phi_instr);
-        int old_ident_val = blk->varVals.at(ident);
+        int old_ident_val = this->currBB->varVals.at(ident);
         this->currBB->varVals.insert_or_assign(ident, phi_table_int);
+        
+        #ifdef DEBUG
+            std::cout << "this->currBB looks like: " << this->currBB->toString() << std::endl;
+        #endif
+        
         this->currBB = parent;
 
         // [10.28.2024]: TODO - propagate update down to while-body BB
@@ -435,8 +439,14 @@ SSA* Parser::p2_assignment() {
         #ifdef DEBUG
             std::cout << "new phi-SSA: " << phi_instr->toString() << std::endl;
         #endif
+        // } else {
+        //     blk->varVals.insert_or_assign(ident, table_int); 
+        // }
     } else {
-        blk->varVals.insert_or_assign(ident, table_int); 
+        #ifdef DEBUG
+            std::cout << "not overwriting a ident, inserting in currBB" << std::endl;
+        #endif
+        this->currBB->varVals.insert_or_assign(ident, table_int);
     }
 
     this->printVVs();
