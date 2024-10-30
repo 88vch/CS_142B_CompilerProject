@@ -358,6 +358,7 @@ SSA* Parser::p2_assignment() {
                 std::cout << "created new BB (new assignment)" << std::endl;
             #endif
         } else {
+            // [10.29.2024]: THIS IS [PREVCHILD]; (from a while-loop [i think]), (or join-blk for if?)
             BasicBlock *prevChild = this->currBB->child;
 
             this->currBB->child = new BasicBlock(this->currBB->varVals);
@@ -396,8 +397,9 @@ SSA* Parser::p2_assignment() {
     
     int table_int = this->add_SSA_table(value);
     
-    // 10.29.2024: if this assignment would overwrite a previous varVal mapping
-    if (overwrite && this->currBB->child){ // [overwrite==true] should indicate we have a child bb right?
+    // [10.29.2024]: if this assignment would overwrite a previous varVal mapping
+    // - if we have a childBB indicates we have a [PREVCHILD] see above
+    if (overwrite && this->currBB->child){ 
         // then lets use the new child bb we created
         // BasicBlock *blk = this->currBB->child;
         
