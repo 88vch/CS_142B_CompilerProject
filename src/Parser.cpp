@@ -1253,6 +1253,7 @@ SSA* Parser::p_term() { // Check For `*` && `/`
         next();
         SSA *y = p_factor();
         x = BuildIR(op, x, y); // ToDo: Create IR Block
+        x = this->addSSA1(x, true);
         std::cout << "in while loop" << std::endl;
     }
     // [08/02/2024]: Segmentation Fault here (both CheckFor()'s should return false, DEBUG stmt should print (currently doesn't!))

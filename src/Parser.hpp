@@ -474,7 +474,7 @@ public:
         lst += "[const]: \n\t" + this->BB0->constList->listToString();
         
         for (unsigned int i = 1; i < SymbolTable::operator_table.size() - 1; i++) {
-            lst += "[" + SymbolTable::operator_table_reversed.at(i) + "]: \n\t" + this->instrList.at(i)->listToString();
+            lst += "[" + SymbolTable::operator_table_reversed.at(i) + "]: \n" + this->instrList.at(i)->listToString();
         }
         return lst;
     }

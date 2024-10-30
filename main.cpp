@@ -18,11 +18,13 @@
 
 // class SymbolTable; // forward declaration (?)
 
-std::string f_ext = ".ty";
-std::string f_name = "nested_if_while";
+// #define file_name "simple_instrs"
+
+// std::string f_ext = ".ty";
+// std::string f_name = file_name;
 // std::string f_full = f_name + f_ext;
-std::string in_f = "tst/" + f_name + f_ext;
-#define in_f "tst/simple_instrs.ty"
+// std::string in_f = "tst/" + f_name + f_ext;
+#define in_f "tst/simple_nested_if_while.ty"
 
 // [10.23.2024]: Silly rabbit
 
