@@ -437,11 +437,11 @@ public:
     }
 
     void printVVs() { // print varVals
-        std::unordered_map<std::string, SSA *> res = this->getVarVal();
+        std::unordered_map<int, int> res = this->currBB->varVals;
         
         std::cout << "printing [this->varVals(size=" << res.size() << ")]:" << std::endl;
         for (const auto &p : res) {
-            std::cout << "[" << p.first << "], [" << p.second->toString() << "]" << std::endl;
+            std::cout << "[" << SymbolTable::symbol_table.at(p.first) << "], [" << this->ssa_table.at(p.second)->toString() << "]" << std::endl;
         }
     }
 

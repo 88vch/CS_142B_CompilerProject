@@ -353,26 +353,55 @@ SSA* Parser::p2_assignment() {
             this->currBB->child = new BasicBlock(this->currBB->varVals);
             this->currBB->child->parent = this->currBB;
 
-            this->currBB = this->currBB->child;
             #ifdef DEBUG
                 std::cout << "created new BB (new assignment)" << std::endl;
             #endif
+
+            // 10.30.2024: for join
+            if (this->currBB->child2) {
+                this->currBB->child->child2 = this->currBB->child2;
+                this->currBB->child2 = nullptr;
+            }
         } else {
             // [10.29.2024]: THIS IS [PREVCHILD]; (from a while-loop [i think]), (or join-blk for if?)
-            BasicBlock *prevChild = this->currBB->child;
+            BasicBlock *prevChild2 = (this->currBB->child2) ? this->currBB->child2 : nullptr;
+            BasicBlock *curr = this->currBB, *oldCurr = this->currBB;
 
-            this->currBB->child = new BasicBlock(this->currBB->varVals);
-            this->currBB->child->parent = this->currBB;
-            this->currBB->child->child = prevChild;
+            while (((curr->child) && (oldCurr->compare(curr->child) == false)) &&
+                   ((curr->child->child2) && (prevChild2->compare(curr->child->child2) == false))) {
+                curr = curr->child;
+            }
 
-            prevChild->varVals = this->currBB->varVals;
-            prevChild->parent = this->currBB->child;
+            // 10.30.2024: while-loop confirmed(?)
+            if ((curr->child && (oldCurr->compare(curr->child))) && (curr->child->child2 && (prevChild2->compare(curr->child->child2)))) {
+                BasicBlock *pnt = curr->child;
+                
+                curr->child = new BasicBlock(oldCurr->varVals);
+                curr->child->parent = curr;
+                curr->child->child = pnt;
+                curr->child->child2 = prevChild2;
+                
+                prevChild2->parent = curr->child;
+                prevChild2->varVals = curr->child->varVals;
+            }
 
-            this->currBB = this->currBB->child;
+
+            // this->currBB->child = new BasicBlock(this->currBB->varVals);
+            // this->currBB->child->parent = this->currBB;
+            // this->currBB->child->child = prevChild;
+
+            // prevChild->varVals = this->currBB->varVals;
+            // prevChild->parent = this->currBB->child;
+
             #ifdef DEBUG
                 std::cout << "child bb's exissts: " << this->currBB->child->toString() << std::endl;
             #endif
         }
+
+        if (this->currBB->child2) {
+            
+        }
+        this->currBB = this->currBB->child;
 
         overwrite = true;  // 10.29.2024: if this assignment would overwrite a previous varVal mapping
         #ifdef DEBUG
@@ -399,7 +428,7 @@ SSA* Parser::p2_assignment() {
     
     // [10.29.2024]: if this assignment would overwrite a previous varVal mapping
     // - if we have a childBB indicates we have a [PREVCHILD] see above
-    if (overwrite && this->currBB->child){ 
+    if (overwrite && this->currBB->child2){ 
         // then lets use the new child bb we created
         // BasicBlock *blk = this->currBB->child;
         
@@ -409,6 +438,7 @@ SSA* Parser::p2_assignment() {
     
         #ifdef DEBUG
             std::cout << "done p2_assignment value [p_expr()] returned: " << value->toString() << std::endl;
+            std::cout << "about to write new phi-instr into child2" << std::endl;
             // if (blk) {
             //     std::cout << "using blk: " << blk->toString() << std::endl;
             // } else {
@@ -416,10 +446,36 @@ SSA* Parser::p2_assignment() {
             // }
         #endif
 
+        // [10.28.2024]: TODO - propagate update down to while-body BB
+        // this->propagateUpdate(old_ident_val, phi_table_int);
+        // [10.30.2024]: Propagate down from here?
+        // this->propagateDown();
+        // inline void propagateDown() {    
+        //     BasicBlock *propStart = this->currBB;
+        //      // loop while we still have children (if-join shouldn't have children), (while-cmp should bring back to [propStart])
+        //     while ((this->currBB->child) || (propStart->compare(this->currBB))) {
+        //         this->currBB = this->currBB->child;
+        //     }
+        //     this->currBB = propStart;
+        // }
+
+
+
+        // [10.30.2024]: PHI-instr
         // if (blk->varVals.find(ident) != blk->varVals.end()) {
         BasicBlock *parent = this->currBB->parent;
         // this->currBB = blk; // [10.24.2024]: So that [this->addSSA()] will add SSA-instr into proper BasicBlock
-        this->currBB = this->currBB->child; // [10.29.2024]: to follow the loop (IFF ONE EXISTS!)
+        if (this->currBB->child2) {
+            this->currBB = this->currBB->child2; // [10.29.2024]: to follow the loop (IFF ONE EXISTS!)
+            #ifdef DEBUG    
+                std::cout << "got child2! " << std::endl << this->currBB->toString() << std::endl;
+            #endif
+        } else {
+            #ifdef DEBUG
+                std::cout << "no child2 exists in currBB! printing currBB: " << std::endl << this->currBB->toString() << std::endl;
+                exit(EXIT_FAILURE);
+            #endif
+        }
 
         // this will add to currBB's [newInstrs]
         SSA *phi_instr = this->addSSA1(6, this->ssa_table.at(this->currBB->varVals.at(ident)), this->ssa_table.at(table_int), true);
@@ -434,9 +490,6 @@ SSA* Parser::p2_assignment() {
         #endif
         
         this->currBB = parent;
-
-        // [10.28.2024]: TODO - propagate update down to while-body BB
-        // this->propagateUpdate(old_ident_val, phi_table_int);
 
         #ifdef DEBUG
             std::cout << "new phi-SSA: " << phi_instr->toString() << std::endl;
@@ -626,7 +679,7 @@ SSA* Parser::p2_funcCall() {
         if (f.name == "InputNum") {
             this->CheckFor_udf_optional_paren();
 
-            res = this->addSSA1(23, nullptr, nullptr, true);
+            res = this->addSSA1(23, nullptr, nullptr, false); // don't check, just add new SSA's each time for [read]
             
             #ifdef DEBUG
                 std::cout << "\tend of [InputNum()] got res: " << res->toString() << std::endl;
@@ -849,7 +902,7 @@ SSA* Parser::p2_ifStatement() {
         std::cout << "created new BB (join)" << std::endl;
     #endif
     join_blk->parent = then_blk;
-    then_blk->child = join_blk;
+    then_blk->child2 = join_blk;
 
     SSA *if1 = p2_statSeq(); // returns the 1st SSA instruction 
     // [10.28.2024]: Guess we don't rlly need to jmp to this since its directly after the cmp
@@ -915,6 +968,8 @@ SSA* Parser::p2_ifStatement() {
 
     if_parent->child2 = else_blk;
     else_blk->parent = if_parent;
+    else_blk->child2 = join_blk;
+    join_blk->parent2 = else_blk;
     this->currBB = else_blk; // [10/14/2024]: again, similar to above we assume [p2_statSeq()] manipulates [this->currBB]
 
     // [10/10/2024]: These instructions should start the else-BasicBlock right?
@@ -1034,12 +1089,12 @@ SSA* Parser::p2_whileStatement() {
     
     parent_blk->child = while_blk;
     while_blk->parent = parent_blk;
-    while_blk->child = parent_blk; // [10/14/2024]: Circular...should we do this?
+    while_blk->child2 = parent_blk; // [10/30/2024]: changed to child2
     this->currBB = while_blk;
     // this->currBB = this->currBB->child; // [10.21.2024]: same as right above
     // END
 
-    // [10.24.2024]: Moved
+    // [10.24.2024]: Moved; 10.30.2024: this is essentially the join-blk
     BasicBlock *afterWhile_blk = new BasicBlock(this->currBB->varVals);
     afterWhile_blk->parent = parent_blk;
     parent_blk->child2 = afterWhile_blk;

@@ -154,7 +154,7 @@ public:
             res += "none!";
         }
 
-        res += "\nvarVals: ";
+        res += "\nvarVals ((string) SymbolTable::symbol_table.at(key), (SSA *) Parser::ssa_table.at(value)): ";
         if (!this->varVals.empty()) {
             for (const auto &pair : this->varVals) {
                 res += "\n\tident: " + std::to_string(pair.first) + ", value: " + std::to_string(pair.second);
@@ -167,6 +167,10 @@ public:
     }
 
     std::string toDOT() const;
+
+    inline bool compare(BasicBlock *b) {
+        return (this->blockNum != b->blockNum); 
+    }
 
     BasicBlock *parent, *parent2;
     BasicBlock *child, *child2;
