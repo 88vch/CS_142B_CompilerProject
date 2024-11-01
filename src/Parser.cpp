@@ -312,6 +312,7 @@ SSA* Parser::p2_assignment() {
     bool overwrite = false;
     #ifdef DEBUG
         std::cout << "[Parser::p2_assignment(" << this->sym.to_string() << ")]" << std::endl;
+        std::cout << "\t[this->currBB] looks like: \n\t" << this->currBB->toString() << std::endl;
     #endif
     // LET(TUCE GO)
     this->CheckFor(Result(2, 6)); // check for `let`
@@ -373,7 +374,11 @@ SSA* Parser::p2_assignment() {
             }
 
             // 10.30.2024: while-loop confirmed(?)
-            if ((curr->child && (oldCurr->compare(curr->child))) && (curr->child->child2 && (prevChild2->compare(curr->child->child2)))) {
+            if ((curr->child && (oldCurr->compare(curr->child))) && 
+                (curr->child->child2 && (prevChild2->compare(curr->child->child2))) && 
+                (curr->child->findSSA(this->ssa_table.at(this->currBB->varVals.at(ident))))) {
+                // if we're in a while loop & can't find the current [ident]'s SSA-instr in this BB
+                // - then we don't need to create a child BB and can just use the created one from the while-loop
                 BasicBlock *pnt = curr->child;
                 
                 curr->child = new BasicBlock(oldCurr->varVals);
@@ -463,12 +468,12 @@ SSA* Parser::p2_assignment() {
 
         // [10.30.2024]: PHI-instr
         // if (blk->varVals.find(ident) != blk->varVals.end()) {
-        BasicBlock *parent = this->currBB->parent;
+        BasicBlock *parent = this->currBB; // [11.01.2024]: changed from [this->currBB->parent] to [this->currBB] (circular loop)
         // this->currBB = blk; // [10.24.2024]: So that [this->addSSA()] will add SSA-instr into proper BasicBlock
         if (this->currBB->child2) {
             this->currBB = this->currBB->child2; // [10.29.2024]: to follow the loop (IFF ONE EXISTS!)
             #ifdef DEBUG    
-                std::cout << "got child2! " << std::endl << this->currBB->toString() << std::endl;
+                std::cout << "got child2! looks like: \n\t" << this->currBB->toString() << std::endl;
             #endif
         } else {
             #ifdef DEBUG
@@ -493,6 +498,7 @@ SSA* Parser::p2_assignment() {
 
         #ifdef DEBUG
             std::cout << "new phi-SSA: " << phi_instr->toString() << std::endl;
+            std::cout << "current BB (og parent): " << this->currBB->toString() << std::endl;
         #endif
         // } else {
         //     blk->varVals.insert_or_assign(ident, table_int); 
@@ -508,6 +514,7 @@ SSA* Parser::p2_assignment() {
     
     #ifdef DEBUG
         std::cout << "[Parser::p2_assignment()]: returning " << value->toString() << std::endl;
+        std::cout << "current BB: " << this->currBB->toString() << std::endl;
     #endif
 
     // [10/01/2024]: Don't we need to assign [this->VVs] to this->currBB first?
@@ -1090,7 +1097,7 @@ SSA* Parser::p2_whileStatement() {
     parent_blk->child = while_blk;
     while_blk->parent = parent_blk;
     while_blk->child2 = parent_blk; // [10/30/2024]: changed to child2
-    this->currBB = while_blk;
+    // this->currBB = while_blk;
     // this->currBB = this->currBB->child; // [10.21.2024]: same as right above
     // END
 

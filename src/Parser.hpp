@@ -395,8 +395,14 @@ public:
                         std::cout << "currBB looks like: nullptr!" << std::endl;
                     }
                 #endif
-                // [10.23.2024]: [LinkedList::InsertAtTail()] returns [Node*]
-                this->currBB->newInstrs.push_back(this->instrList.at(instr->get_operator())->InsertAtTail(instr));
+                if (instr->get_operator() == 6) {
+                    // [11.01.2024]: phi instructions go ontop of [this->newInstrs]
+                    // - insert into initial position
+                    this->currBB->newInstrs.insert(this->currBB->newInstrs.begin(), this->instrList.at(instr->get_operator())->InsertAtTail(instr));
+                } else {
+                    // [10.23.2024]: [LinkedList::InsertAtTail()] returns [Node*]
+                    this->currBB->newInstrs.push_back(this->instrList.at(instr->get_operator())->InsertAtTail(instr));
+                }
                 #ifdef DEBUG
                     std::cout << "done pushing into [currBB]'s [newInstrs]" << std::endl;
                 #endif

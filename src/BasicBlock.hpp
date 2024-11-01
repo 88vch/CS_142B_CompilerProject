@@ -32,9 +32,6 @@ public:
         #ifdef DEBUG
             std::cout << "in ~BasicBlock()" << std::endl;
         #endif
-        // #ifdef DEBUG
-        //     std::cout << "in ~BasicBlock(this->instrList.size=" << this->instrList.size() << ")" << std::endl;
-        // #endif
 
         if (this->constList) {
             delete this->constList;
@@ -57,25 +54,6 @@ public:
         //     delete instr;
         // }
     }
-
-    // [10/01/2024]: We don't actually need to do this bc we can do smtn else instead
-    // - [Parser::this->addSSA()] already adds the SSA instr to the LinkedList, 
-    // - right before we create a new [BasicBlock] each time, we should ONLY THEN assign the [Parser::SSA_LL] to [this->instrList]!!!
-    // void insertInstr(SSA *instr) {
-    //     this->instrList.at(instr->get_operator())->InsertAtTail(instr);
-    // }
-
-    // void printInstrList() const {
-    //     std::cout << "[instrA]:\n\tinstrA1, instrA2, instrA3, ..." << std::endl;
-    //     for (unsigned int i = 1; i < SymbolTable::operator_table.size(); i++) {
-    //         std::cout << "[" << SymbolTable::operator_table_reversed.at(i) << "]: " << std::endl << "\t";
-    //         if (this->instrList.find(i) != this->instrList.end()) {
-    //             this->instrList.at(i)->printList();
-    //         } else {
-    //             std::cout << std::endl;
-    //         }
-    //     } 
-    // }
 
     // [10/14/2024]: BLEHHHH; ugh do we need to do this?
     // void setInstructionList(std::unordered_map<int, LinkedList*> curr_instr_lst) {
@@ -170,6 +148,15 @@ public:
 
     inline bool compare(BasicBlock *b) {
         return (this->blockNum != b->blockNum); 
+    }
+
+    inline bool findSSA(SSA *s) {
+        for (const auto &n : this->newInstrs) {
+            if (s->compare(n->instr)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     BasicBlock *parent, *parent2;
