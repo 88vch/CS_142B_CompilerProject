@@ -709,7 +709,7 @@ private:
         }
 
         #ifdef DEBUG
-            std::cout << "\tmodified [this->sym] to: " << this->sym.to_string_literal() << ", this->s_index=" << this->s_index << std::endl;
+            std::cout << "\tmodified [this->sym] to: " << this->sym.to_string_literal() << "[" << this->sym.to_string() << "], this->s_index=" << this->s_index << std::endl;
         #endif
     }
 

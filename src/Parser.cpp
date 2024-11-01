@@ -1083,6 +1083,9 @@ SSA* Parser::p2_whileStatement() {
     // WHILE
     this->CheckFor(Result(2, 22)); // check `while`; Note: we only do this as a best practice and to consume the `while` token
     SSA *jmp_instr = p_relation(); // WHILE: relation
+    #ifdef DEBUG
+        std::cout << "\t[p_relation()] got: " << jmp_instr->toString() << std::endl;
+    #endif
 
     // DO
     this->CheckFor(Result(2, 23)); // check `do`
@@ -1338,45 +1341,16 @@ SSA* Parser::p_factor() {
         SSA *tmp = new SSA(0, this->sym.get_value_literal());
         res = this->addSSA1(tmp, true);
 
-        // [10.23.2024]: Shouldn't need this if we handle deletion in [this->addSSA1()]
-        // if (res != tmp) {
-        //     delete tmp;
-        //     tmp = nullptr;
-
-        //     #ifdef DEBUG
-        //         std::cout << "\t[const] val EXISTS in [this->instrList], using pre-existing-SSA instruction: [" << res->toString() << "]" << std::endl;
-        //     #endif
-        // } else {
-        //     #ifdef DEBUG
-        //         std::cout << "\t[const] val dne in [this->instrList], created new-SSA instruction: [" << res->toString() << "]" << std::endl;
-        //     #endif
-        // }
-
         // [10.23.2024]: it'll get handled, & either way we won't need tmp anymore so assigning it to [nullptr] is fine here
         tmp = nullptr; 
-        
-        // [07/26/2024]: return the SSA for the const value
-        // 1) check if value already exists as a const SSA
-        // 2) if exists, use and return; else, create and return new-SSA const
-        // res = this->CheckConstExistence(this->sym.get_value_literal());
-
-        // if (res == nullptr) { // if dne, create and return new-SSA const
-        //     // int val = this->sym.get_value_literal();
-        //     #ifdef DEBUG
-        //         std::cout << "\t[Parser::p_factor()] created new [tmp] SSA const instr" << std::endl;
-        //     #endif
-        //     res = new SSA(0, this->sym.get_value_literal());
-        //     // this->SSA_instrs.push_back(res);
-        //     this->addSSA(res);
-        //     #ifdef DEBUG
-        //         std::cout << "\t[const] val dne in [this->instrList], created new-SSA instruction: [" << res->toString() << "]" << std::endl;
-        //     #endif
-        // }
         next(); // [08/05/2024]: we can consume the [const-val]?
     } else if (this->sym.get_kind_literal() == 1) { // check [ident]
         // if (this->varVals.find(this->sym.get_value()) == this->varVals.end()) {
         if (this->currBB->varVals.find(this->sym.get_value_literal()) == this->currBB->varVals.end()) {
             std::cout << "Error: p_factor(ident) expected a defined variable (in [varVals]), got: [" << this->sym.to_string() << "]! exiting prematurely..." << std::endl;
+            #ifdef DEBUG
+                std::cout << "this->currBB: \n\t" << this->currBB->toString() << std::endl;
+            #endif
             exit(EXIT_FAILURE);
         }
         res = this->ssa_table.at(this->currBB->varVals.at(this->sym.get_value_literal()));
