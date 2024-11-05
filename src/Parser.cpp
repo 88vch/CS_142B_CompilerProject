@@ -429,7 +429,7 @@ SSA* Parser::p2_assignment() {
     if (!value->get_constVal()) {
         value = this->addSSA1(value->get_operator(), value->get_operand1(), value->get_operand2(), true);
     }
-    
+    // 11.04.2024 = dummy coommit
     int table_int = this->add_SSA_table(value);
     
     // [10.29.2024]: if this assignment would overwrite a previous varVal mapping
