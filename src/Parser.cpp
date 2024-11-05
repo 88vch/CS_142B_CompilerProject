@@ -287,7 +287,7 @@ SSA* Parser::p_assignment() {
         std::cout << "in [Parser::p_assignment]: key=" << SymbolTable::symbol_table.at(ident) << ", current varVal value="; 
         
         if (this->VVs.find(ident) != this->VVs.end()) {
-            std::cout << this->ssa_table.at(this->VVs.at(ident))->toString() << std::endl;
+            std::cout << BasicBlock::ssa_table.at(this->VVs.at(ident))->toString() << std::endl;
         } else {
             std::cout << "none!" << std::endl;
         }
@@ -332,9 +332,10 @@ SSA* Parser::p2_assignment() {
 
     // [10/02/2024]: Check if it's already defined before (if so then we need a new BB!)
     // if (this->VVs.find(ident) != this->VVs.end()) {
-    if (this->currBB->varVals.find(ident) != this->currBB->varVals.end()) {
+    if ((this->currBB->varVals.find(ident) != this->currBB->varVals.end()) && 
+        (this->currBB->findSSA(BasicBlock::ssa_table.at(this->currBB->varVals.at(ident))))) {
         #ifdef DEBUG
-            std::cout << "ident exists with a definition: ident=" << ident << ", val=" << this->ssa_table.at(this->currBB->varVals.at(ident))->toString() << std::endl;
+            std::cout << "ident exists with a definition (created in this BB): ident=" << ident << ", val=" << BasicBlock::ssa_table.at(this->currBB->varVals.at(ident))->toString() << std::endl;
             std::cout << "printing instrList first" << std::endl;
         #endif
         this->printInstrList();
@@ -376,7 +377,7 @@ SSA* Parser::p2_assignment() {
             // 10.30.2024: while-loop confirmed(?)
             if ((curr->child && (oldCurr->compare(curr->child))) && 
                 (curr->child->child2 && (prevChild2->compare(curr->child->child2))) && 
-                (curr->child->findSSA(this->ssa_table.at(this->currBB->varVals.at(ident))))) {
+                (curr->child->findSSA(BasicBlock::ssa_table.at(this->currBB->varVals.at(ident))))) {
                 // if we're in a while loop & can't find the current [ident]'s SSA-instr in this BB
                 // - then we don't need to create a child BB and can just use the created one from the while-loop
                 BasicBlock *pnt = curr->child;
@@ -483,7 +484,7 @@ SSA* Parser::p2_assignment() {
         }
 
         // this will add to currBB's [newInstrs]
-        SSA *phi_instr = this->addSSA1(6, this->ssa_table.at(this->currBB->varVals.at(ident)), this->ssa_table.at(table_int), true);
+        SSA *phi_instr = this->addSSA1(6, BasicBlock::ssa_table.at(this->currBB->varVals.at(ident)), BasicBlock::ssa_table.at(table_int), true);
         
         // [10.28.2024]: Update BasicBlock's VV
         int phi_table_int = this->add_SSA_table(phi_instr);
@@ -585,14 +586,14 @@ SSA* Parser::p_funcCall() {
                 // res = this->varVals.at(num);
                 // std::cout << res->toString() << std::endl;
                 
-                // SSA *tmp = new SSA(24, this->ssa_table.at(this->VVs.at(num)));
-                res = this->addSSA1(24, this->ssa_table.at(this->currBB->varVals.at(num)), nullptr, true);
+                // SSA *tmp = new SSA(24, BasicBlock::ssa_table.at(this->VVs.at(num)));
+                res = this->addSSA1(24, BasicBlock::ssa_table.at(this->currBB->varVals.at(num)), nullptr, true);
                 // if (res != tmp) {
                 //     delete tmp;
                 //     tmp = nullptr;
                 // }
                 
-                // res = this->CheckExistence(24, this->ssa_table.at(this->VVs.at(num)), nullptr);
+                // res = this->CheckExistence(24, BasicBlock::ssa_table.at(this->VVs.at(num)), nullptr);
                 // if (!res) {
                 //     res = this->addSSA(new SSA(24, this->VVs.at(num)));
                 // }
@@ -712,7 +713,7 @@ SSA* Parser::p2_funcCall() {
                 this->printVVs();
             #endif
             if (this->currBB->varVals.find(num) != this->currBB->varVals.end()) {
-                res = this->addSSA1(24, this->ssa_table.at(this->currBB->varVals.at(num)), nullptr, true);
+                res = this->addSSA1(24, BasicBlock::ssa_table.at(this->currBB->varVals.at(num)), nullptr, true);
             } else {
                 try {
                     // [10/09/2024]: Can't modify constVal SSA call
@@ -1353,7 +1354,7 @@ SSA* Parser::p_factor() {
             #endif
             exit(EXIT_FAILURE);
         }
-        res = this->ssa_table.at(this->currBB->varVals.at(this->sym.get_value_literal()));
+        res = BasicBlock::ssa_table.at(this->currBB->varVals.at(this->sym.get_value_literal()));
         next(); // [08/08/2024]: must consume the [ident]?
     } else if (this->CheckFor(Result(2, 13), true)) { // check [`(` expression `)`]
         next(); // consume `(`

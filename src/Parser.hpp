@@ -380,7 +380,7 @@ public:
                     std::cout << "done pushing into [currBB]'s [newInstrs]" << std::endl;
                 #endif
             } else {
-                this->BB0->constList->InsertAtTail(instr);
+                instr = this->BB0->constList->InsertAtTail(instr)->instr;
             }
         } else {
             #ifdef DEBUG
@@ -407,7 +407,7 @@ public:
                     std::cout << "done pushing into [currBB]'s [newInstrs]" << std::endl;
                 #endif
             } else {
-                this->instrList.at(instr->get_operator())->InsertAtTail(instr);
+                instr = this->instrList.at(instr->get_operator())->InsertAtTail(instr)->instr;
             }
         }
 
@@ -420,13 +420,13 @@ public:
         return instr;
     }
 
-    // [10/09/2024]: ToDo - should check if [SSA] already exists in [this->ssa_table] 
+    // [10/09/2024]: ToDo - should check if [SSA] already exists in [this->BasicBlock::ssa_table] 
     // - specifically for [this->VVs]
     inline int add_SSA_table(SSA *toAdd) {
-        ssa_table.insert(std::pair<int, SSA *>(ssa_table.size(), toAdd));
-        ssa_table_reversed.insert(std::pair<SSA *, int>(toAdd, ssa_table.size() - 1));
+        BasicBlock::ssa_table.insert(std::pair<int, SSA *>(BasicBlock::ssa_table.size(), toAdd));
+        BasicBlock::ssa_table_reversed.insert(std::pair<SSA *, int>(toAdd, BasicBlock::ssa_table.size() - 1));
 
-        return ssa_table.size() - 1; // [09/30/2024]: return the int that is associated with SSA-instr
+        return BasicBlock::ssa_table.size() - 1; // [09/30/2024]: return the int that is associated with SSA-instr
     }
 
     inline std::vector<SSA*> getSSA() const { return this->SSA_instrs; }
@@ -436,7 +436,7 @@ public:
         std::unordered_map<std::string, SSA *> res = {};
 
         for (const auto pair : this->VVs) {
-            res.insert(std::pair<std::string, SSA *>(SymbolTable::symbol_table.at(pair.first), this->ssa_table.at(pair.second)));
+            res.insert(std::pair<std::string, SSA *>(SymbolTable::symbol_table.at(pair.first), BasicBlock::ssa_table.at(pair.second)));
         }
         
         return res; 
@@ -447,7 +447,7 @@ public:
         
         std::cout << "printing [this->varVals(size=" << res.size() << ")]:" << std::endl;
         for (const auto &p : res) {
-            std::cout << "[" << SymbolTable::symbol_table.at(p.first) << "], [" << this->ssa_table.at(p.second)->toString() << "]" << std::endl;
+            std::cout << "[" << SymbolTable::symbol_table.at(p.first) << "], [" << BasicBlock::ssa_table.at(p.second)->toString() << "]" << std::endl;
         }
     }
 
@@ -634,14 +634,11 @@ private:
     std::vector<Result> source;
     std::vector<SSA*> SSA_instrs; // [09/11/2024]: this is pretty much js for our testing/reference purposes now
     
-    // [09/30/2024]: Though this may be for a legitimate reason
-    std::unordered_map<int, SSA *> ssa_table = {}; // key=[value's in this->VVs] : value=SSA-corresponding to int-val
-    std::unordered_map<SSA *, int> ssa_table_reversed = {};
 
     // [09/02/2024]: Do we need to optimize this? (i.e. <int, int> that is a table lookup probably in [SymbolTable]? Nope! in [Parser])
     // - Note: we probably should
     // std::unordered_map<std::string, SSA*> varVals; 
-    std::unordered_map<int, int> VVs; // [key (int) = SymbolTable::symbol_table.at(key) (string)], [value (int) = Parser::ssa_table.at(value) (string)]
+    std::unordered_map<int, int> VVs; // [key (int) = SymbolTable::symbol_table.at(key) (string)], [value (int) = BasicBlock::ssa_table.at(value) (string)]
     size_t s_index, source_len;
 
     // [09/02/2024]: Does this need to include the `const` SSA's? I don't think it should bc the const instr's only belong to BB0 (special)

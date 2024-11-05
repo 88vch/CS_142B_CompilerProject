@@ -8,6 +8,8 @@
 #include "LinkedList.hpp"
 #include "Result.hpp"
 
+// #include "Parser.hpp" // circular import????Fa;lsdkfjals;kdfjal;sdkfj
+
 // Remark: the [SubTree]'s should become our [BasicBlock]'s (i.e. we shouldn't need BasicBlock.hpp)
 
 
@@ -132,10 +134,10 @@ public:
             res += "none!";
         }
 
-        res += "\nvarVals ((string) SymbolTable::symbol_table.at(key), (SSA *) Parser::ssa_table.at(value)): ";
+        res += "\nvarVals ((string) SymbolTable::symbol_table.at(key), (SSA *) BasicBlock::ssa_table.at(value)): ";
         if (!this->varVals.empty()) {
             for (const auto &pair : this->varVals) {
-                res += "\n\tident: " + std::to_string(pair.first) + ", value: " + std::to_string(pair.second);
+                res += "\n\tident: " + SymbolTable::symbol_table.at(pair.first) + ", value: " + BasicBlock::ssa_table.at(pair.second)->toString();
             }
         } else {
             res += "none!";
@@ -172,6 +174,11 @@ public:
 
     int blockNum;
     static int debugNum;
+
+    // [11.04.2024]: made public && moved to BB (from pParser)
+    // [09/30/2024]: Though this may be for a legitimate reason
+    static std::unordered_map<int, SSA *> ssa_table; // key=[value's in this->VVs] : value=SSA-corresponding to int-val
+    static std::unordered_map<SSA *, int> ssa_table_reversed;
 };
 
 #endif   
