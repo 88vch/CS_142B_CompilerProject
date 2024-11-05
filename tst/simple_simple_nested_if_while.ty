@@ -7,15 +7,6 @@ while x < 10 do
     let j <- 0;
     let x <- x + 1;
     let m <- k * 2;
-
-    if k > 5 then
-        let j <- j + 1;
-        let k <- 0;
-        let m <- 9;
-    else
-        let k <- k + 1;
-        let m <- m * 2;
-    fi;
 od;
 call OutputNum(x);
 call OutputNum(k);

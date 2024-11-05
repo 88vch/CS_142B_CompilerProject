@@ -694,9 +694,9 @@ private:
 
     // peek & consume char
     inline void next() {
-        #ifdef DEBUG
-            std::cout << "in [next(this->sym=" << this->sym.to_string_literal() << ", this->s_index=" << this->s_index << ")]" << std::endl;
-        #endif
+        // #ifdef DEBUG
+        //     std::cout << "in [next(this->sym=" << this->sym.to_string_literal() << ", this->s_index=" << this->s_index << ")]" << std::endl;
+        // #endif
 
 
         if (this->s_index < this->source_len) {
@@ -705,9 +705,9 @@ private:
             this->sym = Result(2, -1); // keyword: ["EOF": -1]
         }
 
-        #ifdef DEBUG
-            std::cout << "\tmodified [this->sym] to: " << this->sym.to_string_literal() << "[" << this->sym.to_string() << "], this->s_index=" << this->s_index << std::endl;
-        #endif
+        // #ifdef DEBUG
+        //     std::cout << "\tmodified [this->sym] to: " << this->sym.to_string_literal() << "[" << this->sym.to_string() << "], this->s_index=" << this->s_index << std::endl;
+        // #endif
     }
 
     // consumes [non-optional's]

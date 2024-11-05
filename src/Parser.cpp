@@ -869,15 +869,8 @@ SSA* Parser::p_ifStatement() {
 SSA* Parser::p2_ifStatement() {
     #ifdef DEBUG
         std::cout << "[Parser::p2_ifStatement(" << this->sym.to_string() << ")]" << std::endl;
+        std::cout << "\tcurrBB looks like: " << std::endl << this->currBB->toString() << std::endl;
     #endif
-    /*
-    [07/19/2024] Thought about this:
-    ii) we could create the SSA instr WITH the empty position,
-    then fill it once we see a corresponding `else`
-    - I think this might be better
-
-    Note: the curr instr list here DOMinates all 3 following blocks for [if-statement][then, else, && join]
-    */
     // IF
     this->CheckFor(Result(2, 18)); // check `if`; Note: we only do this as a best practice and to consume the `if` token
     SSA *jmp_instr = p_relation(); // IF: relation
@@ -885,40 +878,50 @@ SSA* Parser::p2_ifStatement() {
     // THEN
     this->CheckFor(Result(2, 19)); // check `then`
 
-    // [10.21.2024]: Store a temp version of [this->instrList] rn if need join later
-    // std::unordered_map<int, LinkedList*> tmpLst = this->copyInstrList();
-
     // [10/14/2024];
     BasicBlock *then_blk = new BasicBlock(this->currBB->varVals);
     #ifdef DEBUG
         std::cout << "created new BB (then)" << std::endl;
     #endif
-    // #ifdef DEBUG
-    //     std::cout << "created new BB with instrList: " << std::endl << "\t";
-    //     then_blk->printInstrList();
-    // #endif
 
     BasicBlock *if_parent = this->currBB;
-    then_blk->parent = if_parent;
+    BasicBlock *og_child = nullptr;
+    
+    bool hasChild = false;
+    if (if_parent->child2) {
+        #ifdef DEBUG    
+            std::cout << "if_parent has a previous child, looks like: " << std::endl << if_parent->child2->toString() << std::endl;
+        #endif
+        hasChild = true;
+        og_child = if_parent->child2;
+    }
+    
+    then_blk->parent = if_parent;    
     if_parent->child = then_blk;
     // if_parent = then_blk; // [10/14/2024]: Assume [p2_statSeq()] manipulates [this->currBB]
     this->currBB = this->currBB->child;
 
-    // [10.24.2024]: ?
-    BasicBlock *join_blk = new BasicBlock(this->currBB->varVals);
-    #ifdef DEBUG
-        std::cout << "created new BB (join)" << std::endl;
-    #endif
-    join_blk->parent = then_blk;
-    then_blk->child2 = join_blk;
+    BasicBlock *join_blk = nullptr;
+
+    // [11.04.2024]: new; note - [then_blk->child = (old) if_parent->child]
+    if (!hasChild) {
+        // [10.24.2024]: ?
+        join_blk = new BasicBlock(this->currBB->varVals);
+        #ifdef DEBUG
+            std::cout << "created new BB (join), looks like: " << std::endl << join_blk->toString() << std::endl;
+        #endif
+        then_blk->child2 = join_blk;
+        join_blk->parent = then_blk;
+    } else {
+        #ifdef DEBUG
+            std::cout << "using existing child (4join): " << std::endl << og_child->toString() << std::endl;
+        #endif
+        then_blk->child2 = og_child;
+        og_child->parent = then_blk;
+    }
 
     SSA *if1 = p2_statSeq(); // returns the 1st SSA instruction 
     // [10.28.2024]: Guess we don't rlly need to jmp to this since its directly after the cmp
-
-    // [Optional] ELSE
-    // if (this->CheckFor(Result(2, 20), true)) { // check `else`
-    //    moved below。。。
-    // } else {
 
     if (!this->CheckFor(Result(2, 20), true)) { // if no-else statement
     // 【09/23/2024】： This is not the condition that properly checks whether or not we have an `else` condition
@@ -932,26 +935,23 @@ SSA* Parser::p2_ifStatement() {
         this->prevJump = true;
         this->prevInstrs.push(jmp_instr); // [10/10/2024]: push at the end so next added SSA-instr will be set as the jump-location
 
-        // BasicBlock *notThen = new BasicBlock();
-        // #ifdef DEBUG
-        //     std::cout << "created new BB (not-then)" << std::endl;
-        // #endif
-        // #ifdef DEBUG
-        //     std::cout << "created new BB with instrList: " << std::endl << "\t";
-        //     notThen->printInstrList();
-        // #endif
-        
-        if_parent->child2 = join_blk;
-        join_blk->parent2 = if_parent;
-        this->currBB = join_blk; // [10.24.2024]: same as [this->currBB = this->currBB->child;]?
-        
-        // notThen->parent = then_blk; // [this->currBB (should) == then]
-        // then_blk->child = notThen;
-        // notThen->parent2 = if_parent;
-        // this->currBB = notThen;
+        if (!hasChild) {
+            if_parent->child2 = join_blk;
+            join_blk->parent2 = if_parent;
+            this->currBB = join_blk; // [10.24.2024]: same as [this->currBB = this->currBB->child;]?
+        } else {
+            if_parent->child2 = og_child;
+            this->currBB = og_child;
+        }
 
-        // [07/28/2024]: might need this here(?)
-        // return if1; // [08/08/2024]: Good call; yes we should
+        #ifdef DEBUG
+            std::cout << "after if1 statSeq(), [if_parent->child2] looks like: " << std::endl;
+            if (if_parent->child2) {
+                std::cout << if_parent->child2->toString() << std::endl;
+            } else {
+                std::cout << "nullptr!" << std::endl;
+            }
+        #endif
         
         //[10.21.2024]: Isn't this actually the first instruction?
         return jmp_instr;
@@ -965,19 +965,21 @@ SSA* Parser::p2_ifStatement() {
     next();
 
     // [10/14/2024];
-    BasicBlock *else_blk = new BasicBlock(this->currBB->varVals);
+    BasicBlock *else_blk = new BasicBlock(if_parent->varVals);
     #ifdef DEBUG
         std::cout << "created new BB (else)" << std::endl;
     #endif
-    // #ifdef DEBUG
-    //     std::cout << "created new BB with instrList: " << std::endl << "\t";
-    //     else_blk->printInstrList();
-    // #endif
-
     if_parent->child2 = else_blk;
     else_blk->parent = if_parent;
-    else_blk->child2 = join_blk;
-    join_blk->parent2 = else_blk;
+    
+    if (!hasChild) {
+        else_blk->child2 = join_blk;
+        join_blk->parent2 = else_blk;
+    } else {
+        else_blk->child2 = og_child;
+        og_child->parent2 = else_blk;
+    }
+
     this->currBB = else_blk; // [10/14/2024]: again, similar to above we assume [p2_statSeq()] manipulates [this->currBB]
 
     // [10/10/2024]: These instructions should start the else-BasicBlock right?
@@ -990,49 +992,63 @@ SSA* Parser::p2_ifStatement() {
     // FI
     this->CheckFor(Result(2, 21)); // check `fi`
 
-    // // [10.21.2024]: Repalce below(?)
-    // BasicBlock *join_blk = new BasicBlock(then_blk, else_blk, this->VVs);
-
-    // [10/14/2024];
-    // BasicBlock *join_blk = new BasicBlock(then_blk, else_blk, this->VVs, this->instrList);
-
-    // #ifdef DEBUG
-    //     std::cout << "created new BB with instrList: " << std::endl << "\t";
-    //     join_blk->printInstrList();
-    // #endif
+    // 11.04.2024::6:57;
+    if (!hasChild) {
+        // join_blk->parent = then_blk; // [10.24.2024]: already did this earlier
+        join_blk->parent2 = else_blk;
+        then_blk->child = join_blk;
+        else_blk->child = join_blk;
     
-    // join_blk->parent = then_blk; // [10.24.2024]: already did this earlier
-    join_blk->parent2 = else_blk;
-    then_blk->child = join_blk;
-    else_blk->child = join_blk;
+        this->currBB = join_blk;
+    } else {
+        og_child->parent2 = else_blk;
+        // then_blk->child = og_child; [this is already done earlier]
+        else_blk->child = og_child;
+        
+        this->currBB = og_child;
+    }
     
-    this->currBB = join_blk;
-
-    // [Special Instructions]: phi() goes here
-    // - [10.24.2024]: i don't think it does xD
-    // SSA *phi_instr = this->addSSA1(6, if1, if2); // [check=false]; Note - new [addSSA1()] does the same as below's commented out portion!
-
     // [SECTION_A]
     // 【10/10/2024】： Note that we can't [this->prevJump=true; this->prevInstrs.push(jmpIf_instr)] bc we set_operand1() rather than set_operand2()...see below
     #ifdef DEBUG
         std::cout << "jmpIf_instr: " << jmpIf_instr->toString() << std::endl;
         // std::cout << "created new phi-instr: " << phi_instr->toString() << std::endl;
         std::cout << "trying to set operand1 (join_blk->newInstrs.front()->instr): ";
-        if (!join_blk->newInstrs.empty()) {
-            std::cout << join_blk->newInstrs.front()->instr->toString() << std::endl;
+        if (!hasChild) {
+            if (!join_blk->newInstrs.empty()) {
+                std::cout << join_blk->newInstrs.front()->instr->toString() << std::endl;
+            } else {
+                std::cout << "no node exists!" << std::endl;
+            }
         } else {
-            std::cout << "no node exists!" << std::endl;
+            if (!og_child->newInstrs.empty()) {
+                std::cout << og_child->newInstrs.front()->instr->toString() << std::endl;
+            } else {
+                std::cout << "no node exists!" << std::endl;
+            }
         }
     #endif
-    // [10.24.2024]: Does this work?
-    // jmpIf_instr->set_operand1(phi_instr);
-    if (!join_blk->newInstrs.empty()) {
-        jmpIf_instr->set_operand1(join_blk->newInstrs.front()->instr); // set_operand[1] since it's just a `bra` instr
+    
+    if (!hasChild) {
+        // [10.24.2024]: Does this work?
+        // jmpIf_instr->set_operand1(phi_instr);
+        if (!join_blk->newInstrs.empty()) {
+            jmpIf_instr->set_operand1(join_blk->newInstrs.front()->instr); // set_operand[1] since it's just a `bra` instr
+        } else {
+            this->prevInstrs.push(jmpIf_instr);
+            #ifdef DEBUG
+                std::cout << "join_blk had no newInstrs! pushing [jmpIf_instr] onto [this->prevInstrs]" << std::endl;
+            #endif
+        }
     } else {
-        this->prevInstrs.push(jmpIf_instr);
-        #ifdef DEBUG
-            std::cout << "join_blk had no newInstrs! pushing [jmpIf_instr] onto [this->prevInstrs]" << std::endl;
-        #endif
+        if (!og_child->newInstrs.empty()) {
+            jmpIf_instr->set_operand1(og_child->newInstrs.front()->instr); // set_operand[1] since it's just a `bra` instr
+        } else {
+            this->prevInstrs.push(jmpIf_instr);
+            #ifdef DEBUG
+                std::cout << "og_child (join) had no newInstrs! pushing [jmpIf_instr] onto [this->prevInstrs]" << std::endl;
+            #endif
+        }
     }
 
     // [07/31/2024]: For now don't know what to do abt this (or if this is even right)
@@ -1114,10 +1130,10 @@ SSA* Parser::p2_whileStatement() {
     #endif
 
     this->currBB = while_blk;
+    #ifdef DEBUG
+        std::cout << "right before while-statSeq, [this->currBB]'s child2 looks like (parent_blk): " << this->currBB->child2->toString() << std::endl;
+    #endif
     SSA *while1 = p2_statSeq(); // DO: relation
-
-    // [10/14/2024]: Do we need a SSA-instr that takes us back to the [cmp-instr]?
-    // - check video
 
     // this->SSA_instrs.push_back(while1); // returns first statement from statSeq in while
     #ifdef DEBUG
@@ -1356,6 +1372,9 @@ SSA* Parser::p_factor() {
             exit(EXIT_FAILURE);
         }
         res = BasicBlock::ssa_table.at(this->currBB->varVals.at(this->sym.get_value_literal()));
+        #ifdef DEBUG
+            std::cout << "got ident with value: " << res->toString() << std::endl;
+        #endif
         next(); // [08/08/2024]: must consume the [ident]?
     } else if (this->CheckFor(Result(2, 13), true)) { // check [`(` expression `)`]
         next(); // consume `(`
