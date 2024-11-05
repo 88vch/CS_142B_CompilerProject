@@ -1097,7 +1097,7 @@ SSA* Parser::p2_whileStatement() {
     #ifdef DEBUG
         std::cout << "created new BB (while)" << std::endl;
     #endif
-    
+    // 11.04.2024: dummy modification to write commit
     parent_blk->child = while_blk;
     while_blk->parent = parent_blk;
     while_blk->child2 = parent_blk; // [10/30/2024]: changed to child2
