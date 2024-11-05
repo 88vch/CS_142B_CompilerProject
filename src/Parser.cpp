@@ -1095,7 +1095,7 @@ SSA* Parser::p2_whileStatement() {
     BasicBlock *parent_blk = this->currBB;
     BasicBlock *while_blk = new BasicBlock(this->currBB->varVals);
     #ifdef DEBUG
-        std::cout << "created new BB (while)" << std::endl;
+        std::cout << "created new BB (while)" << std::endl << while_blk->toString() << std::endl;
     #endif
     // 11.04.2024: dummy modification to write commit
     parent_blk->child = while_blk;
@@ -1110,9 +1110,10 @@ SSA* Parser::p2_whileStatement() {
     afterWhile_blk->parent = parent_blk;
     parent_blk->child2 = afterWhile_blk;
     #ifdef DEBUG
-        std::cout << "created new BB after-While" << std::endl;
+        std::cout << "created new BB after-While" << std::endl << afterWhile_blk->toString() << std::endl;
     #endif
 
+    this->currBB = while_blk;
     SSA *while1 = p2_statSeq(); // DO: relation
 
     // [10/14/2024]: Do we need a SSA-instr that takes us back to the [cmp-instr]?
