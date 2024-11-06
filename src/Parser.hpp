@@ -429,6 +429,28 @@ public:
         return BasicBlock::ssa_table.size() - 1; // [09/30/2024]: return the int that is associated with SSA-instr
     }
 
+    inline void propagateDown(int ident, SSA* oldVal, int phi_ident_val) {    
+        BasicBlock *propStart = this->currBB;
+            // loop while we still have children (if-join shouldn't have children...unless in while-loop), (while-cmp should bring back to [propStart])
+        while ((this->currBB->child) || (propStart->compare(this->currBB) == false)) {
+            this->currBB = this->currBB->child;
+
+            if (this->currBB->varVals.find(ident) != this->currBB->varVals.end()) {
+
+            } else {
+                // this->currBB->varVals.insert({ident, phi_ident_val});
+
+                // 11.05.2024: if we don't find the [ident] defined as a key in [this->currBB->varVals],
+                // - does it imply that we've reached the end of propagate (since this means there is no loop?; that's my assumption)?
+            }
+
+            if (this->currBB->findSSA(oldVal)) {
+
+            }
+        }
+        this->currBB = propStart;
+    }
+
     inline std::vector<SSA*> getSSA() const { return this->SSA_instrs; }
 
     // [09/30/2024]: Converts to original varVal mapping

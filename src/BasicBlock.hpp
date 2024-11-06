@@ -44,73 +44,7 @@ public:
             delete this->constPtr;
             this->constPtr = nullptr;
         }
-
-        // for (unsigned int i = 1; i < this->instrList.size() - 1; i++) {
-        //     if (this->instrList.find(i) != this->instrList.end()) {
-        //         delete this->instrList.at(i);
-        //     }
-        //     this->instrList.insert(std::pair<int, LinkedList*>(i, nullptr));
-        // }
-
-        // for (SSA* instr : this->instrs) {
-        //     delete instr;
-        // }
     }
-
-    // [10/14/2024]: BLEHHHH; ugh do we need to do this?
-    // void setInstructionList(std::unordered_map<int, LinkedList*> curr_instr_lst) {
-    //     #ifdef DEBUG
-    //         std::cout << "\tin setInstructionList( lol ) pre-clear printing this->instrList..." << std::endl;
-    //     #endif
-       
-    //     this->printInstrList();
-
-    //     // for (const auto &pair : this->instrList) {
-    //     // for (unsigned int i = 1; i < this->instrList.size(); i++) {
-    //     //     delete this->instrList.at(i);
-    //     //     this->instrList[i] = nullptr;
-    //     // }
-        
-
-    //     for (auto& pair : this->instrList) {
-    //         if (pair.second != nullptr) {
-    //             delete pair.second;
-    //             pair.second = nullptr;  // Set to nullptr after deleting
-    //         }
-    //     }
-
-    //     // Clear the list after deleting elements
-    //     this->instrList.clear();
-        
-    //     #ifdef DEBUG
-    //         std::cout << "\tin setInstructionList( lol ) post-erase, pre-newInsert" << std::endl;
-    //     #endif
-
-    //     for (const auto &pair : curr_instr_lst) {
-    //         // this->instrList.insert(pair);
-    //         this->instrList[pair.first] = new LinkedList(*pair.second);
-    //     }
-
-    //     #ifdef DEBUG
-    //         std::cout << "\tin setInstructionList( lol ) post-newInsert" << std::endl;
-    //     #endif
-
-    //     // [09/02/2024]: VALIDATE that this makes a shallow copy (we only care abt the values, since we're going to continue to modify this [curr_instr_list])
-    //     // this->instrList = curr_instr_lst;
-    // }
-
-    // std::string instrListToString() const {
-    //     std::string lst = "[instrA]:\n\tinstrA1, instrA2, instrA3, ...\n";
-        
-    //     if (this->constList) {
-    //         lst += "[const]: \n\t" + this->constList->listToString();
-    //     } else {
-    //         for (unsigned int i = 1; i < SymbolTable::operator_table.size() - 1; i++) {
-    //             lst += "[" + SymbolTable::operator_table_reversed.at(i) + "]: \n\t" + this->instrList.at(i)->listToString();
-    //         }
-    //     }
-    //     return lst;
-    // }
 
     std::string toString() const {
         std::string res = "BB" + std::to_string(this->blockNum) + ": ";
@@ -148,7 +82,7 @@ public:
 
     std::string toDOT() const;
 
-    inline bool compare(BasicBlock *b) {
+    inline bool compare(BasicBlock *b) const {
         return (this->blockNum != b->blockNum); 
     }
 

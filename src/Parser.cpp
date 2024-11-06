@@ -319,6 +319,7 @@ SSA* Parser::p2_assignment() {
 
     // IDENT: not checking for a specific since this is a [variable]
     int ident = SymbolTable::identifiers.at(this->sym.get_value()); // unused for now
+    SSA *oldVal = nullptr;
 
     // [10.29.2024]: todo - update [this->varDeclarations] to only include BB's? (and inherit from parent)?
     // - validate that [variable] has been declared
@@ -334,6 +335,7 @@ SSA* Parser::p2_assignment() {
     // if (this->VVs.find(ident) != this->VVs.end()) {
     if ((this->currBB->varVals.find(ident) != this->currBB->varVals.end()) && 
         (this->currBB->findSSA(BasicBlock::ssa_table.at(this->currBB->varVals.at(ident))))) {
+        oldVal = BasicBlock::ssa_table.at(this->currBB->varVals.at(ident));
         #ifdef DEBUG
             std::cout << "ident exists with a definition (created in this BB): ident=" << ident << ", val=" << BasicBlock::ssa_table.at(this->currBB->varVals.at(ident))->toString() << std::endl;
             std::cout << "printing instrList first" << std::endl;
@@ -452,21 +454,6 @@ SSA* Parser::p2_assignment() {
             // }
         #endif
 
-        // [10.28.2024]: TODO - propagate update down to while-body BB
-        // this->propagateUpdate(old_ident_val, phi_table_int);
-        // [10.30.2024]: Propagate down from here?
-        // this->propagateDown();
-        // inline void propagateDown() {    
-        //     BasicBlock *propStart = this->currBB;
-        //      // loop while we still have children (if-join shouldn't have children), (while-cmp should bring back to [propStart])
-        //     while ((this->currBB->child) || (propStart->compare(this->currBB))) {
-        //         this->currBB = this->currBB->child;
-        //     }
-        //     this->currBB = propStart;
-        // }
-
-
-
         // [10.30.2024]: PHI-instr
         // if (blk->varVals.find(ident) != blk->varVals.end()) {
         BasicBlock *parent = this->currBB; // [11.01.2024]: changed from [this->currBB->parent] to [this->currBB] (circular loop)
@@ -496,6 +483,11 @@ SSA* Parser::p2_assignment() {
         #endif
         
         this->currBB = parent;
+
+        // [10.28.2024]: TODO - propagate update down to while-body BB
+        // this->propagateUpdate(old_ident_val, phi_table_int);
+        // [10.30.2024]: Propagate down from here?
+        this->propagateDown(ident, oldVal, phi_table_int);
 
         #ifdef DEBUG
             std::cout << "new phi-SSA: " << phi_instr->toString() << std::endl;
