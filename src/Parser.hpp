@@ -429,26 +429,53 @@ public:
         return BasicBlock::ssa_table.size() - 1; // [09/30/2024]: return the int that is associated with SSA-instr
     }
 
-    inline void propagateDown(int ident, SSA* oldVal, int phi_ident_val) {    
-        BasicBlock *propStart = this->currBB;
-            // loop while we still have children (if-join shouldn't have children...unless in while-loop), (while-cmp should bring back to [propStart])
-        while ((this->currBB->child) || (propStart->compare(this->currBB) == false)) {
-            this->currBB = this->currBB->child;
-
-            if (this->currBB->varVals.find(ident) != this->currBB->varVals.end()) {
-
-            } else {
-                // this->currBB->varVals.insert({ident, phi_ident_val});
-
-                // 11.05.2024: if we don't find the [ident] defined as a key in [this->currBB->varVals],
-                // - does it imply that we've reached the end of propagate (since this means there is no loop?; that's my assumption)?
-            }
-
-            if (this->currBB->findSSA(oldVal)) {
-
-            }
+    // recursive; maintains [this->currBB]
+    inline void propagateDown(BasicBlock *curr, int ident, SSA* oldVal, int phi_ident_val, bool first = false) {    
+        #ifdef DEBUG
+            std::cout << "in propagateDown(ident=" << ident << ", phi_ident=" << phi_ident_val << ", oldVal (SSA) = " << oldVal->toString() << ", )" << std::endl;
+        #endif
+        if (!first && this->currBB->compare(curr)) {
+            #ifdef DEBUG
+                std::cout << "returning: in a loop! found startBB looks like: " << std::endl << this->currBB->toString() << std::endl;
+            #endif
+            return;
         }
-        this->currBB = propStart;
+
+        if (curr->varVals.find(ident) != curr->varVals.end()) {
+            if (curr->varVals.at(ident) != phi_ident_val) {
+                #ifdef DEBUG
+                    std::cout << "currBB's varVals contains the following pair: {ident=" << ident << ", val=" << curr->varVals.at(ident) << "}; updating with [phi_ident_val]" << std::endl;
+                #endif
+                // if varVal mapping ident != phi_ident_val, (waht does this mean)?
+                //      - means that [ident : old_ident_val] ?
+                curr->varVals.insert_or_assign(ident, phi_ident_val);
+            } else {
+                #ifdef DEBUG
+                    std::cout << "currBB's varVals contains [ident:phi_ident_val] pair!" << std::endl;
+                #endif
+            }
+        } else {
+            #ifdef DEBUG
+                std::cout << "ident doesn't exist in currBB! inserting new" << std::endl;
+            #endif
+            curr->varVals.insert_or_assign(ident, phi_ident_val);
+
+            // 11.06.2024: nah i think smtn with the logic is wrong abt this...
+            // 11.05.2024: if we don't find the [ident] defined as a key in [this->currBB->varVals],
+            // - does it imply that we've reached the end of propagate (since this means there is no loop?; that's my assumption)?
+        }
+        curr->updateInstructions(oldVal, BasicBlock::ssa_table.at(phi_ident_val));
+
+        if (curr->child) {
+            propagateDown(curr->child, ident, oldVal, phi_ident_val, false);
+        } 
+        if (curr->child2) {
+            propagateDown(curr->child2, ident, oldVal, phi_ident_val, false);
+        }
+
+        #ifdef DEBUG
+            std::cout << "returning normally: no children remain! curr looks like: " << std::endl << curr->toString() << std::endl;
+        #endif
     }
 
     inline std::vector<SSA*> getSSA() const { return this->SSA_instrs; }

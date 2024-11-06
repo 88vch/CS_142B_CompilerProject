@@ -488,7 +488,7 @@ SSA* Parser::p2_assignment() {
         // [10.28.2024]: TODO - propagate update down to while-body BB
         // this->propagateUpdate(old_ident_val, phi_table_int);
         // [10.30.2024]: Propagate down from here?
-        this->propagateDown(ident, oldVal, phi_table_int);
+        this->propagateDown(this->currBB, ident, oldVal, phi_table_int, true);
 
         #ifdef DEBUG
             std::cout << "new phi-SSA: " << phi_instr->toString() << std::endl;

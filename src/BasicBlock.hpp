@@ -29,7 +29,6 @@ public:
     BasicBlock(std::unordered_map<int, int> DOM_vv_map, bool isConst = false);
     BasicBlock(BasicBlock *p1, BasicBlock *p2, std::unordered_map<int, int> DOM_vv_map);
 
-
     ~BasicBlock() {
         #ifdef DEBUG
             std::cout << "in ~BasicBlock()" << std::endl;
@@ -81,6 +80,8 @@ public:
     }
 
     std::string toDOT() const;
+
+    void updateInstructions(SSA *oldVal, SSA *newVal);
 
     inline bool compare(BasicBlock *b) const {
         return (this->blockNum != b->blockNum); 
