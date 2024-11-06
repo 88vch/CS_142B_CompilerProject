@@ -484,6 +484,7 @@ SSA* Parser::p2_assignment() {
         
         this->currBB = parent;
 
+        // [11.05.2024]: moved down here below phi...?
         // [10.28.2024]: TODO - propagate update down to while-body BB
         // this->propagateUpdate(old_ident_val, phi_table_int);
         // [10.30.2024]: Propagate down from here?
