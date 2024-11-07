@@ -308,6 +308,8 @@ SSA* Parser::p_assignment() {
     return res;
 }
 
+// [join_blk] is always in [child2]
+// [while-loop] always goes back from [child2]
 SSA* Parser::p2_assignment() {
     bool overwrite = false;
     #ifdef DEBUG
@@ -353,7 +355,7 @@ SSA* Parser::p2_assignment() {
 
         // [10.29.2024]: suppose we only use [bb->child] for new assignment bb's 
         // - save [bb->child2] for if-else, && while-loops?
-        if (this->currBB->child == nullptr) {
+        if ((this->currBB->child == nullptr) && (this->currBB->child2 == nullptr)) {
             this->currBB->child = new BasicBlock(this->currBB->varVals);
             this->currBB->child->parent = this->currBB;
 
@@ -366,20 +368,36 @@ SSA* Parser::p2_assignment() {
                 this->currBB->child->child2 = this->currBB->child2;
                 this->currBB->child2 = nullptr;
             }
-        } else {
+        } else if (this->currBB->child2) {
+            #ifdef DEBUG
+                std::cout << "this->currBB->child2 exists! looks like: " << std::endl << this->currBB->child2->toString() << std::endl;
+            #endif
+
+            // [11.06.2024]: segfault somewhere after this and before the next debug statement
             // [10.29.2024]: THIS IS [PREVCHILD]; (from a while-loop [i think]), (or join-blk for if?)
-            BasicBlock *prevChild2 = (this->currBB->child2) ? this->currBB->child2 : nullptr;
+            BasicBlock *prevChild2 = this->currBB->child2;
             BasicBlock *curr = this->currBB, *oldCurr = this->currBB;
 
-            while (((curr->child) && (oldCurr->compare(curr->child) == false)) &&
-                   ((curr->child->child2) && (prevChild2->compare(curr->child->child2) == false))) {
+            while ((curr->child) && (oldCurr->compare(curr->child) == false) && 
+                   ((curr->child->child2) && (prevChild2->compare(curr->child->child2)))) {
                 curr = curr->child;
+                #ifdef DEBUG
+                    std::cout << "iterating through children" << std::endl;
+                #endif
             }
+
+            #ifdef DEBUG
+                std::cout << "curr is: " << std::endl << curr->toString() << std::endl;
+            #endif
 
             // 10.30.2024: while-loop confirmed(?)
             if ((curr->child && (oldCurr->compare(curr->child))) && 
                 (curr->child->child2 && (prevChild2->compare(curr->child->child2))) && 
                 (curr->child->findSSA(BasicBlock::ssa_table.at(this->currBB->varVals.at(ident))))) {
+                #ifdef DEBUG
+                    std::cout << "we're in a while loop!" << std::endl;
+                #endif
+                
                 // if we're in a while loop & can't find the current [ident]'s SSA-instr in this BB
                 // - then we don't need to create a child BB and can just use the created one from the while-loop
                 BasicBlock *pnt = curr->child;
@@ -392,14 +410,6 @@ SSA* Parser::p2_assignment() {
                 prevChild2->parent = curr->child;
                 prevChild2->varVals = curr->child->varVals;
             }
-
-
-            // this->currBB->child = new BasicBlock(this->currBB->varVals);
-            // this->currBB->child->parent = this->currBB;
-            // this->currBB->child->child = prevChild;
-
-            // prevChild->varVals = this->currBB->varVals;
-            // prevChild->parent = this->currBB->child;
 
             #ifdef DEBUG
                 std::cout << "child bb's exissts: " << this->currBB->child->toString() << std::endl;
@@ -910,7 +920,12 @@ SSA* Parser::p2_ifStatement() {
             std::cout << "using existing child (4join): " << std::endl << og_child->toString() << std::endl;
         #endif
         then_blk->child2 = og_child;
-        og_child->parent = then_blk;
+
+        if (og_child->parent == if_parent) {
+            og_child->parent = then_blk;
+        } else if (og_child->parent2 == if_parent) {
+            og_child->parent2 = then_blk;
+        }
     }
 
     SSA *if1 = p2_statSeq(); // returns the 1st SSA instruction 

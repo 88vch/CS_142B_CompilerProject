@@ -67,7 +67,7 @@ public:
             res += "none!";
         }
 
-        res += "\nvarVals ((string) SymbolTable::symbol_table.at(key), (SSA *) BasicBlock::ssa_table.at(value)): ";
+        res += "\nvarVals[" + std::to_string(this->varVals.size()) + "]: ((string) SymbolTable::symbol_table.at(key), (SSA *) BasicBlock::ssa_table.at(value)): ";
         if (!this->varVals.empty()) {
             for (const auto &pair : this->varVals) {
                 res += "\n\tident: " + SymbolTable::symbol_table.at(pair.first) + ", value: " + BasicBlock::ssa_table.at(pair.second)->toString();

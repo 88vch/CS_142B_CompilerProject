@@ -58,6 +58,21 @@ public:
         return (this->y) ? this->y : nullptr;
     }
 
+    void updateIfHas(SSA *oldVal, SSA *newVal) {
+        if (this->x == oldVal) {
+            #ifdef DEBUG
+                std::cout << "updated [SSA->x]" << std::endl;
+            #endif
+            this->x = newVal;
+        }
+        if (this->y == oldVal) {
+            #ifdef DEBUG
+                std::cout << "updated [SSA->y]" << std::endl;
+            #endif
+            this->y = newVal;
+        }
+    }
+
     bool compare(int op, SSA *x, SSA *y) const {
         #ifdef DEBUG
             std::cout << "[SSA::compare(op=" << op << ")]; this->op=" << this->op << ", this->x=";

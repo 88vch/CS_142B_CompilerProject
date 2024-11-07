@@ -8,6 +8,8 @@ while x < 10 do
     let x <- x + 1;
     let m <- k * 2;
 
+    let j <- 99;
+
     if k > 5 then
         let j <- j + 1;
         let k <- 0;
