@@ -39,7 +39,7 @@ BasicBlock::BasicBlock(bool isConst)
     //     this->printInstrList();
     // #endif
     #ifdef DEBUG
-        std::cout << "new BasicBlock looks like: " << this->toString() << std::endl;
+        std::cout << "new BasicBlock looks like: " << this->toString() << "varVals: {}" << std::endl;
     #endif
 }
 
@@ -62,6 +62,10 @@ BasicBlock::BasicBlock(std::unordered_map<int, int> DOM_vv_map, bool isConst)
     }
     this->newInstrs = {};
 
+    #ifdef DEBUG
+        std::cout << "new BasicBlock; got [varVals: size=" << this->varVals.size() << "] looks like:" << std::endl;
+        this->printVVs();
+    #endif
     // #ifdef DEBUG
     //     std::cout << "new BasicBlock; got [instrList; size=" << this->instrList.size() << ", " << instrLst.size() << "] looks like:" << std::endl;
     //     this->printInstrList();
@@ -83,10 +87,10 @@ BasicBlock::BasicBlock(BasicBlock *p1, BasicBlock *p2, std::unordered_map<int, i
 
     this->newInstrs = {};
 
-    // #ifdef DEBUG
-    //     std::cout << "new BasicBlock; got [instrList; size=" << this->instrList.size() << ", " << instrLst.size() << "] looks like:" << std::endl;
-    //     this->printInstrList();
-    // #endif
+    #ifdef DEBUG
+        std::cout << "new BasicBlock; got [varVals: size=" << this->varVals.size() << "] looks like:" << std::endl;
+        this->printVVs();
+    #endif
 }
 
 std::string BasicBlock::toDOT() const {

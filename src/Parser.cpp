@@ -293,7 +293,7 @@ SSA* Parser::p_assignment() {
         }
     #endif
     this->VVs.insert_or_assign(ident, VV_value);
-    this->printVVs();
+    Parser::printVVs(this->currBB->varVals);
 
 
     // [08/07/2024]: Revised; wtf was i trying to say down there???
@@ -321,6 +321,7 @@ SSA* Parser::p2_assignment() {
 
     // IDENT: not checking for a specific since this is a [variable]
     int ident = SymbolTable::identifiers.at(this->sym.get_value()); // unused for now
+    int oldInt;
     SSA *oldVal = nullptr;
 
     // [10.29.2024]: todo - update [this->varDeclarations] to only include BB's? (and inherit from parent)?
@@ -337,95 +338,155 @@ SSA* Parser::p2_assignment() {
     // if (this->VVs.find(ident) != this->VVs.end()) {
     if ((this->currBB->varVals.find(ident) != this->currBB->varVals.end()) && 
         (this->currBB->findSSA(BasicBlock::ssa_table.at(this->currBB->varVals.at(ident))))) {
+        oldInt = this->currBB->varVals.at(ident);
         oldVal = BasicBlock::ssa_table.at(this->currBB->varVals.at(ident));
         #ifdef DEBUG
             std::cout << "ident exists with a definition (created in this BB): ident=" << ident << ", val=" << BasicBlock::ssa_table.at(this->currBB->varVals.at(ident))->toString() << std::endl;
-            std::cout << "printing instrList first" << std::endl;
+            // std::cout << "printing instrList first" << std::endl;
         #endif
-        this->printInstrList();
+        // this->printInstrList();
 
-        #ifdef DEBUG
-            std::cout << "About to create child BB, [this->currBB] looks like: \n\t";
-            if (this->currBB) {
-                std::cout << this->currBB->toString() << std::endl;
-            } else {
-                std::cout << "nullptr!" << std::endl;
-            }
-        #endif
+        // #ifdef DEBUG
+        //     std::cout << "About to create child BB, [this->currBB] looks like: \n\t";
+        //     if (this->currBB) {
+        //         std::cout << this->currBB->toString() << std::endl;
+        //     } else {
+        //         std::cout << "nullptr!" << std::endl;
+        //     }
+        // #endif
 
-        // [10.29.2024]: suppose we only use [bb->child] for new assignment bb's 
-        // - save [bb->child2] for if-else, && while-loops?
-        if ((this->currBB->child == nullptr) && (this->currBB->child2 == nullptr)) {
+        if (this->currBB->child == nullptr) {
+            #ifdef DEBUG
+                std::cout << "child blk == nullptr!" << std::endl;
+            #endif
             this->currBB->child = new BasicBlock(this->currBB->varVals);
             this->currBB->child->parent = this->currBB;
 
-            #ifdef DEBUG
-                std::cout << "created new BB (new assignment)" << std::endl;
-            #endif
-
-            // 10.30.2024: for join
             if (this->currBB->child2) {
+                #ifdef DEBUG
+                    std::cout << "child2 blk == " << this->currBB->child2->toString() << std::endl;
+                #endif
                 this->currBB->child->child2 = this->currBB->child2;
+                this->currBB->child->child2->parent2 = this->currBB->child;
                 this->currBB->child2 = nullptr;
             }
-        } else if (this->currBB->child2) {
+        } else if (this->currBB->child) {
             #ifdef DEBUG
-                std::cout << "this->currBB->child2 exists! looks like: " << std::endl << this->currBB->child2->toString() << std::endl;
+                std::cout << "child blk == " << this->currBB->child->toString() << std::endl;
             #endif
+            BasicBlock *oldChild = this->currBB->child;
 
-            // [11.06.2024]: segfault somewhere after this and before the next debug statement
-            // [10.29.2024]: THIS IS [PREVCHILD]; (from a while-loop [i think]), (or join-blk for if?)
-            BasicBlock *prevChild2 = this->currBB->child2;
-            BasicBlock *curr = this->currBB, *oldCurr = this->currBB;
+            this->currBB->child = new BasicBlock(this->currBB->varVals);
+            this->currBB->child->parent = this->currBB;
+            this->currBB->child->child = oldChild;
+            this->currBB->child->child->parent = this->currBB->child;
 
-            while ((curr->child) && (oldCurr->compare(curr->child) == false) && 
-                   ((curr->child->child2) && (prevChild2->compare(curr->child->child2)))) {
-                curr = curr->child;
+            if (this->currBB->child2) {
                 #ifdef DEBUG
-                    std::cout << "iterating through children" << std::endl;
+                    std::cout << "child2 blk == " << this->currBB->child2->toString() << std::endl;
                 #endif
+                this->currBB->child->child2 = this->currBB->child2;
+                this->currBB->child->child2->parent2 = this->currBB->child;
+                this->currBB->child2 = nullptr;
             }
-
-            #ifdef DEBUG
-                std::cout << "curr is: " << std::endl << curr->toString() << std::endl;
-            #endif
-
-            // 10.30.2024: while-loop confirmed(?)
-            if ((curr->child && (oldCurr->compare(curr->child))) && 
-                (curr->child->child2 && (prevChild2->compare(curr->child->child2))) && 
-                (curr->child->findSSA(BasicBlock::ssa_table.at(this->currBB->varVals.at(ident))))) {
-                #ifdef DEBUG
-                    std::cout << "we're in a while loop!" << std::endl;
-                #endif
-                
-                // if we're in a while loop & can't find the current [ident]'s SSA-instr in this BB
-                // - then we don't need to create a child BB and can just use the created one from the while-loop
-                BasicBlock *pnt = curr->child;
-                
-                curr->child = new BasicBlock(oldCurr->varVals);
-                curr->child->parent = curr;
-                curr->child->child = pnt;
-                curr->child->child2 = prevChild2;
-                
-                prevChild2->parent = curr->child;
-                prevChild2->varVals = curr->child->varVals;
-            }
-
-            #ifdef DEBUG
-                std::cout << "child bb's exissts: " << this->currBB->child->toString() << std::endl;
-            #endif
         }
 
-        if (this->currBB->child2) {
+        // 11.07.2024: what if we use above ? is this doing the same thing?
+        // // [10.29.2024]: suppose we only use [bb->child] for new assignment bb's 
+        // // - save [bb->child2] for if-else, && while-loops?
+        // if ((this->currBB->child == nullptr) && (this->currBB->child2 == nullptr)) {
+        //     this->currBB->child = new BasicBlock(this->currBB->varVals);
+        //     this->currBB->child->parent = this->currBB;
+
+        //     #ifdef DEBUG
+        //         std::cout << "created new BB (new assignment)" << std::endl;
+        //     #endif
+
+        //     // 10.30.2024: for join
+        //     if (this->currBB->child2) {
+        //         this->currBB->child->child2 = this->currBB->child2;
+        //         this->currBB->child2 = nullptr;
+        //     }
+        // } else if (this->currBB->child && (this->currBB->child2 == nullptr)) {
+
+        // } else if (this->currBB->child2) { // 11.07.2024: doesn't this alone confirm the existence of a while-loop?
+        //     #ifdef DEBUG
+        //         std::cout << "this->currBB->child2 exists! looks like: " << std::endl << this->currBB->child2->toString() << std::endl;
+        //     #endif
+
+        //     // [11.06.2024]: segfault somewhere after this and before the next debug statement
+        //     // - CURRENT ISSUE! IDK WHY A:SLKFJS:ALDKFJS:LDKFJ:SLDKF
             
-        }
-        this->currBB = this->currBB->child;
+        //     // [10.29.2024]: THIS IS [PREVCHILD]; (from a while-loop [i think]), (or join-blk for if?)
+        //     BasicBlock *prevChild2 = this->currBB->child2;
+        //     // BasicBlock *curr = this->currBB;
+        //     BasicBlock *oldCurr = this->currBB;
 
-        overwrite = true;  // 10.29.2024: if this assignment would overwrite a previous varVal mapping
+        //     #ifdef DEBUG
+        //         std::cout << "curr's child is: ";
+        //         if (this->currBB->child) {
+        //             std::cout << std::endl << this->currBB->child->toString() << std::endl;
+        //         } else {
+        //             std::cout << "nullptr!" << std::endl;
+        //         }
+        //     #endif
+
+        //     // 11.07.2024: may not need this
+        //     // while ((curr->child) && (oldCurr->compare(curr->child) == false) && 
+        //     //        ((curr->child->child2) && (prevChild2->compare(curr->child->child2)))) {
+        //     //     curr = curr->child;
+        //     //     #ifdef DEBUG
+        //     //         std::cout << "iterating through children" << std::endl;
+        //     //     #endif
+        //     // }
+
+        //     #ifdef DEBUG
+        //         std::cout << "curr is: " << std::endl << this->currBB->toString() << std::endl;
+        //     #endif
+
+        //     // 11.07.2024: new
+        //     if (this->currBB->findSSA(BasicBlock::ssa_table.at(this->currBB->varVals.at(ident)))) {
+        //         // stub for now...? we sohouldnt need this cause this [if-branch] already confirms that another [val] exists for this [ident] in this->currBB
+        //     }
+                
+        //     #ifdef DEBUG
+        //         std::cout << "we're in a while loop!" << std::endl;
+        //     #endif
+            
+        //     // if we're in a while loop & can't find the current [ident]'s SSA-instr in this BB
+        //     // - then we don't need to create a child BB and can just use the created one from the while-loop
+        //     BasicBlock *pnt = this->currBB->child;
+            
+        //     this->currBB->child = new BasicBlock(oldCurr->varVals);
+        //     this->currBB->child->parent = this->currBB;
+        //     this->currBB->child->child = pnt;
+        //     this->currBB->child->child2 = prevChild2;
+            
+        //     prevChild2->parent = curr->child;
+        //     prevChild2->varVals = curr->child->varVals; // 11.07.2024: note - not updated yet...
+
+        //     #ifdef DEBUG
+        //         std::cout << "child bb's exissts: " << this->currBB->child->toString() << std::endl;
+        //     #endif
+        // }
+
+        this->currBB = this->currBB->child;
         #ifdef DEBUG
-            std::cout << "overwrite=true; current BB: " << this->currBB->toString() << std::endl;
+            std::cout << "this->currBB moved now looks like: " << this->currBB->toString() << std::endl << "\twith varVals like: ";
+            Parser::printVVs(this->currBB->varVals);
         #endif
+        overwrite = true;  // 10.29.2024: if this assignment would overwrite a previous varVal mapping
     }
+    
+    
+    #ifdef DEBUG
+        if (overwrite) {
+            std::cout << "overwrite=true;";
+        } else {
+            std::cout << "overwrite=false;";
+        }
+        std::cout << "current BB: " << this->currBB->toString() << std::endl;
+    #endif
     next();
 
     // ASSIGNMENT
@@ -443,25 +504,16 @@ SSA* Parser::p2_assignment() {
     }
     // 11.04.2024 = dummy coommit
     int table_int = this->add_SSA_table(value);
+    #ifdef DEBUG
+        std::cout << "returned SSA value assignment has table int of : " << std::to_string(table_int) << std::endl;
+    #endif
     
     // [10.29.2024]: if this assignment would overwrite a previous varVal mapping
     // - if we have a childBB indicates we have a [PREVCHILD] see above
     if (overwrite && this->currBB->child2){ 
-        // then lets use the new child bb we created
-        // BasicBlock *blk = this->currBB->child;
-        
-        // 10.28.2024: theres a reason to check child2 first (i think phi or smtn)
-        // 10.29.2024: idk using [child] for now...
-        // this->VVs = blk->varVals;
-    
         #ifdef DEBUG
             std::cout << "done p2_assignment value [p_expr()] returned: " << value->toString() << std::endl;
             std::cout << "about to write new phi-instr into child2" << std::endl;
-            // if (blk) {
-            //     std::cout << "using blk: " << blk->toString() << std::endl;
-            // } else {
-            //     std::cout << "blk: nullptr!" << std::endl;
-            // }
         #endif
 
         // [10.30.2024]: PHI-instr
@@ -481,11 +533,13 @@ SSA* Parser::p2_assignment() {
         }
 
         // this will add to currBB's [newInstrs]
-        SSA *phi_instr = this->addSSA1(6, BasicBlock::ssa_table.at(this->currBB->varVals.at(ident)), BasicBlock::ssa_table.at(table_int), true);
+        SSA *phi_instr = this->addSSA1(6, oldVal, value, true);
+        #ifdef DEBUG
+            std::cout << "phi_instr: " << phi_instr->toString() << std::endl;
+        #endif
         
         // [10.28.2024]: Update BasicBlock's VV
         int phi_table_int = this->add_SSA_table(phi_instr);
-        int old_ident_val = this->currBB->varVals.at(ident);
         this->currBB->varVals.insert_or_assign(ident, phi_table_int);
         
         #ifdef DEBUG
@@ -494,6 +548,7 @@ SSA* Parser::p2_assignment() {
         
         this->currBB = parent;
 
+        // [11.07.2024]: is this just for [child2] if [while-loop]?
         // [11.05.2024]: moved down here below phi...?
         // [10.28.2024]: TODO - propagate update down to while-body BB
         // this->propagateUpdate(old_ident_val, phi_table_int);
@@ -514,7 +569,7 @@ SSA* Parser::p2_assignment() {
         this->currBB->varVals.insert_or_assign(ident, table_int);
     }
 
-    this->printVVs();
+    Parser::printVVs(this->currBB->varVals);
     
     #ifdef DEBUG
         std::cout << "[Parser::p2_assignment()]: returning " << value->toString() << std::endl;
@@ -583,7 +638,7 @@ SSA* Parser::p_funcCall() {
             // - Or can we simply output the SSA-instruction corresponding to the value? (currently doing this)
             #ifdef DEBUG
                 std::cout << "current [varVals] mapping looks like: " << std::endl;
-                this->printVVs();
+                Parser::printVVs(this->currBB->varVals);
             #endif
             if (this->currBB->varVals.find(num) != this->currBB->varVals.end()) {
                 // res = this->varVals.at(num);
@@ -713,7 +768,7 @@ SSA* Parser::p2_funcCall() {
             // - Or can we simply output the SSA-instruction corresponding to the value? (currently doing this)
             #ifdef DEBUG
                 std::cout << "current [varVals] mapping looks like: " << std::endl;
-                this->printVVs();
+                Parser::printVVs(this->currBB->varVals);
             #endif
             if (this->currBB->varVals.find(num) != this->currBB->varVals.end()) {
                 res = this->addSSA1(24, BasicBlock::ssa_table.at(this->currBB->varVals.at(num)), nullptr, true);
@@ -841,7 +896,7 @@ SSA* Parser::p_ifStatement() {
     }
     SSA *if2 = nullptr, *jmpIf_instr = nullptr;
     // [09/20/2024]: if `else` exists, we need a jump at the end of `if` right?
-    jmpIf_instr = this->addSSA1(8, nullptr, nullptr); // bra instruction; [check=false(?)]
+    // jmpIf_instr = this->addSSA1(8, nullptr, nullptr); // bra instruction; [check=false(?)]
         // [10/10/2024]: this is the last SSA of the if-BasicBlock right?
     
     next();
@@ -861,10 +916,10 @@ SSA* Parser::p_ifStatement() {
 
     // [SECTION_A]
     // 【10/10/2024】： Note that we can't [this->prevJump=true; this->prevInstrs.push(jmpIf_instr)] bc we set_operand1() rather than set_operand2()...see below
-    #ifdef DEBUG
-        std::cout << "jmpIf_instr: " << jmpIf_instr->toString() << std::endl;
-    #endif
-    jmpIf_instr->set_operand1(phi_instr); // set_operand1 since it's just a `bra` instr
+    // #ifdef DEBUG
+    //     std::cout << "jmpIf_instr: " << jmpIf_instr->toString() << std::endl;
+    // #endif
+    // jmpIf_instr->set_operand1(phi_instr); // set_operand1 since it's just a `bra` instr
 
     return phi_instr; // [08/08/2024]: For now this is good
 }
@@ -966,8 +1021,9 @@ SSA* Parser::p2_ifStatement() {
     }
     // BasicBlock *ifStat_else = nullptr; // should use some similar logic to check for existence of [else block]
     SSA *if2 = nullptr, *jmpIf_instr = nullptr;
+    // [11.07.2024]: nah, it just falls through...
     // [09/20/2024]: if `else` exists, we need a jump at the end of `if` right?
-    jmpIf_instr = this->addSSA1(8, nullptr, nullptr); // [check=false(?)]
+    // jmpIf_instr = this->addSSA1(8, nullptr, nullptr); // [check=false(?)]
         // [10/10/2024]: this is the last SSA of the if-BasicBlock right?
     
     next();
@@ -1018,50 +1074,51 @@ SSA* Parser::p2_ifStatement() {
 
     // [SECTION_A]
     // 【10/10/2024】： Note that we can't [this->prevJump=true; this->prevInstrs.push(jmpIf_instr)] bc we set_operand1() rather than set_operand2()...see below
-    #ifdef DEBUG
-        std::cout << "jmpIf_instr: " << jmpIf_instr->toString() << std::endl;
-        // std::cout << "created new phi-instr: " << phi_instr->toString() << std::endl;
-        std::cout << "trying to set operand1 (join_blk->newInstrs.front()->instr): ";
-        if (!hasChild) {
-            if (!join_blk->newInstrs.empty()) {
-                std::cout << join_blk->newInstrs.front()->instr->toString() << std::endl;
-            } else {
-                std::cout << "no node exists!" << std::endl;
-            }
-        } else {
-            if (!og_child->newInstrs.empty()) {
-                std::cout << og_child->newInstrs.front()->instr->toString() << std::endl;
-            } else {
-                std::cout << "no node exists!" << std::endl;
-            }
-        }
-    #endif
+    // #ifdef DEBUG
+    //     // std::cout << "jmpIf_instr: " << jmpIf_instr->toString() << std::endl;
+    //     // std::cout << "created new phi-instr: " << phi_instr->toString() << std::endl;
+    //     std::cout << "trying to set operand1 (join_blk->newInstrs.front()->instr): ";
+    //     if (!hasChild) {
+    //         if (!join_blk->newInstrs.empty()) {
+    //             std::cout << join_blk->newInstrs.front()->instr->toString() << std::endl;
+    //         } else {
+    //             std::cout << "no node exists!" << std::endl;
+    //         }
+    //     } else {
+    //         if (!og_child->newInstrs.empty()) {
+    //             std::cout << og_child->newInstrs.front()->instr->toString() << std::endl;
+    //         } else {
+    //             std::cout << "no node exists!" << std::endl;
+    //         }
+    //     }
+    // #endif
     
-    if (!hasChild) { // 11.04.2024 - dummy commit
-        // [10.24.2024]: Does this work?
-        // jmpIf_instr->set_operand1(phi_instr);
-        if (!join_blk->newInstrs.empty()) {
-            jmpIf_instr->set_operand1(join_blk->newInstrs.front()->instr); // set_operand[1] since it's just a `bra` instr
-        } else {
-            this->prevInstrs.push(jmpIf_instr);
-            #ifdef DEBUG
-                std::cout << "join_blk had no newInstrs! pushing [jmpIf_instr] onto [this->prevInstrs]" << std::endl;
-            #endif
-        }
-    } else {
-        if (!og_child->newInstrs.empty()) {
-            jmpIf_instr->set_operand1(og_child->newInstrs.front()->instr); // set_operand[1] since it's just a `bra` instr
-        } else {
-            this->prevInstrs.push(jmpIf_instr);
-            #ifdef DEBUG
-                std::cout << "og_child (join) had no newInstrs! pushing [jmpIf_instr] onto [this->prevInstrs]" << std::endl;
-            #endif
-        }
-    }
+    // [11.07.2024]: if we don't need [jmpIf_instr] we can delete all this
+    // if (!hasChild) { // 11.04.2024 - dummy commit
+    //     // [10.24.2024]: Does this work?
+    //     // jmpIf_instr->set_operand1(phi_instr);
+    //     if (!join_blk->newInstrs.empty()) {
+    //         jmpIf_instr->set_operand1(join_blk->newInstrs.front()->instr); // set_operand[1] since it's just a `bra` instr
+    //     } else {
+    //         this->prevInstrs.push(jmpIf_instr);
+    //         #ifdef DEBUG
+    //             std::cout << "join_blk had no newInstrs! pushing [jmpIf_instr] onto [this->prevInstrs]" << std::endl;
+    //         #endif
+    //     }
+    // } else {
+    //     if (!og_child->newInstrs.empty()) {
+    //         jmpIf_instr->set_operand1(og_child->newInstrs.front()->instr); // set_operand[1] since it's just a `bra` instr
+    //     } else {
+    //         this->prevInstrs.push(jmpIf_instr);
+    //         #ifdef DEBUG
+    //             std::cout << "og_child (join) had no newInstrs! pushing [jmpIf_instr] onto [this->prevInstrs]" << std::endl;
+    //         #endif
+    //     }
+    // }
 
     // [07/31/2024]: For now don't know what to do abt this (or if this is even right)
-    // return phi_instr; // [08/08/2024]: For now this is good
-    return jmpIf_instr; // [10.24.2024]: ?
+    return jmp_instr; // [11.07.2024]: ?
+    // return jmpIf_instr; // [10.24.2024]: ?
 }
 
 SSA* Parser::p_whileStatement() {

@@ -8,7 +8,7 @@ while x < 10 do
     let x <- x + 1;
     let m <- k * 2;
 
-    let j <- 99;
+    let j <- x + m;
 
     if k > 5 then
         let j <- j + 1;

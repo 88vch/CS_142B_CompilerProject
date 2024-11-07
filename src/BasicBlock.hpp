@@ -96,6 +96,16 @@ public:
         return false;
     }
 
+    inline void printVVs() { // print varVals
+        std::unordered_map<int, int> res = this->varVals;
+
+        std::cout << "printing [varVals(size=" << res.size() << ")]:" << std::endl;
+        for (const auto &p : res) {
+            std::cout << "[" << SymbolTable::symbol_table.at(p.first) << "], [" << BasicBlock::ssa_table.at(p.second)->toString() << "]" << std::endl;
+        }
+        std::cout << std::endl;
+    }
+
     BasicBlock *parent, *parent2;
     BasicBlock *child, *child2;
     std::unordered_map<int, int> varVals; // [variable (sym_table val) : value]

@@ -491,13 +491,12 @@ public:
         return res; 
     }
 
-    void printVVs() { // print varVals
-        std::unordered_map<int, int> res = this->currBB->varVals;
-        
-        std::cout << "printing [this->varVals(size=" << res.size() << ")]:" << std::endl;
+    static void printVVs(std::unordered_map<int, int> res) { // print varVals
+        std::cout << "printing [varVals(size=" << res.size() << ")]:" << std::endl;
         for (const auto &p : res) {
             std::cout << "[" << SymbolTable::symbol_table.at(p.first) << "], [" << BasicBlock::ssa_table.at(p.second)->toString() << "]" << std::endl;
         }
+        std::cout << std::endl;
     }
 
     void printPrevInstrs() const {
