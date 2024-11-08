@@ -609,8 +609,9 @@ public:
         res += "\n\n";
         std::queue<BasicBlock *> tmp;
         std::vector<BasicBlock *> seen = {};
-        tmp.push(this->BB0);
 
+        // 11.07.2024: edge connections part 1 - [branch / fall-through]
+        tmp.push(this->BB0);
         while (!tmp.empty()) {
             curr = tmp.front();
             tmp.pop();
@@ -650,9 +651,40 @@ public:
                     std::cout << "pushed child2 [" << std::to_string(curr->child2->blockNum) << "] onto tmp" << std::endl;
                 #endif
             }
-            #ifdef DEBUG
-                std::cout << "done checking children res:" << std::endl << res;
-            #endif
+        }
+
+        // [11.07.2024]: edge connections part 2 - [dom]
+        seen.clear();
+        tmp.push(this->BB0);
+        while (!tmp.empty()) {
+            curr = tmp.front();
+            tmp.pop();
+            if (std::find(seen.begin(), seen.end(), curr) == seen.end()) {
+                seen.push_back(curr);
+            } else { // [10.27.2024]: only add if we haven't seen this [BasicBlock] before
+                continue;
+            }
+
+            if (curr->child) {
+                res += "\tbb" + std::to_string(curr->blockNum) +  ":s -> bb" + std::to_string(curr->child->blockNum) + ":n [label=\"fall-through\"];\n";
+                tmp.push(curr->child);
+                #ifdef DEBUG
+                    std::cout << "pushed child [" << std::to_string(curr->child->blockNum) << "] onto tmp" << std::endl << curr->child->toString() << std::endl;
+                #endif
+            }
+            if (curr->child2) {
+                res += "\tbb" + std::to_string(curr->blockNum) +  ":s -> bb" + std::to_string(curr->child2->blockNum) + ":n";
+
+                if (curr->child) {
+                    res += "[label=\"branch\"];\n";
+                } else { // gets called when we have an if-statement without anything after it in a [statSeq]
+                    res += "[label=\"fall-through\"];\n";
+                }
+                tmp.push(curr->child2);
+                #ifdef DEBUG
+                    std::cout << "pushed child2 [" << std::to_string(curr->child2->blockNum) << "] onto tmp" << std::endl;
+                #endif
+            }
         }
 
         res += "}";
