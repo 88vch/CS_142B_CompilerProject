@@ -613,24 +613,29 @@ public:
 
         while (!tmp.empty()) {
             curr = tmp.front();
+            tmp.pop();
             if (std::find(seen.begin(), seen.end(), curr) == seen.end()) {
                 seen.push_back(curr);
             } else { // [10.27.2024]: only add if we haven't seen this [BasicBlock] before
-                tmp.pop();
                 continue;
             }
 
-            // 11.07.2024: adding to prevent double arrows to same location
-            if (((curr->child) && (curr->child2)) && (curr->child->compare(curr->child2))) {
-                #ifdef DEBUG
-                    std::cout << "child == child2! setting child to nullptr for curr: " << std::endl << curr->toString() << std::__find_end_impl;
-                #endif
-                curr->child = nullptr; // will this cause any probelms?
+            // [11.07.2024]: adding to prevent double arrows to same location
+            if ((curr->child) && (curr->child2)) {
+                if (curr->child->compare(curr->child2)) {
+                    #ifdef DEBUG
+                        std::cout << "set curr's child2 to nullptr bc dupe (child: " << curr->child->blockNum << ", child2: " << curr->child2->blockNum << "); curr: " << std::endl << curr->toString() << std::endl;
+                    #endif
+                    curr->child2 = nullptr;  // will this cause any probelms?
+                }
             }
 
             if (curr->child) {
                 res += "\tbb" + std::to_string(curr->blockNum) +  ":s -> bb" + std::to_string(curr->child->blockNum) + ":n [label=\"fall-through\"];\n";
                 tmp.push(curr->child);
+                #ifdef DEBUG
+                    std::cout << "pushed child [" << std::to_string(curr->child->blockNum) << "] onto tmp" << std::endl << curr->child->toString() << std::endl;
+                #endif
             }
             if (curr->child2) {
                 res += "\tbb" + std::to_string(curr->blockNum) +  ":s -> bb" + std::to_string(curr->child2->blockNum) + ":n";
@@ -641,8 +646,13 @@ public:
                     res += "[label=\"fall-through\"];\n";
                 }
                 tmp.push(curr->child2);
+                #ifdef DEBUG
+                    std::cout << "pushed child2 [" << std::to_string(curr->child2->blockNum) << "] onto tmp" << std::endl;
+                #endif
             }
-            tmp.pop();
+            #ifdef DEBUG
+                std::cout << "done checking children res:" << std::endl << res;
+            #endif
         }
 
         res += "}";

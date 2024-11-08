@@ -5,9 +5,9 @@ int SSA::curr_instr_num = 1;
 int SSA::curr_const_num = -1;
 
 SSA::~SSA() {
-    #ifdef DEBUG
-        std::cout << "SSA to-delete: " << this->toString() << std::endl;
-    #endif
+    // #ifdef DEBUG
+    //     std::cout << "SSA to-delete: " << this->toString() << std::endl;
+    // #endif
 
     if (this->op == 0) {
         curr_const_num++;

@@ -76,6 +76,18 @@ public:
             res += "none!";
         }
 
+        // if (this->child) {
+        //     res +="\nchild1: " + this->child->toString() + "\n";
+        // } else {
+        //     res +="\nchild1: nullptr\n";
+        // }
+         
+        // if (this->child2) {
+        //     res +="\nchild2: " + this->child2->toString() + "\n";
+        // } else {
+        //     res +="\nchild2: nullptr\n";
+        // }
+
         return res;
     }
 
@@ -84,7 +96,10 @@ public:
     void updateInstructions(SSA *oldVal, SSA *newVal);
 
     inline bool compare(BasicBlock *b) const {
-        return (this->blockNum != b->blockNum); 
+        #ifdef DEBUG
+            std::cout << "in BB compare: this=[" << this->blockNum << "], b=[" << b->blockNum << "]" << std::endl;
+        #endif
+        return (this->blockNum == b->blockNum); 
     }
 
     inline bool findSSA(SSA *s) {
