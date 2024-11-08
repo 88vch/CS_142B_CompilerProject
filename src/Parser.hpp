@@ -600,7 +600,11 @@ public:
             std::cout << "done creating block definitions res: " << res << std::endl;
         #endif
 
-        // edge connections
+        // edge connections;
+        // - label=[`branch`, `fall-through`, `dom`]
+        //      note: `dom`    style=[dotted]
+        //      note: `branch` iff condition == true (then_blk, while_blk)
+        // NOTE: [branch && fall through] && [dom] imply 2 separate edge connection generations!
         BasicBlock *curr = nullptr;
         res += "\n\n";
         std::queue<BasicBlock *> tmp;
@@ -616,12 +620,26 @@ public:
                 continue;
             }
 
+            // 11.07.2024: adding to prevent double arrows to same location
+            if (((curr->child) && (curr->child2)) && (curr->child->compare(curr->child2))) {
+                #ifdef DEBUG
+                    std::cout << "child == child2! setting child to nullptr for curr: " << std::endl << curr->toString() << std::__find_end_impl;
+                #endif
+                curr->child = nullptr; // will this cause any probelms?
+            }
+
             if (curr->child) {
-                res += "\tbb" + std::to_string(curr->blockNum) +  "-> bb" + std::to_string(curr->child->blockNum) + ";\n";
+                res += "\tbb" + std::to_string(curr->blockNum) +  ":s -> bb" + std::to_string(curr->child->blockNum) + ":n [label=\"fall-through\"];\n";
                 tmp.push(curr->child);
             }
             if (curr->child2) {
-                res += "\tbb" + std::to_string(curr->blockNum) +  "-> bb" + std::to_string(curr->child2->blockNum) + ";\n";
+                res += "\tbb" + std::to_string(curr->blockNum) +  ":s -> bb" + std::to_string(curr->child2->blockNum) + ":n";
+
+                if (curr->child) {
+                    res += "[label=\"branch\"];\n";
+                } else { // gets called when we have an if-statement without anything after it in a [statSeq]
+                    res += "[label=\"fall-through\"];\n";
+                }
                 tmp.push(curr->child2);
             }
             tmp.pop();
