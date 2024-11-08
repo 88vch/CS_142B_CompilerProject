@@ -106,14 +106,15 @@ std::string BasicBlock::toDOT() const {
             res += curr->instr->toDOT() + "|";
             curr = curr->prev;
         }
+        res.pop_back();
     } else {
         for (const auto &node : this->newInstrs) {
             if (node->instr->get_constVal() == nullptr) {
                 res += node->instr->toDOT() + "|";
             }
         }
+        res.pop_back();
     }
-    res.pop_back();
     res += "}";
 
 

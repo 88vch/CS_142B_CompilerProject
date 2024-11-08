@@ -580,6 +580,7 @@ SSA* Parser::p2_assignment() {
     return value;
 }
 
+
 // ToDo: after generating the Dot & graph the first time
 SSA* Parser::p_funcCall() {
     SSA *res = nullptr;
@@ -853,7 +854,6 @@ SSA* Parser::p2_funcCall() {
         // func->child = this->currBB;
     }
 
-
     #ifdef DEBUG
         std::cout << "\t[Parser::p_funcCall()] returning res: " << res->toString() << std::endl;
     #endif
@@ -960,26 +960,32 @@ SSA* Parser::p2_ifStatement() {
     this->currBB = this->currBB->child;
 
     BasicBlock *join_blk = nullptr;
+    join_blk = new BasicBlock(this->currBB->varVals);
 
     // [11.04.2024]: new; note - [then_blk->child = (old) if_parent->child]
     if (!hasChild) {
         // [10.24.2024]: ?
-        join_blk = new BasicBlock(this->currBB->varVals);
         #ifdef DEBUG
             std::cout << "created new BB (join), looks like: " << std::endl << join_blk->toString() << std::endl;
         #endif
-        then_blk->child2 = join_blk;
+        then_blk->child = join_blk;
         join_blk->parent = then_blk;
     } else {
         #ifdef DEBUG
             std::cout << "using existing child (4join): " << std::endl << og_child->toString() << std::endl;
         #endif
-        then_blk->child2 = og_child;
+        then_blk->child = join_blk;
+        join_blk->parent = then_blk;
+        join_blk->child2 = og_child;
+        // og_child->parent2 = join_blk;
+        if_parent->child2 = join_blk;
+
+        // then_blk->child2 = og_child;
 
         if (og_child->parent == if_parent) {
-            og_child->parent = then_blk;
+            og_child->parent = join_blk;
         } else if (og_child->parent2 == if_parent) {
-            og_child->parent2 = then_blk;
+            og_child->parent2 = join_blk;
         }
     }
 
@@ -998,14 +1004,16 @@ SSA* Parser::p2_ifStatement() {
         this->prevJump = true;
         this->prevInstrs.push(jmp_instr); // [10/10/2024]: push at the end so next added SSA-instr will be set as the jump-location
 
-        if (!hasChild) {
+        // [11.08.2024]: shouldn't need condition here cause we handle above, right?
+        // if (!hasChild) {
             if_parent->child2 = join_blk;
             join_blk->parent2 = if_parent;
-            this->currBB = join_blk; // [10.24.2024]: same as [this->currBB = this->currBB->child;]?
-        } else {
-            if_parent->child2 = og_child;
-            this->currBB = og_child;
-        }
+        // } else {
+        //     if_parent->child2 = join_blk;
+        //     join_blk->parent2 = if_parent;
+        //     join_blk->child2 = og_child;
+        // }
+        this->currBB = join_blk;
 
         #ifdef DEBUG
             std::cout << "after if1 statSeq(), [if_parent->child2] looks like: " << std::endl;
@@ -1036,13 +1044,11 @@ SSA* Parser::p2_ifStatement() {
     if_parent->child2 = else_blk;
     else_blk->parent = if_parent;
     
-    if (!hasChild) {
-        else_blk->child2 = join_blk;
+    // [11.08.2024]: shouldn't need condition here cause we handle above, right?
+    // if (!hasChild) {
+        else_blk->child = join_blk;
         join_blk->parent2 = else_blk;
-    } else {
-        else_blk->child2 = og_child;
-        og_child->parent2 = else_blk;
-    }
+    // }
 
     this->currBB = else_blk; // [10/14/2024]: again, similar to above we assume [p2_statSeq()] manipulates [this->currBB]
 

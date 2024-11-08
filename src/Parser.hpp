@@ -560,7 +560,7 @@ public:
     inline std::string generateBlocks(BasicBlock *curr, std::string res, std::vector<BasicBlock *>blocksSeen) {
         blocksSeen.push_back(curr);
 
-        res += "\tbb" + std::to_string(curr->blockNum) + " [shape=record, label=\"" + curr->toDOT() + "\"];\n";
+        res += "\tbb" + std::to_string(curr->blockNum) + " [shape=record, label=\"<b>" + curr->toDOT() + "\"];\n";
         #ifdef DEBUG
             std::cout << "updated res: " << res << std::endl << std::endl;
         #endif
@@ -665,21 +665,16 @@ public:
                 continue;
             }
 
-            if (curr->child) {
-                res += "\tbb" + std::to_string(curr->blockNum) +  ":s -> bb" + std::to_string(curr->child->blockNum) + ":n [label=\"fall-through\"];\n";
+            // if we haven't seen the child before indicates this blk [dom] the child
+            if (curr->child && (std::find(seen.begin(), seen.end(), curr->child) == seen.end())) {
+                res += "\tbb" + std::to_string(curr->blockNum) +  ":b -> bb" + std::to_string(curr->child->blockNum) + ":b [color=blue, style=dotted, label=\"dom\"];\n";
                 tmp.push(curr->child);
                 #ifdef DEBUG
                     std::cout << "pushed child [" << std::to_string(curr->child->blockNum) << "] onto tmp" << std::endl << curr->child->toString() << std::endl;
                 #endif
             }
-            if (curr->child2) {
-                res += "\tbb" + std::to_string(curr->blockNum) +  ":s -> bb" + std::to_string(curr->child2->blockNum) + ":n";
-
-                if (curr->child) {
-                    res += "[label=\"branch\"];\n";
-                } else { // gets called when we have an if-statement without anything after it in a [statSeq]
-                    res += "[label=\"fall-through\"];\n";
-                }
+            if (curr->child2 && (std::find(seen.begin(), seen.end(), curr->child2) == seen.end())) {
+                res += "\tbb" + std::to_string(curr->blockNum) +  ":b -> bb" + std::to_string(curr->child2->blockNum) + ":b [color=blue, style=dotted, label=\"dom\"];\n";
                 tmp.push(curr->child2);
                 #ifdef DEBUG
                     std::cout << "pushed child2 [" << std::to_string(curr->child2->blockNum) << "] onto tmp" << std::endl;
