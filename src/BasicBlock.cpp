@@ -11,7 +11,7 @@ std::unordered_map<SSA *, int> BasicBlock::ssa_table_reversed = {};
 
 
 // [10.22.2024]: Revised?
-BasicBlock::BasicBlock(bool isConst)
+BasicBlock::BasicBlock(bool isConst, bool isJoin)
 {
     #ifdef DEBUG
         std::cout << "in BasicBlock(isConst=" << isConst << ")" << std::endl;
@@ -33,6 +33,7 @@ BasicBlock::BasicBlock(bool isConst)
     }
     this->newInstrs = {};
     this->varVals = {};
+    this->join = isJoin;
 
     // #ifdef DEBUG
     //     std::cout << "new BasicBlock; got [instrList; size=" << this->instrList.size() << ", " << instrLst.size() << "] looks like:" << std::endl;
@@ -43,7 +44,7 @@ BasicBlock::BasicBlock(bool isConst)
     #endif
 }
 
-BasicBlock::BasicBlock(std::unordered_map<int, int> DOM_vv_map, bool isConst)
+BasicBlock::BasicBlock(std::unordered_map<int, int> DOM_vv_map, bool isConst, bool isJoin)
 {
     this->blockNum = debugNum++;
 
@@ -61,6 +62,7 @@ BasicBlock::BasicBlock(std::unordered_map<int, int> DOM_vv_map, bool isConst)
         this->constPtr = nullptr;
     }
     this->newInstrs = {};
+    this->join = isJoin;
 
     #ifdef DEBUG
         std::cout << "new BasicBlock; got [varVals: size=" << this->varVals.size() << "] looks like:" << std::endl;
@@ -71,7 +73,7 @@ BasicBlock::BasicBlock(std::unordered_map<int, int> DOM_vv_map, bool isConst)
     //     this->printInstrList();
     // #endif
 }
-BasicBlock::BasicBlock(BasicBlock *p1, BasicBlock *p2, std::unordered_map<int, int> DOM_vv_map)
+BasicBlock::BasicBlock(BasicBlock *p1, BasicBlock *p2, std::unordered_map<int, int> DOM_vv_map, bool isJoin)
 {
     this->blockNum = debugNum++;
 
@@ -86,6 +88,7 @@ BasicBlock::BasicBlock(BasicBlock *p1, BasicBlock *p2, std::unordered_map<int, i
     this->constPtr = nullptr;
 
     this->newInstrs = {};
+    this->join = isJoin;
 
     #ifdef DEBUG
         std::cout << "new BasicBlock; got [varVals: size=" << this->varVals.size() << "] looks like:" << std::endl;

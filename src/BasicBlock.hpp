@@ -25,9 +25,9 @@ public:
 
 
     // [10.22.2024]: Revised slightly to try without [instrLis]?
-    BasicBlock(bool isConst = false);
-    BasicBlock(std::unordered_map<int, int> DOM_vv_map, bool isConst = false);
-    BasicBlock(BasicBlock *p1, BasicBlock *p2, std::unordered_map<int, int> DOM_vv_map);
+    BasicBlock(bool isConst = false, bool isJoin = false);
+    BasicBlock(std::unordered_map<int, int> DOM_vv_map, bool isConst = false, bool isJoin = false);
+    BasicBlock(BasicBlock *p1, BasicBlock *p2, std::unordered_map<int, int> DOM_vv_map, bool isJoin = false);
 
     ~BasicBlock() {
         #ifdef DEBUG
@@ -132,6 +132,7 @@ public:
 
     Node *constPtr;
 
+    bool join;
     int blockNum;
     static int debugNum;
 

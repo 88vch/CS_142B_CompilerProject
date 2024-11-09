@@ -954,28 +954,21 @@ SSA* Parser::p2_ifStatement() {
     this->currBB = this->currBB->child;
 
     BasicBlock *join_blk = nullptr;
-    join_blk = new BasicBlock(this->currBB->varVals);
+    join_blk = new BasicBlock(this->currBB->varVals, false, true);
 
     #ifdef DEBUG
         std::cout << "created new BB (join), looks like: " << std::endl << join_blk->toString() << std::endl;
     #endif
 
+    then_blk->child = join_blk;
+    join_blk->parent = then_blk;
     // [11.04.2024]: new; note - [then_blk->child = (old) if_parent->child]
-    if (!hasChild) {
-        // [10.24.2024]: ?
-        then_blk->child = join_blk;
-        join_blk->parent = then_blk;
-    } else {
+    if (hasChild) {
         #ifdef DEBUG
             std::cout << "moved existing child back (to create new BB)" << std::endl;
         #endif
-        then_blk->child = join_blk;
-        join_blk->parent = then_blk;
         join_blk->child2 = og_child;
-        // og_child->parent2 = join_blk;
         if_parent->child2 = join_blk;
-
-        // then_blk->child2 = og_child;
 
         if (og_child->parent == if_parent) {
             og_child->parent = join_blk;
@@ -1018,6 +1011,20 @@ SSA* Parser::p2_ifStatement() {
                 std::cout << "nullptr!" << std::endl;
             }
         #endif
+
+        for (const auto &p : if_parent->varVals) {
+            // if a ident from [if_parent] exists in [then_blk] with a different value, we need a phi
+            if (then_blk->varVals.at(p.first) != p.second) {
+                    SSA *phi_instr = this->addSSA1(6, BasicBlock::ssa_table.at(p.second), BasicBlock::ssa_table.at(then_blk->varVals.at(p.first)), true);
+                    #ifdef DEBUG
+                        std::cout << "phi_instr: " << phi_instr->toString() << std::endl;
+                    #endif
+                    
+                    // [10.28.2024]: Update BasicBlock's VV
+                    int phi_table_int = this->add_SSA_table(phi_instr);
+                    this->currBB->varVals.insert_or_assign(p.first, phi_table_int);
+            }
+        }
         
         //[10.21.2024]: Isn't this actually the first instruction?
         return jmp_instr;
@@ -1039,12 +1046,12 @@ SSA* Parser::p2_ifStatement() {
     if_parent->child2 = else_blk;
     else_blk->parent = if_parent;
     else_blk->child = join_blk;
+    join_blk->parent2 = else_blk;
 
     #ifdef DEBUG
         std::cout << "\tset [else_blk]->child = join_blk; join_blk looks like: " << join_blk->toString() << std::endl;
     #endif
 
-    join_blk->parent2 = else_blk;
     
     // [11.08.2024]: shouldn't need condition here cause we handle above, right?
     // if (!hasChild) {
@@ -1064,19 +1071,27 @@ SSA* Parser::p2_ifStatement() {
     this->CheckFor(Result(2, 21)); // check `fi`
 
     // 11.04.2024::6:57;
-    if (!hasChild) {
+    // if (!hasChild) {
         // join_blk->parent = then_blk; // [10.24.2024]: already did this earlier
-        join_blk->parent2 = else_blk;
-        then_blk->child = join_blk;
-        else_blk->child = join_blk;
-    
-        this->currBB = join_blk;
-    } else {
-        og_child->parent2 = else_blk;
-        // then_blk->child = og_child; [this is already done earlier]
-        else_blk->child = og_child;
-        
-        this->currBB = og_child;
+    join_blk->parent2 = else_blk;
+    then_blk->child = join_blk;
+    else_blk->child = join_blk;
+
+    this->currBB = join_blk;
+
+    // [SECTION A]: check if we need to create phi-instrs
+    for (const auto &p : if_parent->varVals) {
+        // if a ident from [if_parent] exists in [then_blk] with a different value, we need a phi
+        if (then_blk->varVals.at(p.first) != else_blk->varVals.at(p.first)) {
+                SSA *phi_instr = this->addSSA1(6, BasicBlock::ssa_table.at(then_blk->varVals.at(p.first)), BasicBlock::ssa_table.at(else_blk->varVals.at(p.first)), true);
+                #ifdef DEBUG
+                    std::cout << "phi_instr: " << phi_instr->toString() << std::endl;
+                #endif
+                
+                // [10.28.2024]: Update BasicBlock's VV
+                int phi_table_int = this->add_SSA_table(phi_instr);
+                this->currBB->varVals.insert_or_assign(p.first, phi_table_int);
+        }
     }
 
     return jmp_instr; // [11.07.2024]: ?

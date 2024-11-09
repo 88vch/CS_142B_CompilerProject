@@ -560,7 +560,11 @@ public:
     inline std::string generateBlocks(BasicBlock *curr, std::string res, std::vector<BasicBlock *>blocksSeen) {
         blocksSeen.push_back(curr);
 
-        res += "\tbb" + std::to_string(curr->blockNum) + " [shape=record, label=\"<b>" + curr->toDOT() + "\"];\n";
+        if (curr->join) {
+            res += "\tbb" + std::to_string(curr->blockNum) + " [shape=record, label=\"<b>join\n" + curr->toDOT() + "\"];\n";
+        } else {
+            res += "\tbb" + std::to_string(curr->blockNum) + " [shape=record, label=\"<b>" + curr->toDOT() + "\"];\n";
+        }
         #ifdef DEBUG
             std::cout << "updated res: " << res << std::endl << std::endl;
         #endif
