@@ -474,7 +474,7 @@ public:
         if (curr->child2) {
             propagateDown(curr->child2, ident, oldVal, phi_ident_val, false);
         }
-
+        // stub
         #ifdef DEBUG
             std::cout << "returning normally: no children remain! curr looks like: " << std::endl << curr->toString() << std::endl;
         #endif
