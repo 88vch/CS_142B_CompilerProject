@@ -315,7 +315,7 @@ SSA* Parser::p2_assignment() {
 
     // IDENT: not checking for a specific since this is a [variable]
     int ident = SymbolTable::identifiers.at(this->sym.get_value()); // unused for now
-    int oldInt;
+    // int oldInt;
     SSA *oldVal = nullptr;
 
     // [10.29.2024]: todo - update [this->varDeclarations] to only include BB's? (and inherit from parent)?
@@ -332,7 +332,7 @@ SSA* Parser::p2_assignment() {
     // if (this->VVs.find(ident) != this->VVs.end()) {
     if ((this->currBB->varVals.find(ident) != this->currBB->varVals.end()) && 
         (this->currBB->findSSA(BasicBlock::ssa_table.at(this->currBB->varVals.at(ident))))) {
-        oldInt = this->currBB->varVals.at(ident);
+        // oldInt = this->currBB->varVals.at(ident);
         oldVal = BasicBlock::ssa_table.at(this->currBB->varVals.at(ident));
         #ifdef DEBUG
             std::cout << "ident exists with a definition (created in this BB): ident=" << ident << ", val=" << BasicBlock::ssa_table.at(this->currBB->varVals.at(ident))->toString() << std::endl;
@@ -468,6 +468,12 @@ SSA* Parser::p2_assignment() {
         #ifdef DEBUG
             std::cout << "this->currBB moved now looks like: " << this->currBB->toString() << std::endl << "\twith varVals like: ";
             Parser::printVVs(this->currBB->varVals);
+            std::cout << "this->currBB's child2: ";
+            if (this->currBB->child2) {
+                std::cout << std::endl << this->currBB->child2->toString() << std::endl;
+            } else {
+                std::cout << "nullptr!" << std::endl;
+            }
         #endif
         overwrite = true;  // 10.29.2024: if this assignment would overwrite a previous varVal mapping
     }
@@ -504,9 +510,15 @@ SSA* Parser::p2_assignment() {
     
     // [10.29.2024]: if this assignment would overwrite a previous varVal mapping
     // - if we have a childBB indicates we have a [PREVCHILD] see above
-    if (overwrite && this->currBB->child2){ 
+    // [11.09.2024]: tbh idk what [overwrite] does exactly here
+    // - modified to `||` to try handle case: modify ident (in while-relation) in body, causes phi update (in while-relation bb)
+    if (overwrite || ((this->currBB->child2) && (this->currBB->child2->varVals.find(ident) != this->currBB->child2->varVals.end()))){ 
+        if (this->currBB->child2->varVals.find(ident) != this->currBB->child2->varVals.end()) {
+            oldVal = BasicBlock::ssa_table.at(this->currBB->child2->varVals.at(ident));
+        }
+        // BasicBlock::ssa_table.at(this->currBB->varVals.at(ident))
         #ifdef DEBUG
-            std::cout << "done p2_assignment value [p_expr()] returned: " << value->toString() << std::endl;
+            // std::cout << "done p2_assignment value [p_expr()] returned: " << value->toString() << std::endl;
             std::cout << "about to write new phi-instr into child2" << std::endl;
         #endif
 

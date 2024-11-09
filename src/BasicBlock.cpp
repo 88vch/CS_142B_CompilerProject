@@ -128,9 +128,14 @@ std::string BasicBlock::toDOT() const {
 // this function is called after we update this BB's varVal mapping with a new update
 // - todo: search through each newInstr ( each {x, y} in the SSA )
 void BasicBlock::updateInstructions(SSA *oldVal, SSA *newVal) {
+    #ifdef DEBUG
+        std::cout << "BB before updateInstructions: " << std::endl << this->toString() << std::endl;
+    #endif
     for (size_t i = 0; i < this->newInstrs.size(); i++) {
         SSA *curr = this->newInstrs.at(i)->instr;
         curr->updateIfHas(oldVal, newVal);
-
     }
+    #ifdef DEBUG
+        std::cout << "BB after updateInstructions: " << std::endl << this->toString() << std::endl;
+    #endif
 }

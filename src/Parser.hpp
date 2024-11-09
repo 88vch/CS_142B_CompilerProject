@@ -449,22 +449,24 @@ public:
                 // if varVal mapping ident != phi_ident_val, (waht does this mean)?
                 //      - means that [ident : old_ident_val] ?
                 curr->varVals.insert_or_assign(ident, phi_ident_val);
+                curr->updateInstructions(oldVal, BasicBlock::ssa_table.at(phi_ident_val));
             } else {
                 #ifdef DEBUG
                     std::cout << "currBB's varVals contains [ident:phi_ident_val] pair!" << std::endl;
                 #endif
+                // 11.09.2024: no need to update instructions if proper mapping already exists
             }
         } else {
             #ifdef DEBUG
                 std::cout << "ident doesn't exist in currBB! inserting new" << std::endl;
             #endif
             curr->varVals.insert_or_assign(ident, phi_ident_val);
+            curr->updateInstructions(oldVal, BasicBlock::ssa_table.at(phi_ident_val));
 
             // 11.06.2024: nah i think smtn with the logic is wrong abt this...
             // 11.05.2024: if we don't find the [ident] defined as a key in [this->currBB->varVals],
             // - does it imply that we've reached the end of propagate (since this means there is no loop?; that's my assumption)?
         }
-        curr->updateInstructions(oldVal, BasicBlock::ssa_table.at(phi_ident_val));
 
         if (curr->child) {
             propagateDown(curr->child, ident, oldVal, phi_ident_val, false);
@@ -561,13 +563,13 @@ public:
         blocksSeen.push_back(curr);
 
         if (curr->join) {
-            res += "\tbb" + std::to_string(curr->blockNum) + " [shape=record, label=\"<b>join\n" + curr->toDOT() + "\"];\n";
+            res += "\tbb" + std::to_string(curr->blockNum) + " [shape=record, label=\"<b>join\\n" + curr->toDOT() + "\"];\n";
         } else {
             res += "\tbb" + std::to_string(curr->blockNum) + " [shape=record, label=\"<b>" + curr->toDOT() + "\"];\n";
         }
-        #ifdef DEBUG
-            std::cout << "updated res: " << res << std::endl << std::endl;
-        #endif
+        // #ifdef DEBUG
+        //     std::cout << "updated res: " << res << std::endl << std::endl;
+        // #endif
 
         if ((curr->child) && (std::find(blocksSeen.begin(), blocksSeen.end(), curr->child) == blocksSeen.end())) {
             res = this->generateBlocks(curr->child, res, blocksSeen);
@@ -588,9 +590,9 @@ public:
         //     blk = nullptr;
         // }
         std::vector<BasicBlock *> blks = {};
-        #ifdef DEBUG
-            std::cout << "entering [generateBlocks]..." << std::endl;
-        #endif
+        // #ifdef DEBUG
+        //     std::cout << "entering [generateBlocks]..." << std::endl;
+        // #endif
         res = this->generateBlocks(this->BB0, res, blks);
 
         // BasicBlock *curr = this->BB0;
@@ -638,9 +640,9 @@ public:
             if (curr->child) {
                 res += "\tbb" + std::to_string(curr->blockNum) +  ":s -> bb" + std::to_string(curr->child->blockNum) + ":n [label=\"fall-through\"];\n";
                 tmp.push(curr->child);
-                #ifdef DEBUG
-                    std::cout << "pushed child [" << std::to_string(curr->child->blockNum) << "] onto tmp" << std::endl << curr->child->toString() << std::endl;
-                #endif
+                // #ifdef DEBUG
+                //     std::cout << "pushed child [" << std::to_string(curr->child->blockNum) << "] onto tmp" << std::endl << curr->child->toString() << std::endl;
+                // #endif
             }
             if (curr->child2) {
                 res += "\tbb" + std::to_string(curr->blockNum) +  ":s -> bb" + std::to_string(curr->child2->blockNum) + ":n";
@@ -651,9 +653,9 @@ public:
                     res += "[label=\"fall-through\"];\n";
                 }
                 tmp.push(curr->child2);
-                #ifdef DEBUG
-                    std::cout << "pushed child2 [" << std::to_string(curr->child2->blockNum) << "] onto tmp" << std::endl;
-                #endif
+                // #ifdef DEBUG
+                //     std::cout << "pushed child2 [" << std::to_string(curr->child2->blockNum) << "] onto tmp" << std::endl;
+                // #endif
             }
         }
 
@@ -673,16 +675,16 @@ public:
             if (curr->child && (std::find(seen.begin(), seen.end(), curr->child) == seen.end())) {
                 res += "\tbb" + std::to_string(curr->blockNum) +  ":b -> bb" + std::to_string(curr->child->blockNum) + ":b [color=blue, style=dotted, label=\"dom\"];\n";
                 tmp.push(curr->child);
-                #ifdef DEBUG
-                    std::cout << "pushed child [" << std::to_string(curr->child->blockNum) << "] onto tmp" << std::endl << curr->child->toString() << std::endl;
-                #endif
+                // #ifdef DEBUG
+                //     std::cout << "pushed child [" << std::to_string(curr->child->blockNum) << "] onto tmp" << std::endl << curr->child->toString() << std::endl;
+                // #endif
             }
             if (curr->child2 && (std::find(seen.begin(), seen.end(), curr->child2) == seen.end())) {
                 res += "\tbb" + std::to_string(curr->blockNum) +  ":b -> bb" + std::to_string(curr->child2->blockNum) + ":b [color=blue, style=dotted, label=\"dom\"];\n";
                 tmp.push(curr->child2);
-                #ifdef DEBUG
-                    std::cout << "pushed child2 [" << std::to_string(curr->child2->blockNum) << "] onto tmp" << std::endl;
-                #endif
+                // #ifdef DEBUG
+                //     std::cout << "pushed child2 [" << std::to_string(curr->child2->blockNum) << "] onto tmp" << std::endl;
+                // #endif
             }
         }
 
@@ -819,9 +821,9 @@ private:
 
     // consumes [non-optional's]
     inline bool CheckFor(Result expected_token, bool optional = false) {
-        #ifdef DEBUG
-            std::cout << "Checking For [expected: " << expected_token.to_string() << "], [got: " << this->sym.to_string() << "]" << std::endl;
-        #endif
+        // #ifdef DEBUG
+        //     std::cout << "Checking For [expected: " << expected_token.to_string() << "], [got: " << this->sym.to_string() << "]" << std::endl;
+        // #endif
         bool retVal = false;
         
         // Note: there might be some logic messed up abt this (relation: [expected_token, Result(2, -1)])
@@ -830,16 +832,16 @@ private:
             //     std::cout << "expected token != EOF token" << std::endl;
             // #endif
             if (optional) { // optional's don't get consumed
-                #ifdef DEBUG
-                    std::cout << "\toptional!" << std::endl;
-                #endif
+                // #ifdef DEBUG
+                //     std::cout << "\toptional!" << std::endl;
+                // #endif
                 if (this->sym.compare(expected_token)) {
                     retVal = true;
                 }
             } else {
-                #ifdef DEBUG
-                    std::cout << "\tnot an optional! (i.e. will consume if can)" << std::endl;
-                #endif
+                // #ifdef DEBUG
+                //     std::cout << "\tnot an optional! (i.e. will consume if can)" << std::endl;
+                // #endif
                 if (!this->sym.compare(expected_token)) {
                     std::cout << "Error: CheckFor expected: [" << expected_token.to_string() << "], got: [" << this->sym.to_string() << "]! exiting prematurely..." << std::endl;
                     exit(EXIT_FAILURE);
@@ -850,9 +852,9 @@ private:
             }
         }
 
-        #ifdef DEBUG
-            std::cout << "\treturning [" << retVal << "]" << std::endl;
-        #endif
+        // #ifdef DEBUG
+        //     std::cout << "\treturning [" << retVal << "]" << std::endl;
+        // #endif
         return retVal;
     }
 

@@ -78,9 +78,9 @@ public:
     }
 
     static bool write_file_contents(const std::string &out_f, const std::string& content, const std::string &fileName) {
-        #ifdef DEBUG
-            std::cout << "got file contents: " << content << std::endl;
-        #endif
+        // #ifdef DEBUG
+        //     std::cout << "got file contents: " << content << std::endl;
+        // #endif
         // Open the file for writing
         std::ofstream file(out_f);
 

@@ -4,9 +4,11 @@ var x,k,j,m;
 let x <- call InputNum();
 let k <- call InputNum();
 while x < 10 do
-    let j <- 0;
+    let j <- 0 + 1;
     let x <- x + 1;
     let m <- k * 2;
+
+    let j <- x + m;
 od;
 call OutputNum(x);
 call OutputNum(k);
