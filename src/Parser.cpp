@@ -435,13 +435,10 @@ SSA* Parser::p2_assignment() {
         // BasicBlock::ssa_table.at(this->currBB->varVals.at(ident))
         
         // if (this->currBB->findSSA(oldVal)) {}
-        if (this->sameBranch(oldVal, value)) {
-            // create a function which iterates thorough BBs checking to see
-            // - if [oldVal] && [value] come from the same path then we don't need phi (bc [value] should dom [oldVal])
-        } else {
+        if (this->SSAisDOM(oldVal, value) == false) {
             #ifdef DEBUG
                 // std::cout << "done p2_assignment value [p_expr()] returned: " << value->toString() << std::endl;
-                std::cout << "about to write new phi-instr into child2" << std::endl;
+                std::cout << "oldVal !DOM newVal" << std::endl << "about to write new phi-instr into child2" << std::endl;
             #endif
 
             // [10.30.2024]: PHI-instr
@@ -498,6 +495,10 @@ SSA* Parser::p2_assignment() {
                 //     blk->varVals.insert_or_assign(ident, table_int); 
                 // }
             }
+        } else {
+            #ifdef DEBUG
+                std::cout << "oldVal DOM's newVal! no need to create phi" << std::endl;
+            #endif
         }
     } else {
         #ifdef DEBUG

@@ -7,6 +7,7 @@
 #include <sstream>
 #include <cstring>
 #include <fstream>
+#include <algorithm>
 // #include <stdio.h>
 // #include <cstdio>
 #include "Func.hpp"
@@ -478,6 +479,61 @@ public:
         #ifdef DEBUG
             std::cout << "returning normally: no children remain! curr looks like: " << std::endl << curr->toString() << std::endl;
         #endif
+    }
+
+    // [11.11.2024]: a function which iterates thorough BBs checking to see
+    // - if [oldVal] DOM [newVal]; i.e. they come from the same path then we don't need phi (bc they come from the same path)
+    inline bool SSAisDOM(SSA *oldVal, SSA *newVal) const {
+        #ifdef DEBUG
+            std::cout << "entering [SSAisDOM] with [oldVal && newVal];" << std::endl << "\t[oldVal]: " << oldVal->toString() << std::endl << "\t[newVal]: " << newVal->toString() << std::endl << std::endl;
+        #endif
+        BasicBlock *curr = nullptr;
+        bool oldFound = false;
+
+        std::vector<BasicBlock *>seen = {};
+        std::stack<BasicBlock *> s;
+        s.push(this->BB0);
+        seen.push_back(this->BB0);
+
+        while (!s.empty()) {
+            curr = s.top();
+            s.pop();
+            #ifdef DEBUG
+                std::cout << curr->toString() << std::endl;
+            #endif
+
+            if (curr->findSSA(oldVal)) {
+                #ifdef DEBUG    
+                    std::cout << "found oldVal" << std::endl;
+                #endif
+                oldFound = true; // 11.11.2024: there should be no way that oldVal && newVal are in the sameBB (RIGHT?)
+            }
+            if (curr->findSSA(newVal)) {
+                #ifdef DEBUG
+                    std::cout << "found newVal" << std::endl;
+                #endif
+                if (oldFound) {
+                    return true;
+                } else { // if newVal was seen before old, false
+                    return false;
+                }
+            }
+
+
+            if (curr->child && (std::find(seen.begin(), seen.end(), curr->child) == seen.end())) {
+                s.push(curr->child);
+                seen.push_back(curr->child);
+            }
+            if (curr->child2 && (std::find(seen.begin(), seen.end(), curr->child2) == seen.end())) {
+                s.push(curr->child2);
+                seen.push_back(curr->child2);
+            }
+        }
+        // if we've reached this point, it means that we couldn't find [newVal]
+        #ifdef DEBUG
+            std::cout << "exiting [Parser::SSAisDOM] with return val (false); coudln't find [newVal]: " << newVal->toString() << std::endl;
+        #endif
+        return false; 
     }
 
     inline std::vector<SSA*> getSSA() const { return this->SSA_instrs; }
