@@ -418,73 +418,86 @@ SSA* Parser::p2_assignment() {
         std::cout << "returned SSA value assignment has table int of : " << std::to_string(table_int) << std::endl;
     #endif
     
-    // [10.29.2024]: if this assignment would overwrite a previous varVal mapping
-    // - if we have a childBB indicates we have a [PREVCHILD] see above
+    // [11.10.2024]: so overwrite implies that the previous [currBB] had the newInstr for this [ident]
+    // - therefore we create a new bb. this is what overwrite signals to us
+    // - does not tell us whether or not we need a phi (but this is what we want overwrite to imply)
     // [11.09.2024]: tbh idk what [overwrite] does exactly here
     // - modified to `||` to try handle case: modify ident (in while-relation) in body, causes phi update (in while-relation bb)
+    // [10.29.2024]: if this assignment would overwrite a previous varVal mapping
+    // - if we have a childBB indicates we have a [PREVCHILD] see above
     if (overwrite || ((this->currBB->child2) && (this->currBB->child2->varVals.find(ident) != this->currBB->child2->varVals.end()))){ 
         if (this->currBB->child2->varVals.find(ident) != this->currBB->child2->varVals.end()) {
             oldVal = BasicBlock::ssa_table.at(this->currBB->child2->varVals.at(ident));
         }
-        // BasicBlock::ssa_table.at(this->currBB->varVals.at(ident))
         #ifdef DEBUG
-            // std::cout << "done p2_assignment value [p_expr()] returned: " << value->toString() << std::endl;
-            std::cout << "about to write new phi-instr into child2" << std::endl;
+            std::cout << "oldVal: " << oldVal->toString() << std::endl;
         #endif
-
-        // [10.30.2024]: PHI-instr
-        // if (blk->varVals.find(ident) != blk->varVals.end()) {
-        BasicBlock *parent = this->currBB; // [11.01.2024]: changed from [this->currBB->parent] to [this->currBB] (circular loop)
-        // this->currBB = blk; // [10.24.2024]: So that [this->addSSA()] will add SSA-instr into proper BasicBlock
-        if (this->currBB->child2) {
-            this->currBB = this->currBB->child2; // [10.29.2024]: to follow the loop (IFF ONE EXISTS!)
-            #ifdef DEBUG    
-                std::cout << "got child2! looks like: \n\t" << this->currBB->toString() << std::endl;
-            #endif
+        // BasicBlock::ssa_table.at(this->currBB->varVals.at(ident))
+        
+        // if (this->currBB->findSSA(oldVal)) {}
+        if (this->sameBranch(oldVal, value)) {
+            // create a function which iterates thorough BBs checking to see
+            // - if [oldVal] && [value] come from the same path then we don't need phi (bc [value] should dom [oldVal])
         } else {
             #ifdef DEBUG
-                std::cout << "no child2 exists in currBB! printing currBB: " << std::endl << this->currBB->toString() << std::endl;
-                exit(EXIT_FAILURE);
+                // std::cout << "done p2_assignment value [p_expr()] returned: " << value->toString() << std::endl;
+                std::cout << "about to write new phi-instr into child2" << std::endl;
             #endif
-        }
 
-        // [11.09.2024]: ok modifications here will fuck up the phi's...but this is where the work needs to be done (FAWK)
-        // if (oldVal && ((this->currBB->parent) && (this->currBB->parent->varVals.find(ident) != this->currBB->parent->varVals.end()) 
-        //             && (oldVal->compare(BasicBlock::ssa_table.at(this->currBB->parent->varVals.at(ident)))))) {
-        //     #ifdef DEBUG    
-        //         std::cout << "oldVal != currBB->parent's oldVal (maybe we're in a loop that already [propagatedDown()]!)" << std::endl;
-        //     #endif
-        if (oldVal) {
-            // this will add to currBB's [newInstrs]
-            SSA *phi_instr = this->addSSA1(6, oldVal, value, true);
-            #ifdef DEBUG
-                std::cout << "phi_instr: " << phi_instr->toString() << std::endl;
-            #endif
-            
-            // [10.28.2024]: Update BasicBlock's VV
-            int phi_table_int = this->add_SSA_table(phi_instr);
-            this->currBB->varVals.insert_or_assign(ident, phi_table_int);
-            
-            #ifdef DEBUG
-                std::cout << "this->currBB looks like: " << this->currBB->toString() << std::endl;
-            #endif
-            
-            this->currBB = parent;
+            // [10.30.2024]: PHI-instr
+            // if (blk->varVals.find(ident) != blk->varVals.end()) {
+            BasicBlock *parent = this->currBB; // [11.01.2024]: changed from [this->currBB->parent] to [this->currBB] (circular loop)
+            // this->currBB = blk; // [10.24.2024]: So that [this->addSSA()] will add SSA-instr into proper BasicBlock
+            if (this->currBB->child2) {
+                this->currBB = this->currBB->child2; // [10.29.2024]: to follow the loop (IFF ONE EXISTS!)
+                #ifdef DEBUG    
+                    std::cout << "got child2! looks like: \n\t" << this->currBB->toString() << std::endl;
+                #endif
+            } else {
+                #ifdef DEBUG
+                    std::cout << "no child2 exists in currBB! printing currBB: " << std::endl << this->currBB->toString() << std::endl;
+                    exit(EXIT_FAILURE);
+                #endif
+            }
 
-            // [11.07.2024]: is this just for [child2] if [while-loop]?
-            // [11.05.2024]: moved down here below phi...?
-            // [10.28.2024]: TODO - propagate update down to while-body BB
-            // this->propagateUpdate(old_ident_val, phi_table_int);
-            // [10.30.2024]: Propagate down from here?
-            this->propagateDown(this->currBB, ident, oldVal, phi_table_int, true);
-        
-            #ifdef DEBUG
-                std::cout << "new phi-SSA: " << phi_instr->toString() << std::endl;
-                std::cout << "current BB (og parent): " << this->currBB->toString() << std::endl;
-            #endif
-            // } else {
-            //     blk->varVals.insert_or_assign(ident, table_int); 
-            // }
+            // [11.09.2024]: ok modifications here will fuck up the phi's...but this is where the work needs to be done (FAWK)
+            // if (oldVal && ((this->currBB->parent) && (this->currBB->parent->varVals.find(ident) != this->currBB->parent->varVals.end()) 
+            //             && (oldVal->compare(BasicBlock::ssa_table.at(this->currBB->parent->varVals.at(ident)))))) {
+            //     #ifdef DEBUG    
+            //         std::cout << "oldVal != currBB->parent's oldVal (maybe we're in a loop that already [propagatedDown()]!)" << std::endl;
+            //     #endif
+            if (oldVal) {
+                // this will add to currBB's [newInstrs]
+                SSA *phi_instr = this->addSSA1(6, oldVal, value, true);
+                #ifdef DEBUG
+                    std::cout << "phi_instr: " << phi_instr->toString() << std::endl;
+                #endif
+                
+                // [10.28.2024]: Update BasicBlock's VV
+                int phi_table_int = this->add_SSA_table(phi_instr);
+                this->currBB->varVals.insert_or_assign(ident, phi_table_int);
+                
+                #ifdef DEBUG
+                    std::cout << "this->currBB looks like: " << this->currBB->toString() << std::endl;
+                #endif
+                
+                this->currBB = parent;
+
+                // [11.07.2024]: is this just for [child2] if [while-loop]?
+                // [11.05.2024]: moved down here below phi...?
+                // [10.28.2024]: TODO - propagate update down to while-body BB
+                // this->propagateUpdate(old_ident_val, phi_table_int);
+                // [10.30.2024]: Propagate down from here?
+                this->propagateDown(this->currBB, ident, oldVal, phi_table_int, true);
+            
+                #ifdef DEBUG
+                    std::cout << "new phi-SSA: " << phi_instr->toString() << std::endl;
+                    std::cout << "current BB (og parent): " << this->currBB->toString() << std::endl;
+                #endif
+                // } else {
+                //     blk->varVals.insert_or_assign(ident, table_int); 
+                // }
+            }
         }
     } else {
         #ifdef DEBUG

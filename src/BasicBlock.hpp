@@ -102,6 +102,7 @@ public:
         return (this->blockNum == b->blockNum); 
     }
 
+    // checks for SSA existence in [this->newInstrs]
     inline bool findSSA(SSA *s) {
         for (const auto &n : this->newInstrs) {
             if (s->compare(n->instr)) {
