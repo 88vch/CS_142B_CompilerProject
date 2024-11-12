@@ -4,20 +4,19 @@ var x,k,j,m;
 let x <- call InputNum();
 let k <- call InputNum();
 while x < 10 do
-    let j <- 0;
-    let m <- 0;
-
+    let j <- 0 + 1;
     let x <- x + 1;
+    let m <- k * 2;
+
+    let j <- x + m;
+
     if k > 5 then
-        while j < 15 do
-            let j <- j + 1;
-        od;
+        let j <- j + 1;
         let k <- 0;
+        let m <- 9;
     else
         let k <- k + 1;
-        while m < 20 do
-            let m <- m * 2;
-        od;
+        let m <- m * 2;
     fi;
 od;
 call OutputNum(x);

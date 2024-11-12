@@ -431,10 +431,12 @@ public:
     }
 
     // recursive; maintains [this->currBB]
-    inline void propagateDown(BasicBlock *curr, int ident, SSA* oldVal, int phi_ident_val, bool first = false) {    
+    inline void propagateDown(BasicBlock *curr, int ident, SSA* oldVal, int phi_ident_val, bool first = false, std::vector<BasicBlock *> seen = {}) {    
         #ifdef DEBUG
             std::cout << "in propagateDown(ident=" << SymbolTable::symbol_table.at(ident) << ", phi_ident=" << phi_ident_val << ", oldVal (SSA) = " << oldVal->toString() << ", )" << std::endl;
         #endif
+        seen.push_back(curr);
+        
         if (!first && this->currBB->compare(curr)) {
             #ifdef DEBUG
                 std::cout << "returning: in a loop! found startBB looks like: " << std::endl << this->currBB->toString() << std::endl;
@@ -469,11 +471,11 @@ public:
             // - does it imply that we've reached the end of propagate (since this means there is no loop?; that's my assumption)?
         }
 
-        if (curr->child) {
-            propagateDown(curr->child, ident, oldVal, phi_ident_val, false);
+        if ((curr->child) && (std::find(seen.begin(), seen.end(), curr->child) == seen.end())) {
+            propagateDown(curr->child, ident, oldVal, phi_ident_val, false, seen);
         } 
-        if (curr->child2) {
-            propagateDown(curr->child2, ident, oldVal, phi_ident_val, false);
+        if ((curr->child2) && (std::find(seen.begin(), seen.end(), curr->child2) == seen.end())) {
+            propagateDown(curr->child2, ident, oldVal, phi_ident_val, false, seen);
         }
         // stub
         #ifdef DEBUG

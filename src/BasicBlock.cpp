@@ -133,7 +133,9 @@ void BasicBlock::updateInstructions(SSA *oldVal, SSA *newVal) {
     #endif
     for (size_t i = 0; i < this->newInstrs.size(); i++) {
         SSA *curr = this->newInstrs.at(i)->instr;
-        curr->updateIfHas(oldVal, newVal);
+        if (curr->get_operator() != 6) { // do not update the phi functions!
+            curr->updateIfHas(oldVal, newVal);
+        }
     }
     #ifdef DEBUG
         std::cout << "BB after updateInstructions: " << std::endl << this->toString() << std::endl;

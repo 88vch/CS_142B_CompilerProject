@@ -1,0 +1,20 @@
+main
+var x, y, z; {
+    let x <- call InputNum();
+    let y <- call InputNum();
+    let z <- x + y;
+
+    if x == 1 then
+        if z > 1 then
+            let y <- 4
+        else
+            let y <- 8
+        fi;
+    else
+        let x <- 6
+    fi;    
+
+    call OutputNum(x);
+    call OutputNum(y);
+    call OutputNum(z)
+}.

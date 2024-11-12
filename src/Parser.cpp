@@ -481,7 +481,8 @@ SSA* Parser::p2_assignment() {
                 
                 // [10.28.2024]: Update BasicBlock's VV
                 int phi_table_int = this->add_SSA_table(phi_instr);
-                this->currBB->varVals.insert_or_assign(ident, phi_table_int);
+                // 11.12.2024: propagateDown will already insert, so we don't do this to avoid skipping over the update in [this->currBB]
+                // this->currBB->varVals.insert_or_assign(ident, phi_table_int);
                 
                 #ifdef DEBUG
                     std::cout << "this->currBB looks like: " << this->currBB->toString() << std::endl;
