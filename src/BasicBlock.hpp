@@ -91,12 +91,6 @@ public:
         return res;
     }
 
-    std::string toDOT() const;
-
-    void updateInstructions(SSA *oldVal, SSA *newVal);
-
-    SSA *getConstSSA(int constVal);
-
     inline bool compare(BasicBlock *b) const {
         #ifdef DEBUG
             std::cout << "in BB compare: this=[" << this->blockNum << "], b=[" << b->blockNum << "]" << std::endl;
@@ -123,6 +117,10 @@ public:
         }
         std::cout << std::endl;
     }
+
+    std::string toDOT() const;
+    void updateInstructions(SSA *oldVal, SSA *newVal);
+    SSA *getConstSSA(int constVal);
 
     BasicBlock *parent, *parent2;
     BasicBlock *child, *child2;

@@ -444,10 +444,10 @@ SSA* Parser::p2_assignment() {
         // BasicBlock::ssa_table.at(this->currBB->varVals.at(ident))
         
         // if (this->currBB->findSSA(oldVal)) {}
-        if (this->SSAisDOM(oldVal, value) == false) {
+        if ((this->SSAisDOM(oldVal, value) == false) || (this->BBisDOM(this->currBB->child2, this->currBB))) {
             #ifdef DEBUG
                 // std::cout << "done p2_assignment value [p_expr()] returned: " << value->toString() << std::endl;
-                std::cout << "oldVal !DOM newVal" << std::endl << "about to write new phi-instr into child2" << std::endl;
+                std::cout << "oldVal !DOM newVal OR child2-BB DOM currBB" << std::endl << "about to write new phi-instr into child2" << std::endl;
             #endif
 
             // [10.30.2024]: PHI-instr

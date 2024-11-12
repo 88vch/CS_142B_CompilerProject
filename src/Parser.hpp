@@ -433,7 +433,7 @@ public:
     // recursive; maintains [this->currBB]
     inline void propagateDown(BasicBlock *curr, int ident, SSA* oldVal, int phi_ident_val, bool first = false) {    
         #ifdef DEBUG
-            std::cout << "in propagateDown(ident=" << ident << ", phi_ident=" << phi_ident_val << ", oldVal (SSA) = " << oldVal->toString() << ", )" << std::endl;
+            std::cout << "in propagateDown(ident=" << SymbolTable::symbol_table.at(ident) << ", phi_ident=" << phi_ident_val << ", oldVal (SSA) = " << oldVal->toString() << ", )" << std::endl;
         #endif
         if (!first && this->currBB->compare(curr)) {
             #ifdef DEBUG
@@ -536,6 +536,32 @@ public:
         return false; 
     }
 
+    // [11.11.2024]: return true if b dom d, false otherwise
+    inline bool BBisDOM(BasicBlock *b, BasicBlock *d) const {
+        BasicBlock *curr = nullptr;
+        std::stack<BasicBlock *> s;
+        std::vector<BasicBlock *> seen = {};
+        s.push(b);
+        seen.push_back(b);
+
+        while (!s.empty()) {
+            curr = s.top();
+            s.pop();
+
+            if ((curr->child) && (std::find(seen.begin(), seen.end(), curr->child) == seen.end())) {
+                if (curr->child->compare(d)) { return true; }
+                s.push(curr->child);
+                seen.push_back(curr->child);
+            }
+            if ((curr->child2) && (std::find(seen.begin(), seen.end(), curr->child2) == seen.end())) {
+                if (curr->child2->compare(d)) { return true; }
+                s.push(curr->child2);
+                seen.push_back(curr->child2);
+            }
+        }
+        return false;
+    }
+
     inline std::vector<SSA*> getSSA() const { return this->SSA_instrs; }
 
     // [09/30/2024]: Converts to original varVal mapping
@@ -635,6 +661,7 @@ public:
         }
     }
 
+    // 11.11.2024: dfs to recursively generate blocks for DOT
     inline std::string generateBlocks(BasicBlock *curr, std::string res, std::vector<BasicBlock *>blocksSeen) {
         blocksSeen.push_back(curr);
 
