@@ -95,6 +95,8 @@ public:
 
     void updateInstructions(SSA *oldVal, SSA *newVal);
 
+    SSA *getConstSSA(int constVal);
+
     inline bool compare(BasicBlock *b) const {
         #ifdef DEBUG
             std::cout << "in BB compare: this=[" << this->blockNum << "], b=[" << b->blockNum << "]" << std::endl;

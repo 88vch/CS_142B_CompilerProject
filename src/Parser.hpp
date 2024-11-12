@@ -159,9 +159,9 @@ public:
     // [09/20/2024]: Const is not found in instrList, rather in BB0
     // [08/22/2024]: might need to revise (like CheckExistence()) to include op and curr sym's values
     inline SSA* CheckConstExistence(int val = -1) const {
-        #ifdef DEBUG
-            std::cout << "in Parser::CheckConstExistence(val=" << val << ")" << std::endl;
-        #endif
+        // #ifdef DEBUG
+        //     std::cout << "in Parser::CheckConstExistence(val=" << val << ")" << std::endl;
+        // #endif
         int comparisonVal;
         if (val == -1) {
             comparisonVal = this->sym.get_value_literal();
@@ -182,14 +182,14 @@ public:
         // [09/19/2024]: Replaced Below (previous=this->SSA_instrs; current=this->instrList)
         Node *curr = this->BB0->constList->tail;
         while (curr) {
-            #ifdef DEBUG
-                std::cout << "\tthis instr: [" << curr->instr->toString() << "]" << std::endl;
-            #endif
+            // #ifdef DEBUG
+            //     std::cout << "\tthis instr: [" << curr->instr->toString() << "]" << std::endl;
+            // #endif
             if (curr->instr->compareConst(comparisonVal)) {
                 ret = curr->instr;
-                #ifdef DEBUG
-                    std::cout << "ret is now: " << ret->toString() << std::endl;
-                #endif
+                // #ifdef DEBUG
+                //     std::cout << "ret is now: " << ret->toString() << std::endl;
+                // #endif
                 break;
             }
             curr = curr->prev;
@@ -547,6 +547,26 @@ public:
         }
         
         return res; 
+    }
+
+    // [11.11.2024]: assign an initial value of 0 if uninitialized var has been seen
+    inline void handleUninitVar(int ident) {
+        int constInt;
+
+        this->varDeclarations.insert(ident);
+        
+        SSA *const0 = this->BB0->getConstSSA(0);
+        if (const0 == nullptr) {
+            const0 = this->addSSA1(new SSA(0, 0));
+            constInt = this->add_SSA_table(const0);
+        } else {
+            constInt = BasicBlock::ssa_table_reversed.at(const0);
+        }
+        
+        this->currBB->varVals.insert_or_assign(ident, constInt);
+        #ifdef DEBUG
+            std::cout << "BB after handleUninitVar: " << std::endl << this->currBB->toString() << std::endl;
+        #endif
     }
 
     static void printVVs(std::unordered_map<int, int> res) { // print varVals

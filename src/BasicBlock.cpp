@@ -139,3 +139,21 @@ void BasicBlock::updateInstructions(SSA *oldVal, SSA *newVal) {
         std::cout << "BB after updateInstructions: " << std::endl << this->toString() << std::endl;
     #endif
 }
+
+SSA *BasicBlock::getConstSSA(int val) {
+    SSA *res = nullptr;
+    
+    if (this->constList) {
+        Node *curr = this->constList->tail;
+
+        while (curr) {
+            if (*(curr->instr->get_constVal()) == val) {
+                res = curr->instr;
+                break;
+            }
+            curr = curr->prev;
+        }
+    }
+
+    return res;
+}

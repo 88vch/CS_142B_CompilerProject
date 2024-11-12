@@ -1,5 +1,5 @@
 main
-var x, y, a, b, c; {
+var x, y, a; {
     let x <- call InputNum;
     let y <- call InputNum;
 

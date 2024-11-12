@@ -323,9 +323,14 @@ SSA* Parser::p2_assignment() {
     // - emit warning but continue nevertheless
     if (this->varDeclarations.find(ident) == this->varDeclarations.end()) {
         // [Assumption]: we don't require variables, x, to be declared (i.e. `let x;`) before they are defined, we'll emit a warning encouraging that tho
-        std::cout << "Warning: var [" << this->sym.to_string() << "] hasn't been declared!" << std::endl;
+        std::cout << "Warning: var [" << this->sym.to_string() << "] hasn't been declared! Default: setting to 0..." << std::endl;
+        // [11.11.2024]: don't need to call this func here bc it'll set [var == 0]
+        //      - we don't care to set it to 0 when we're already in [p2_assiggnment()] about to set it to a variable;
+        // this->handleUninitVar(ident);
+        #ifdef DEBUG
+            std::cout << "uninitialized variable has now been declared" << std::endl;
+        #endif
         // exit(EXIT_FAILURE);
-
     }
 
     // [10/02/2024]: Check if it's already defined before (if so then we need a new BB!)
@@ -426,12 +431,16 @@ SSA* Parser::p2_assignment() {
     // [10.29.2024]: if this assignment would overwrite a previous varVal mapping
     // - if we have a childBB indicates we have a [PREVCHILD] see above
     if (overwrite || ((this->currBB->child2) && (this->currBB->child2->varVals.find(ident) != this->currBB->child2->varVals.end()))){ 
-        if (this->currBB->child2->varVals.find(ident) != this->currBB->child2->varVals.end()) {
+        if (this->currBB->child2 && (this->currBB->child2->varVals.find(ident) != this->currBB->child2->varVals.end())) {
             oldVal = BasicBlock::ssa_table.at(this->currBB->child2->varVals.at(ident));
+            #ifdef DEBUG
+                std::cout << "oldVal: " << oldVal->toString() << std::endl;
+            #endif
+        } else {
+            #ifdef DEBUG
+                std::cout << "oldVal: nullptr!" << std::endl;
+            #endif
         }
-        #ifdef DEBUG
-            std::cout << "oldVal: " << oldVal->toString() << std::endl;
-        #endif
         // BasicBlock::ssa_table.at(this->currBB->varVals.at(ident))
         
         // if (this->currBB->findSSA(oldVal)) {}
@@ -904,7 +913,7 @@ SSA* Parser::p2_ifStatement() {
         std::cout << "created new BB (join), looks like: " << std::endl << join_blk->toString() << std::endl;
     #endif
 
-    then_blk->child = join_blk;
+    then_blk->child2 = join_blk; // [11.11.2024]: set then_blk->child2 to join_blk
     join_blk->parent = then_blk;
     // [11.04.2024]: new; note - [then_blk->child = (old) if_parent->child]
     if (hasChild) {
@@ -991,7 +1000,7 @@ SSA* Parser::p2_ifStatement() {
     #endif
     if_parent->child2 = else_blk;
     else_blk->parent = if_parent;
-    else_blk->child = join_blk;
+    else_blk->child2 = join_blk; // [11.11.2024]: set else_blk->child2 to join_blk
     join_blk->parent2 = else_blk;
 
     #ifdef DEBUG
@@ -1025,18 +1034,48 @@ SSA* Parser::p2_ifStatement() {
 
     this->currBB = join_blk;
 
-    // [SECTION A]: check if we need to create phi-instrs
+    std::unordered_set<int> vars = {};
+
     for (const auto &p : if_parent->varVals) {
+        vars.insert(p.first);
+    }
+    for (const auto &p : then_blk->varVals) {
+        vars.insert(p.first);
+    }
+    for (const auto &p : else_blk->varVals) {
+        vars.insert(p.first);
+    }
+
+    // [SECTION A]: check if we need to create phi-instrs
+    #ifdef DEBUG
+        std::cout << "then_blk: " << std::endl << then_blk->toString() << std::endl;
+        std::cout << "else_blk: " << std::endl << else_blk->toString() << std::endl;
+    #endif
+    for (const auto &p : vars) {
+        if (then_blk->varVals.find(p) == then_blk->varVals.end()) {
+            BasicBlock *prevCurr = this->currBB;
+            this->currBB = then_blk;
+            this->handleUninitVar(p);
+            this->currBB = prevCurr;
+        }
+
+        if (else_blk->varVals.find(p) == else_blk->varVals.end()) {
+            BasicBlock *prevCurr = this->currBB;
+            this->currBB = else_blk;
+            this->handleUninitVar(p);
+            this->currBB = prevCurr;
+        }
+        
         // if a ident from [if_parent] exists in [then_blk] with a different value, we need a phi
-        if (then_blk->varVals.at(p.first) != else_blk->varVals.at(p.first)) {
-                SSA *phi_instr = this->addSSA1(6, BasicBlock::ssa_table.at(then_blk->varVals.at(p.first)), BasicBlock::ssa_table.at(else_blk->varVals.at(p.first)), true);
-                #ifdef DEBUG
-                    std::cout << "phi_instr: " << phi_instr->toString() << std::endl;
-                #endif
-                
-                // [10.28.2024]: Update BasicBlock's VV
-                int phi_table_int = this->add_SSA_table(phi_instr);
-                this->currBB->varVals.insert_or_assign(p.first, phi_table_int);
+        if (then_blk->varVals.at(p) != else_blk->varVals.at(p)) {
+            SSA *phi_instr = this->addSSA1(6, BasicBlock::ssa_table.at(then_blk->varVals.at(p)), BasicBlock::ssa_table.at(else_blk->varVals.at(p)), true);
+            #ifdef DEBUG
+                std::cout << "phi_instr: " << phi_instr->toString() << std::endl;
+            #endif
+            
+            // [10.28.2024]: Update BasicBlock's VV
+            int phi_table_int = this->add_SSA_table(phi_instr);
+            this->currBB->varVals.insert_or_assign(p, phi_table_int);
         }
     }
 
@@ -1352,11 +1391,12 @@ SSA* Parser::p_factor() {
     } else if (this->sym.get_kind_literal() == 1) { // check [ident]
         // if (this->varVals.find(this->sym.get_value()) == this->varVals.end()) {
         if (this->currBB->varVals.find(this->sym.get_value_literal()) == this->currBB->varVals.end()) {
-            std::cout << "Error: p_factor(ident) expected a defined variable (in [varVals]), got: [" << this->sym.to_string() << "]! exiting prematurely..." << std::endl;
+            std::cout << "Warning: p_factor(ident) expected a defined variable (in [varVals]), got (uninitialized): [" << this->sym.to_string() << "]! Default: setting to 0..." << std::endl;
+            this->handleUninitVar(this->sym.get_value_literal());
             #ifdef DEBUG
-                std::cout << "this->currBB: \n\t" << this->currBB->toString() << std::endl;
+                std::cout << "uninitialized variable has now been set to 0. this->currBB looks like: " << std::endl << this->currBB->toString() << std::endl;
             #endif
-            exit(EXIT_FAILURE);
+            // exit(EXIT_FAILURE);
         }
         res = BasicBlock::ssa_table.at(this->currBB->varVals.at(this->sym.get_value_literal()));
         #ifdef DEBUG
