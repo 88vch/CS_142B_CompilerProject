@@ -8,7 +8,9 @@ var x, y, z; {
         if z > 1 then
             let y <- 4
         else
-            let y <- 8
+            if y <= 8 then
+                let y <- 8
+            fi;
         fi;
     else
         let x <- 6

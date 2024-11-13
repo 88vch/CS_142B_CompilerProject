@@ -8,8 +8,11 @@ var a, b, c, d, i, j; {
     while i < a do
         let j <- 0;
         while j < b do
-            let c <- c + 1;
-            let d <- d + 1;
+            if i == 0 then
+                let c <- c + 1;
+            else
+                let d <- d + 1;
+            fi;
             let j <- j + 1;
         od;
         let i <- i + 1;
