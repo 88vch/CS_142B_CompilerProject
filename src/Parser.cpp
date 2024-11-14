@@ -1076,11 +1076,10 @@ SSA* Parser::p2_ifStatement() {
         // if a ident from [if_parent] exists in [then_blk] with a different value, we need a phi
         if (then_blk->varVals.at(p) != else_blk->varVals.at(p)) {
             if ((BasicBlock::ssa_table.at(then_blk->varVals.at(p))->get_operator() == 6) && (BasicBlock::ssa_table.at(else_blk->varVals.at(p))->get_operator() == 6)) {
-                // should join the phi's if we can
-                if ()
+                // [11.13.2024]: should join the phi's if we can
             }
 
-            
+
             SSA *phi_instr = this->addSSA1(6, BasicBlock::ssa_table.at(then_blk->varVals.at(p)), BasicBlock::ssa_table.at(else_blk->varVals.at(p)), true);
             #ifdef DEBUG
                 std::cout << "phi_instr: " << phi_instr->toString() << std::endl;
