@@ -432,9 +432,10 @@ SSA* Parser::p2_assignment() {
     // - if we have a childBB indicates we have a [PREVCHILD] see above
     if (overwrite || ((this->currBB->child2) && (this->currBB->child2->varVals.find(ident) != this->currBB->child2->varVals.end()))){ 
         if (this->currBB->child2 && (this->currBB->child2->varVals.find(ident) != this->currBB->child2->varVals.end())) {
-            oldVal = BasicBlock::ssa_table.at(this->currBB->child2->varVals.at(ident));
+            oldVal = BasicBlock::ssa_table.at(this->currBB->varVals.at(ident));
             #ifdef DEBUG
                 std::cout << "oldVal: " << oldVal->toString() << std::endl;
+                // std::cout << "curr's oldVal: " << BasicBlock::ssa_table.at(this->currBB->varVals.at(ident))->toString() << std::endl;
             #endif
         } else {
             #ifdef DEBUG
@@ -472,7 +473,7 @@ SSA* Parser::p2_assignment() {
             //     #ifdef DEBUG    
             //         std::cout << "oldVal != currBB->parent's oldVal (maybe we're in a loop that already [propagatedDown()]!)" << std::endl;
             //     #endif
-            if (oldVal) {
+            if (oldVal && (this->currBB->findSSA(oldVal) == false)) {
                 // this will add to currBB's [newInstrs]
                 SSA *phi_instr = this->addSSA1(6, oldVal, value, true);
                 #ifdef DEBUG
@@ -504,6 +505,8 @@ SSA* Parser::p2_assignment() {
                 // } else {
                 //     blk->varVals.insert_or_assign(ident, table_int); 
                 // }
+            } else if (this->currBB->findSSA(oldVal)) {
+                
             }
         } else {
             #ifdef DEBUG
@@ -969,6 +972,9 @@ SSA* Parser::p2_ifStatement() {
         #endif
 
         for (const auto &p : if_parent->varVals) {
+            #ifdef DEBUG
+                std::cout << "key: " << p.first << ", value: " << p.second << std::endl;
+            #endif
             // if a ident from [if_parent] exists in [then_blk] with a different value, we need a phi
             if (then_blk->varVals.at(p.first) != p.second) {
                     SSA *phi_instr = this->addSSA1(6, BasicBlock::ssa_table.at(p.second), BasicBlock::ssa_table.at(then_blk->varVals.at(p.first)), true);
@@ -1069,6 +1075,12 @@ SSA* Parser::p2_ifStatement() {
         
         // if a ident from [if_parent] exists in [then_blk] with a different value, we need a phi
         if (then_blk->varVals.at(p) != else_blk->varVals.at(p)) {
+            if ((BasicBlock::ssa_table.at(then_blk->varVals.at(p))->get_operator() == 6) && (BasicBlock::ssa_table.at(else_blk->varVals.at(p))->get_operator() == 6)) {
+                // should join the phi's if we can
+                if ()
+            }
+
+            
             SSA *phi_instr = this->addSSA1(6, BasicBlock::ssa_table.at(then_blk->varVals.at(p)), BasicBlock::ssa_table.at(else_blk->varVals.at(p)), true);
             #ifdef DEBUG
                 std::cout << "phi_instr: " << phi_instr->toString() << std::endl;
