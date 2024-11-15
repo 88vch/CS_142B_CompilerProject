@@ -103,6 +103,13 @@ public:
         return false;
     }
     bool compare(SSA *s) const {
+        if (!s) { 
+            #ifdef DEBUG 
+                std::cout << "[SSA::compare(s); found s == nullptr]" << std::endl; 
+            #endif 
+            return false; 
+        }
+
         if (
             (
                 (this->debug_num > 0) && (this->op == s->get_operator()) && 

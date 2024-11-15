@@ -159,3 +159,58 @@ SSA *BasicBlock::getConstSSA(int val) {
 
     return res;
 }
+
+void BasicBlock::removeSSA(SSA *toRemove) {
+    Node *curr = nullptr;
+    // for (const auto i : this->newInstrs) {
+    for (size_t i = 0; i < this->newInstrs.size(); i++) {
+        curr = this->newInstrs.at(i);
+        if (curr->instr->get_debugNum() == toRemove->get_debugNum()) {
+            #ifdef DEBUG
+                std::cout << "found SSA match! curr: " << curr->instr->toString() << std::endl;
+            #endif
+            if (curr->prev) {
+                curr->prev->next = curr->next;
+            }
+            if (curr->next) {
+                curr->next->prev = curr->prev;
+            }
+
+            delete curr->instr;
+            delete curr;
+            this->newInstrs.erase(this->newInstrs.begin() + i);
+            
+            #ifdef DEBUG
+                std::cout << "curr was deleted! currBB looks like: " << std::endl << this->toString() << std::endl;
+            #endif
+            break;
+        }
+    }
+
+    // if (curr) {
+    //     // this->newInstrs.erase(std::remove(this->newInstrs.begin(), this->newInstrs.end(), curr), this->newInstrs.end());
+    //     // delete curr->instr;
+    //     // delete curr;
+    //     int numToFind = curr->instr->get_debugNum();
+    //     auto it = std::find_if(this->newInstrs.begin(), this->newInstrs.end(), [numToFind](Node* ptr) {
+    //         return ptr->instr->get_debugNum() == numToFind;
+    //     });
+    //     if (it != this->newInstrs.end()) {
+    //         #ifdef DEBUG
+    //             std::cout << "deleting node & correspoinding instr!" << std::endl;
+    //         #endif
+
+    //         delete curr->instr;
+    //         delete curr;
+    //         this->newInstrs.erase(it);
+    //     }
+        
+    //     #ifdef DEBUG
+    //         std::cout << "curr was deleted! currBB looks like: " << std::endl << this->toString() << std::endl;
+    //     #endif
+    // } else {
+    //     #ifdef DEBUG
+    //         std::cout << "BB::removeSSA() did not find the SSA in [this->newInstrs] so nothing was deleted!" << std::endl;
+    //     #endif
+    // }
+}

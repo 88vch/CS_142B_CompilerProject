@@ -1075,8 +1075,76 @@ SSA* Parser::p2_ifStatement() {
         
         // if a ident from [if_parent] exists in [then_blk] with a different value, we need a phi
         if (then_blk->varVals.at(p) != else_blk->varVals.at(p)) {
-            if ((BasicBlock::ssa_table.at(then_blk->varVals.at(p))->get_operator() == 6) && (BasicBlock::ssa_table.at(else_blk->varVals.at(p))->get_operator() == 6)) {
+            #ifdef DEBUG
+                std::cout << "then_blk's ident val != else_blk's ident val; consolidating to one..." << std::endl;
+            #endif
+            SSA *then_phi = BasicBlock::ssa_table.at(then_blk->varVals.at(p));
+            SSA *else_phi = BasicBlock::ssa_table.at(else_blk->varVals.at(p));
+            
+            if (((then_phi->get_operator() == 6) && (else_phi->get_operator() == 6))) { 
+                // && then_phi->compare(else_phi) == false) { // we should already know this is false; same as the enclosing if-statement
+                #ifdef DEBUG
+                    std::cout << "both values are phi's!" << std::endl;
+                #endif
+                // if the previous values are both phi's, we should delete the phi's after we grab the old values
+
+
+                SSA *old_then = nullptr, *old_else = nullptr; // the updated assignment SSA before the phi
+                
+                SSA *then_x = then_phi->get_operand1(), *then_y = then_phi->get_operand2();
+                SSA *else_x = else_phi->get_operand1(), *else_y = else_phi->get_operand2();
+
+                #ifdef DEBUG
+                    std::cout << "then operands look like: " << std::endl << "\t" << then_x ->toString() << std::endl << "\t" << then_y->toString() << std::endl;
+                    std::cout << "else operands look like: " << std::endl << "\t" << else_x ->toString() << std::endl << "\t" << else_y->toString() << std::endl;
+                #endif
+
+                // assume all phi's have both operand's set
+                if (then_x->get_debugNum() == else_x->get_debugNum()) {
+                    old_then = then_y;
+                    old_else = else_y;
+                } else if (then_x->get_debugNum() == else_y->get_debugNum()) {
+                    old_then = then_y;
+                    old_else = else_x;
+                } else if (then_y->get_debugNum() == else_x->get_debugNum()) {
+                    old_then = then_x;
+                    old_else = else_y;
+                } else if (then_y->get_debugNum() == else_y->get_debugNum()) {
+                    old_then = then_x;
+                    old_else = else_x;
+                }
+
+                #ifdef DEBUG
+                    std::cout << "old_then: ";
+                    if (old_then) {
+                        std::cout << old_then->toString() << std::endl;
+                    } else {
+                        std::cout << "nullptr! " << std::endl;
+                    }
+                    
+                    std::cout << "old_else: ";
+                    if (old_else) {
+                        std::cout << old_else->toString() << std::endl;
+                    } else {
+                        std::cout << "nullptr! " << std::endl;
+                    }
+                #endif
+
                 // [11.13.2024]: should join the phi's if we can
+                // [11.14.2024]: we could 1) assign each BB's varVal to the modification (before phi), then 2) delete these SSA's 
+                // - since below we create the SSA using the value found in the bb's varVals
+                then_blk->varVals.insert_or_assign(p, BasicBlock::ssa_table_reversed.at(old_then));
+                else_blk->varVals.insert_or_assign(p, BasicBlock::ssa_table_reversed.at(old_else));
+                
+                #ifdef DEBUG
+                    std::cout << "assumption: updated [then_blk] && [else_blk]'s varVal table at ident...printing both blocks (then, else)" << std::endl;
+                    std::cout << then_blk->toString() << std::endl << else_blk->toString() << std::endl;
+                    std::cout << "this->currBB: " << std::endl << this->currBB->toString() << std::endl;
+                #endif
+
+                // delete the previous phi's now
+                this->currBB->removeSSA(then_phi);
+                this->currBB->removeSSA(else_phi);
             }
 
 

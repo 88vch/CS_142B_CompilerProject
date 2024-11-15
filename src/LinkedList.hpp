@@ -92,7 +92,7 @@ public:
             this->tail = newNode;
         } else {
             // Otherwise, insert the new node after the current tail
-            // tail->next = newNode;
+            tail->next = newNode;
             newNode->prev = this->tail;
             this->tail = newNode;
         }

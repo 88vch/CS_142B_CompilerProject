@@ -2,16 +2,9 @@
 #define BASICBLOCK_HPP
 
 #include "SymbolTable.hpp"
-// #include <variant>
-// #include "SSA.hpp"
-// #include "Node.hpp"
 #include "LinkedList.hpp"
 #include "Result.hpp"
-
-// #include "Parser.hpp" // circular import????Fa;lsdkfjals;kdfjal;sdkfj
-
-// Remark: the [SubTree]'s should become our [BasicBlock]'s (i.e. we shouldn't need BasicBlock.hpp)
-
+#include <algorithm>
 
 class BasicBlock {
 public:
@@ -121,6 +114,7 @@ public:
     std::string toDOT() const;
     void updateInstructions(SSA *oldVal, SSA *newVal);
     SSA *getConstSSA(int constVal);
+    void removeSSA(SSA *toRemove);
 
     BasicBlock *parent, *parent2;
     BasicBlock *child, *child2;
