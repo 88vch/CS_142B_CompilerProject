@@ -1156,6 +1156,9 @@ SSA* Parser::p2_ifStatement() {
             // [10.28.2024]: Update BasicBlock's VV
             int phi_table_int = this->add_SSA_table(phi_instr);
             this->currBB->varVals.insert_or_assign(p, phi_table_int);
+            #ifdef DEBUG
+                std::cout << "currBB after update: " << this->currBB->toString() << std::endl;
+            #endif
         }
     }
 

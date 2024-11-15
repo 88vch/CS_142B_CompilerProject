@@ -9,6 +9,7 @@ int BasicBlock::debugNum = 0;
 std::unordered_map<int, SSA *> BasicBlock::ssa_table = {};
 std::unordered_map<SSA *, int> BasicBlock::ssa_table_reversed = {};
 
+std::unordered_map<int, LinkedList*, BasicBlock::SafeCustomHash, BasicBlock::SafeCustomEqual> BasicBlock::instrList = {};
 
 // [10.22.2024]: Revised?
 BasicBlock::BasicBlock(bool isConst, bool isJoin)
@@ -163,20 +164,39 @@ SSA *BasicBlock::getConstSSA(int val) {
 void BasicBlock::removeSSA(SSA *toRemove) {
     Node *curr = nullptr;
 
-
     for (auto it = this->newInstrs.begin(); it != this->newInstrs.end(); ++it) {
         curr = *it;
         if (curr->instr->get_debugNum() == toRemove->get_debugNum()) {
+            int op = curr->instr->get_operator();
             #ifdef DEBUG
                 std::cout << "found SSA match! curr: " << curr->instr->toString() << std::endl;
+                std::cout << "linekd list before removal: " << std::endl;
+                BasicBlock::instrList.at(op)->printList();
             #endif
             
             // Update links to maintain list integrity
             if (curr->prev) {
+                #ifdef DEBUG
+                    std::cout << "curr->prev exists" << std::endl;
+                #endif
                 curr->prev->next = curr->next;
             }
             if (curr->next) {
+                #ifdef DEBUG
+                    std::cout << "curr->next exists" << std::endl;
+                #endif
                 curr->next->prev = curr->prev;
+            }
+
+            if (curr == BasicBlock::instrList.at(op)->tail) {
+                #ifdef DEBUG
+                    std::cout << "curr was tail" << std::endl;
+                #endif
+                if (curr->prev) {
+                    BasicBlock::instrList.at(op)->tail = curr->prev;
+                } else {
+                    BasicBlock::instrList.at(op)->tail = nullptr;
+                }
             }
 
             // Free memory and erase the pointer from the vector
@@ -186,67 +206,10 @@ void BasicBlock::removeSSA(SSA *toRemove) {
 
             #ifdef DEBUG
                 std::cout << "curr was deleted! newInstrs look like: " << this->printNewInstrs() << std::endl;
-                std::cout << "currBB looks like: " << std::endl << this->toString() << std::endl;
+                std::cout << "instrList at ident looks like: " << std::endl;
+                BasicBlock::instrList.at(op)->printList();
             #endif
             break;  // Exit after deletion to avoid invalid iterator usage
         }
     }
-
-
-    // for (const auto i : this->newInstrs) {
-    // for (size_t i = 0; i < this->newInstrs.size(); i++) {
-    //     curr = this->newInstrs.at(i);
-    //     if (curr->instr->get_debugNum() == toRemove->get_debugNum()) {
-    //         #ifdef DEBUG
-    //             std::cout << "found SSA match! curr: " << curr->instr->toString() << std::endl;
-    //         #endif
-    //         if (curr->prev) {
-    //             curr->prev->next = curr->next;
-    //         }
-    //         if (curr->next) {
-    //             curr->next->prev = curr->prev;
-    //         }
-
-    //         delete curr->instr;
-    //         delete curr;
-    //         this->newInstrs.erase(this->newInstrs.begin() + i);
-            
-    //         #ifdef DEBUG
-    //             std::cout << "curr was deleted! currBB looks like: " << std::endl << this->toString() << std::endl;
-    //         #endif
-    //         break;
-    //     }
-    // }
-
-    
-    
-    
-    
-    
-    // if (curr) {
-    //     // this->newInstrs.erase(std::remove(this->newInstrs.begin(), this->newInstrs.end(), curr), this->newInstrs.end());
-    //     // delete curr->instr;
-    //     // delete curr;
-    //     int numToFind = curr->instr->get_debugNum();
-    //     auto it = std::find_if(this->newInstrs.begin(), this->newInstrs.end(), [numToFind](Node* ptr) {
-    //         return ptr->instr->get_debugNum() == numToFind;
-    //     });
-    //     if (it != this->newInstrs.end()) {
-    //         #ifdef DEBUG
-    //             std::cout << "deleting node & correspoinding instr!" << std::endl;
-    //         #endif
-
-    //         delete curr->instr;
-    //         delete curr;
-    //         this->newInstrs.erase(it);
-    //     }
-        
-    //     #ifdef DEBUG
-    //         std::cout << "curr was deleted! currBB looks like: " << std::endl << this->toString() << std::endl;
-    //     #endif
-    // } else {
-    //     #ifdef DEBUG
-    //         std::cout << "BB::removeSSA() did not find the SSA in [this->newInstrs] so nothing was deleted!" << std::endl;
-    //     #endif
-    // }
 }

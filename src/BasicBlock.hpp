@@ -51,11 +51,11 @@ public:
     }
 
     std::string toString() const {
-        std::string res = "BB" + std::to_string(this->blockNum) + ": ";
+        std::string res = " ------------------------------------------------------------------------------------------------------------ \n| BB" + std::to_string(this->blockNum) + ": ";
 
         if (this->constList) 
         {
-            res += "[const]: \n";
+            res += "[const]: \n| ";
             res += this->constList->listToString();
         } 
         // else 
@@ -63,36 +63,36 @@ public:
         //     res += this->instrListToString();
         // }
         
-        res += "\nnewInstrs: ";
+        res += "|\n| newInstrs: ";
         if (!this->newInstrs.empty()) {
             for (const auto &node : this->newInstrs) {
-                res += "\n\t" + node->instr->toString() + ", ";
+                res += "|\n| \t" + node->instr->toString() + ", ";
             }
         } else {
             res += "none!";
         }
 
-        res += "\nvarVals[" + std::to_string(this->varVals.size()) + "]: ((string) SymbolTable::symbol_table.at(key), (SSA *) BasicBlock::ssa_table.at(value)): ";
+        res += "|\n| varVals[" + std::to_string(this->varVals.size()) + "]: ((string) SymbolTable::symbol_table.at(key), (SSA *) BasicBlock::ssa_table.at(value)): ";
         if (!this->varVals.empty()) {
             for (const auto &pair : this->varVals) {
-                res += "\n\tident: " + SymbolTable::symbol_table.at(pair.first) + ", value: " + BasicBlock::ssa_table.at(pair.second)->toString();
+                res += "|\n| \tident: " + SymbolTable::symbol_table.at(pair.first) + ", value: " + BasicBlock::ssa_table.at(pair.second)->toString();
             }
         } else {
             res += "none!";
         }
 
-        // if (this->child) {
-        //     res +="\nchild1: " + this->child->toString() + "\n";
-        // } else {
-        //     res +="\nchild1: nullptr\n";
-        // }
+        if (this->child) {
+            res +="|\n| child1: " + std::to_string(this->child->debugNum) + "";
+        } else {
+            res +="|\n| child1: nullptr";
+        }
          
-        // if (this->child2) {
-        //     res +="\nchild2: " + this->child2->toString() + "\n";
-        // } else {
-        //     res +="\nchild2: nullptr\n";
-        // }
-
+        if (this->child2) {
+            res +="|\n| child2: " + std::to_string(this->child2->debugNum) + "\n";
+        } else {
+            res +="|\n| child2: nullptr\n";
+        }
+        res += " ------------------------------------------------------------------------------------------------------------ ";
         return res;
     }
 
@@ -147,6 +147,20 @@ public:
     // [09/30/2024]: Though this may be for a legitimate reason
     static std::unordered_map<int, SSA *> ssa_table; // key=[value's in this->VVs] : value=SSA-corresponding to int-val
     static std::unordered_map<SSA *, int> ssa_table_reversed;
+
+    struct SafeCustomEqual {
+        bool operator()(const int& lhs, const int& rhs) const {
+            return lhs == rhs; // Only compare the keys.
+        }
+    };
+
+    struct SafeCustomHash {
+        std::size_t operator()(const int& key) const {
+            return std::hash<int>()(key); // Hash the key only.
+        }
+    };
+
+    static std::unordered_map<int, LinkedList*, SafeCustomHash, SafeCustomEqual> instrList; // 11.14.2024: moved from [Parser]
 };
 
 #endif   

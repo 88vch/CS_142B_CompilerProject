@@ -48,7 +48,7 @@ public:
         // this->parentBB = this->BB0;
 
         for (unsigned int i = 1; i < SymbolTable::operator_table.size(); i++) {
-            this->instrList.insert({i, new LinkedList()});
+            BasicBlock::instrList.insert({i, new LinkedList()});
         }
 
         this->prevInstrs = std::stack<SSA *>();
@@ -68,12 +68,12 @@ public:
         #endif
         delete this->BB0;
         
-        for (unsigned int i = 1; i < this->instrList.size(); i++) {
+        for (unsigned int i = 1; i < BasicBlock::instrList.size(); i++) {
             // #ifdef DEBUG
             //     std::cout << "deleting linked list [" << SymbolTable::operator_table_reversed.at(i) << "];" << std::endl;
             // #endif
-            delete this->instrList.at(i);
-            this->instrList[i] = nullptr;
+            delete BasicBlock::instrList.at(i);
+            BasicBlock::instrList[i] = nullptr;
         }
 
         // Then delete the SSA instructions themselves (note ~LinkedList() doesn't do this bc we delete BB LinkedLists too there...)
@@ -117,42 +117,64 @@ public:
 
 
     inline SSA* CheckExistence(const int op, SSA *x, SSA *y) const {
-        // #ifdef DEBUG
-        //     std::cout << "\t[Parser::CheckExistence(op=[" << op << "], x=" << x->toString() << ",y=" << y->toString() << "), this->SSA_instrs.size()=" << this->SSA_instrs.size() << "]" << std::endl;
-        // #endif
+        #ifdef DEBUG
+            std::cout << "\t[Parser::CheckExistence(op=[" << op << "], x=";
+            if (x) {
+                std::cout << x->toString();
+            } else {
+                std::cout << "nullptr";
+            }
+            std::cout << ",y=";
+            if (y) { 
+                std::cout << y->toString();
+            } else {
+                std::cout << "nullptr" << std::endl;
+            }
+            std::cout << "), this->SSA_instrs.size()=" << this->SSA_instrs.size() << "]" << std::endl;
+        #endif
         SSA *ret = nullptr;
         
-        if (this->instrList.find(op) == this->instrList.end()) {
+        if (BasicBlock::instrList.find(op) == BasicBlock::instrList.end()) {
             return nullptr;
         }
 
         // [09/19/2024]: Replaced Below (previous=this->SSA_instrs; current=this->instrList)
-        Node *curr = this->instrList.at(op)->tail;
+        Node *curr = BasicBlock::instrList.at(op)->tail;
+        #ifdef DEBUG
+            std::cout << "got tail with ssa: ";
+            if (curr) {
+                std::cout << curr->instr->toString() << std::endl;
+            } else {
+                std::cout << "nullptr" << std::endl;
+            }
+        #endif
+
+
         while (curr) {
-            // #ifdef DEBUG
-            //     std::cout << "\t\tcomparing instr=[" << curr->instr->toString() << "]" << std::endl;
-            // #endif
+            #ifdef DEBUG
+                std::cout << "\t\tcomparing instr=[" << curr->instr->toString() << "]" << std::endl;
+            #endif
             if (curr->instr->compare(op, x, y)) {
-                // #ifdef DEBUG
-                //     std::cout << "\t\tgot true!!!" << std::endl;
-                // #endif
+                #ifdef DEBUG
+                    std::cout << "\t\tgot true!!!" << std::endl;
+                #endif
                 ret = curr->instr;
                 break;
             } else {
-                // #ifdef DEBUG
-                //     std::cout << "\t\tgot false" << std::endl;
-                // #endif
+                #ifdef DEBUG
+                    std::cout << "\t\tgot false" << std::endl;
+                #endif
             }
             curr = curr->prev;
         }
 
-        // #ifdef DEBUG
-        //     if (ret != nullptr) {
-        //         std::cout << "\t\treturning: [" << ret->toString() << "]" << std::endl;
-        //     } else { 
-        //         std::cout << "\t\treturning: nullptr!" <<std::endl;
-        //     }
-        // #endif
+        #ifdef DEBUG
+            if (ret != nullptr) {
+                std::cout << "\t\treturning: [" << ret->toString() << "]" << std::endl;
+            } else { 
+                std::cout << "\t\treturning: nullptr!" <<std::endl;
+            }
+        #endif
         return ret;
     }
 
@@ -399,16 +421,16 @@ public:
                 if (instr->get_operator() == 6) {
                     // [11.01.2024]: phi instructions go ontop of [this->newInstrs]
                     // - insert into initial position
-                    this->currBB->newInstrs.insert(this->currBB->newInstrs.begin(), this->instrList.at(instr->get_operator())->InsertAtTail(instr));
+                    this->currBB->newInstrs.insert(this->currBB->newInstrs.begin(), BasicBlock::instrList.at(instr->get_operator())->InsertAtTail(instr));
                 } else {
                     // [10.23.2024]: [LinkedList::InsertAtTail()] returns [Node*]
-                    this->currBB->newInstrs.push_back(this->instrList.at(instr->get_operator())->InsertAtTail(instr));
+                    this->currBB->newInstrs.push_back(BasicBlock::instrList.at(instr->get_operator())->InsertAtTail(instr));
                 }
                 #ifdef DEBUG
                     std::cout << "done pushing into [currBB]'s [newInstrs]" << std::endl;
                 #endif
             } else {
-                instr = this->instrList.at(instr->get_operator())->InsertAtTail(instr)->instr;
+                instr = BasicBlock::instrList.at(instr->get_operator())->InsertAtTail(instr)->instr;
             }
         }
 
@@ -436,7 +458,7 @@ public:
             std::cout << "in propagateDown(ident=" << SymbolTable::symbol_table.at(ident) << ", phi_ident=" << phi_ident_val << ", oldVal (SSA) = " << oldVal->toString() << ", )" << std::endl;
         #endif
         seen.push_back(curr);
-        
+
         if (!first && this->currBB->compare(curr)) {
             #ifdef DEBUG
                 std::cout << "returning: in a loop! found startBB looks like: " << std::endl << this->currBB->toString() << std::endl;
@@ -620,7 +642,7 @@ public:
         std::cout << "[instrA]:\n\tinstrA1, instrA2, instrA3, ..." << std::endl;
         for (unsigned int i = 1; i < SymbolTable::operator_table.size() - 1; i++) {
             std::cout << "[" << SymbolTable::operator_table_reversed.at(i) << "]: " << std::endl << "\t";
-            this->instrList.at(i)->printList();
+            BasicBlock::instrList.at(i)->printList();
         } 
 
         #ifdef DEBUG
@@ -634,7 +656,7 @@ public:
         lst += "[const]: \n\t" + this->BB0->constList->listToString();
         
         for (unsigned int i = 1; i < SymbolTable::operator_table.size() - 1; i++) {
-            lst += "[" + SymbolTable::operator_table_reversed.at(i) + "]: \n" + this->instrList.at(i)->listToString();
+            lst += "[" + SymbolTable::operator_table_reversed.at(i) + "]: \n" + BasicBlock::instrList.at(i)->listToString();
         }
         return lst;
     }
@@ -642,7 +664,7 @@ public:
     int getInstrListSize() const {
         int size = 0;
 
-        for (const auto &pair : this->instrList) {
+        for (const auto &pair : BasicBlock::instrList) {
             // #ifdef DEBUG
             //     std::cout << "got op [" << pair.first << "] == " << SymbolTable::operator_table_reversed.at(pair.first) << "; with size=" << pair.second->length << std::endl;
             // #endif
@@ -834,7 +856,7 @@ public:
         file.close();
 
         #ifdef DEBUG    
-            std::cout << "done generating..." << std::endl;
+            std::cout << "file was closed successfully; done generating..." << std::endl;
         #endif
     }
 
@@ -858,7 +880,7 @@ private:
     // [09/02/2024]: Does this need to include the `const` SSA's? I don't think it should bc the const instr's only belong to BB0 (special)
     // current instruction list (copied for each BB)
     // [09/05/2024]: key=[SymbolTable::operator_table] values corresponding to specific SSA-instrs
-    std::unordered_map<int, LinkedList*> instrList; // [10/14/2024]: Should change this to <int, int> as well...
+    // std::unordered_map<int, LinkedList*> instrList; // [10/14/2024]: Should change this to <int, int> as well...
     
     BasicBlock *currBB;
     BasicBlock *BB0; // [09/02/2024]: special BB always generated at the start. Contains const SSA-instrs
