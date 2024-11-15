@@ -5,17 +5,17 @@ var x, y, z; {
     let z <- x + y;
 
     if x == 1 then
-        let x <- 3
+        if z > 1 then
+            let y <- 4
+        else
+            let y <- 8
+        fi;
     else
-        let x <- 6
-    fi;
-
-    if z > 1 then
-        let y <- 4
-    else
-        let y <- 8;
-        let z <- 9
-    fi;
+        let x <- 6 * 2;
+        if x > 16 then
+            let x <- 3
+        fi
+    fi;    
 
     call OutputNum(x);
     call OutputNum(y);
