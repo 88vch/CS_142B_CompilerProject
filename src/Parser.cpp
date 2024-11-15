@@ -510,8 +510,9 @@ SSA* Parser::p2_assignment() {
             }
         } else {
             #ifdef DEBUG
-                std::cout << "oldVal DOM's newVal! no need to create phi" << std::endl;
+                std::cout << "oldVal DOM's newVal! no need to create phi, simply performing a [valid] overwrite" << std::endl;
             #endif
+            this->currBB->varVals.insert_or_assign(ident, table_int);    
         }
     } else {
         #ifdef DEBUG

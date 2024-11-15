@@ -2,6 +2,7 @@ main
 var x, y, z; {
     let x <- call InputNum();
     let y <- call InputNum();
+
     let z <- x + y;
 
     if x == 1 then
@@ -13,7 +14,8 @@ var x, y, z; {
     if z > 1 then
         let y <- 4
     else
-        let y <- 8
+        let y <- 8;
+        let z <- 9
     fi;
 
     call OutputNum(x);
