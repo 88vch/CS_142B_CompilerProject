@@ -161,7 +161,8 @@ SSA *BasicBlock::getConstSSA(int val) {
     return res;
 }
 
-void BasicBlock::removeSSA(SSA *toRemove) {
+// returns the updated vector after remove
+void BasicBlock::removeSSA(SSA *toRemove,  std::vector<SSA*> &debugSSA_instrs) {
     Node *curr = nullptr;
 
     for (auto it = this->newInstrs.begin(); it != this->newInstrs.end(); ++it) {
@@ -211,5 +212,15 @@ void BasicBlock::removeSSA(SSA *toRemove) {
             #endif
             break;  // Exit after deletion to avoid invalid iterator usage
         }
+    }
+
+    SSA *tmp = nullptr;
+    for (size_t i = 0; i < debugSSA_instrs.size(); i++) {
+        tmp = debugSSA_instrs.at(i);
+
+        if (tmp->get_debugNum() == toRemove->get_debugNum()) {
+            debugSSA_instrs.erase(debugSSA_instrs.begin() + i);
+            break;
+        } 
     }
 }

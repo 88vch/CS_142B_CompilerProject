@@ -1143,8 +1143,8 @@ SSA* Parser::p2_ifStatement() {
                 #endif
 
                 // delete the previous phi's now
-                this->currBB->removeSSA(then_phi);
-                this->currBB->removeSSA(else_phi);
+                this->currBB->removeSSA(then_phi, this->SSA_instrs);
+                this->currBB->removeSSA(else_phi, this->SSA_instrs);
             }
 
 

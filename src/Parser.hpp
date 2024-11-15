@@ -56,6 +56,7 @@ public:
         this->prevInstr = nullptr;
 
         this->block = blk;
+        this->generateBlkBlksSeen = {};
         // this->blocksSeen = {};
 
         next(); // [10/14/2024]: Why do we do this?
@@ -411,13 +412,14 @@ public:
             #endif
             
             if (this->block) {
-                #ifdef DEBUG
-                    if (this->currBB) {
-                        std::cout << "currBB looks like: " << this->currBB->toString() << std::endl;
-                    } else {
-                        std::cout << "currBB looks like: nullptr!" << std::endl;
-                    }
-                #endif
+                // #ifdef DEBUG
+                //     std::cout << "currBB looks like: ";
+                //     if (this->currBB) {
+                //         std::cout << this->currBB->toString() << std::endl;
+                //     } else {
+                //         std::cout << "nullptr!" << std::endl;
+                //     }
+                // #endif
                 if (instr->get_operator() == 6) {
                     // [11.01.2024]: phi instructions go ontop of [this->newInstrs]
                     // - insert into initial position
@@ -686,8 +688,11 @@ public:
     }
 
     // 11.11.2024: dfs to recursively generate blocks for DOT
-    inline std::string generateBlocks(BasicBlock *curr, std::string res, std::vector<BasicBlock *>blocksSeen) {
-        blocksSeen.push_back(curr);
+    inline std::string generateBlocks(BasicBlock *curr, std::string res) {
+        this->generateBlkBlksSeen.push_back(curr->blockNum);
+        #ifdef DEBUG
+            std::cout << "generateBlocks pushed_back: [" << curr->blockNum << "]" << std::endl;
+        #endif
 
         if (curr->join) {
             res += "\tbb" + std::to_string(curr->blockNum) + " [shape=record, label=\"<b>join\\n" + curr->toDOT() + "\"];\n";
@@ -698,11 +703,11 @@ public:
         //     std::cout << "updated res: " << res << std::endl << std::endl;
         // #endif
 
-        if ((curr->child) && (std::find(blocksSeen.begin(), blocksSeen.end(), curr->child) == blocksSeen.end())) {
-            res = this->generateBlocks(curr->child, res, blocksSeen);
+        if ((curr->child) && (std::find(this->generateBlkBlksSeen.begin(), this->generateBlkBlksSeen.end(), curr->child->blockNum) == this->generateBlkBlksSeen.end())) {
+            res = this->generateBlocks(curr->child, res);
         }
-        if ((curr->child2) && (std::find(blocksSeen.begin(), blocksSeen.end(), curr->child2) == blocksSeen.end())) {
-            res = this->generateBlocks(curr->child2, res, blocksSeen);
+        if ((curr->child2) && (std::find(this->generateBlkBlksSeen.begin(), this->generateBlkBlksSeen.end(), curr->child2->blockNum) == this->generateBlkBlksSeen.end())) {
+            res = this->generateBlocks(curr->child2, res);
         }
 
         return res;
@@ -716,11 +721,10 @@ public:
         // for (BasicBlock *blk : this->blocksSeen) {
         //     blk = nullptr;
         // }
-        std::vector<BasicBlock *> blks = {};
         // #ifdef DEBUG
         //     std::cout << "entering [generateBlocks]..." << std::endl;
         // #endif
-        res = this->generateBlocks(this->BB0, res, blks);
+        res = this->generateBlocks(this->BB0, res);
 
         // BasicBlock *curr = this->BB0;
 
@@ -865,6 +869,7 @@ public:
     void parse_generate_SSA(); // generate all SSA Instructions
 private:
     bool block;
+    std::vector<int> generateBlkBlksSeen;
 
     Result sym;
     std::vector<Result> source;
