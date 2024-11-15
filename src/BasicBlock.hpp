@@ -38,6 +38,18 @@ public:
         }
     }
 
+    std::string printNewInstrs() const {
+        std::string res = "\nnewInstrs: ";
+        if (!this->newInstrs.empty()) {
+            for (const auto &node : this->newInstrs) {
+                res += "\n\t" + node->instr->toString() + ", ";
+            }
+        } else {
+            res += "none!";
+        }
+        return res;
+    }
+
     std::string toString() const {
         std::string res = "BB" + std::to_string(this->blockNum) + ": ";
 

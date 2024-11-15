@@ -162,13 +162,16 @@ SSA *BasicBlock::getConstSSA(int val) {
 
 void BasicBlock::removeSSA(SSA *toRemove) {
     Node *curr = nullptr;
-    // for (const auto i : this->newInstrs) {
-    for (size_t i = 0; i < this->newInstrs.size(); i++) {
-        curr = this->newInstrs.at(i);
+
+
+    for (auto it = this->newInstrs.begin(); it != this->newInstrs.end(); ++it) {
+        curr = *it;
         if (curr->instr->get_debugNum() == toRemove->get_debugNum()) {
             #ifdef DEBUG
                 std::cout << "found SSA match! curr: " << curr->instr->toString() << std::endl;
             #endif
+            
+            // Update links to maintain list integrity
             if (curr->prev) {
                 curr->prev->next = curr->next;
             }
@@ -176,17 +179,50 @@ void BasicBlock::removeSSA(SSA *toRemove) {
                 curr->next->prev = curr->prev;
             }
 
+            // Free memory and erase the pointer from the vector
             delete curr->instr;
             delete curr;
-            this->newInstrs.erase(this->newInstrs.begin() + i);
-            
+            this->newInstrs.erase(it);
+
             #ifdef DEBUG
-                std::cout << "curr was deleted! currBB looks like: " << std::endl << this->toString() << std::endl;
+                std::cout << "curr was deleted! newInstrs look like: " << this->printNewInstrs() << std::endl;
+                std::cout << "currBB looks like: " << std::endl << this->toString() << std::endl;
             #endif
-            break;
+            break;  // Exit after deletion to avoid invalid iterator usage
         }
     }
 
+
+    // for (const auto i : this->newInstrs) {
+    // for (size_t i = 0; i < this->newInstrs.size(); i++) {
+    //     curr = this->newInstrs.at(i);
+    //     if (curr->instr->get_debugNum() == toRemove->get_debugNum()) {
+    //         #ifdef DEBUG
+    //             std::cout << "found SSA match! curr: " << curr->instr->toString() << std::endl;
+    //         #endif
+    //         if (curr->prev) {
+    //             curr->prev->next = curr->next;
+    //         }
+    //         if (curr->next) {
+    //             curr->next->prev = curr->prev;
+    //         }
+
+    //         delete curr->instr;
+    //         delete curr;
+    //         this->newInstrs.erase(this->newInstrs.begin() + i);
+            
+    //         #ifdef DEBUG
+    //             std::cout << "curr was deleted! currBB looks like: " << std::endl << this->toString() << std::endl;
+    //         #endif
+    //         break;
+    //     }
+    // }
+
+    
+    
+    
+    
+    
     // if (curr) {
     //     // this->newInstrs.erase(std::remove(this->newInstrs.begin(), this->newInstrs.end(), curr), this->newInstrs.end());
     //     // delete curr->instr;
