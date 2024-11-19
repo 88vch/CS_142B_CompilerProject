@@ -217,6 +217,16 @@ public:
         }
     }
 
+    void updateDebugNum() {
+        if (this->debug_num > curr_instr_num) {
+            this->debug_num = curr_instr_num - 1; // [11.18.2024]: minus 1 since [this] is part of the [curr_instr_num]; we update us to get teh proper value
+            
+            #ifdef DEBUG
+                std::cout << "updated Debug Number for ssa!" << std::endl << this->toString() << std::endl;
+            #endif
+        }
+    }
+
     static void resetDebug() {
         curr_instr_num = 1;
         curr_const_num = -1;

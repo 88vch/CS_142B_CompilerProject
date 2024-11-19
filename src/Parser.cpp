@@ -1167,6 +1167,8 @@ SSA* Parser::p2_ifStatement() {
                 // delete the previous phi's now
                 this->currBB->removeSSA(then_phi, this->SSA_instrs);
                 this->currBB->removeSSA(else_phi, this->SSA_instrs);
+
+                phi_instr->updateDebugNum(); // [11.18.2024]: added to ensure debugNum stays up to date (since removal allows for those previous values to be used for debug num)
             } else {
                 phi_instr = this->addSSA1(6, BasicBlock::ssa_table.at(then_blk->varVals.at(p)), BasicBlock::ssa_table.at(else_blk->varVals.at(p)), true);
                 phi_table_int = this->add_SSA_table(phi_instr);
