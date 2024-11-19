@@ -328,56 +328,56 @@ public:
         #endif
         // [10/05/2024]: todo refactor addSSA() with additional prameter to determine if need to check for existence
         if (instr->get_constVal()) {
-            #ifdef DEBUG
-                std::cout << "\tinstr is const" << std::endl;
-            #endif
+            // #ifdef DEBUG
+            //     std::cout << "\tinstr is const" << std::endl;
+            // #endif
             if (check) {
                 SSA *tmp = this->CheckConstExistence(*(instr->get_constVal())); 
                 if (tmp == nullptr) {
                     instr = this->addSSA(instr);
                 } else {
-                    #ifdef DEBUG
-                        std::cout << "instr(" << instr->toString() << ") exists already: " << tmp->toString() << std::endl;
-                    #endif
+                    // #ifdef DEBUG
+                    //     std::cout << "instr(" << instr->toString() << ") exists already: " << tmp->toString() << std::endl;
+                    // #endif
                     if (instr->compare(tmp) == false) {
-                        #ifdef DEBUG
-                            std::cout << "deleting instr!" << std::endl;
-                        #endif
+                        // #ifdef DEBUG
+                        //     std::cout << "deleting instr!" << std::endl;
+                        // #endif
                         // [10.23.2024]: CAN WE DO THIS???
                         delete instr;
                         instr = tmp;
                     }
                 }
             } else {
-                #ifdef DEBUG
-                    std::cout << "not checking! instr=" << instr->toString() << std::endl;
-                #endif
+                // #ifdef DEBUG
+                //     std::cout << "not checking! instr=" << instr->toString() << std::endl;
+                // #endif
                 instr = this->addSSA(instr);
             }
         } else {
-            #ifdef DEBUG
-                std::cout << "\tinstr is NOT const" << std::endl;
-            #endif
+            // #ifdef DEBUG
+            //     std::cout << "\tinstr is NOT const" << std::endl;
+            // #endif
             if (check) {
                 SSA *tmp = this->CheckExistence(instr->get_operator(), instr->get_operand1(), instr->get_operand2());
                 if (tmp == nullptr) {
                     instr = this->addSSA(instr);
                 } else {
-                    #ifdef DEBUG
-                        std::cout << "instr(" << instr->toString() << ") exists already: " << tmp->toString() << std::endl;
-                    #endif
+                    // #ifdef DEBUG
+                    //     std::cout << "instr(" << instr->toString() << ") exists already: " << tmp->toString() << std::endl;
+                    // #endif
                     // [10.23.2024]: CAN WE DO THIS???
                     delete instr;
                     instr = tmp;
 
-                    #ifdef DEBUG
-                        std::cout << "instr is now: " << instr->toString() << std::endl;
-                    #endif
+                    // #ifdef DEBUG
+                    //     std::cout << "instr is now: " << instr->toString() << std::endl;
+                    // #endif
                 }
             } else {
-                #ifdef DEBUG
-                    std::cout << "not checking! instr=" << instr->toString() << std::endl;
-                #endif
+                // #ifdef DEBUG
+                //     std::cout << "not checking! instr=" << instr->toString() << std::endl;
+                // #endif
                 instr = this->addSSA(instr);
             }
         }
@@ -457,7 +457,7 @@ public:
     // recursive; maintains [this->currBB]
     inline void propagateDown(BasicBlock *curr, int ident, SSA* oldVal, int phi_ident_val, bool first = false, std::vector<BasicBlock *> seen = {}) {    
         #ifdef DEBUG
-            std::cout << "in propagateDown(ident=" << SymbolTable::symbol_table.at(ident) << ", phi_ident=" << phi_ident_val << ", oldVal (SSA) = " << oldVal->toString() << ", )" << std::endl;
+            std::cout << "in propagateDown(ident=" << SymbolTable::symbol_table.at(ident) << ", phi_ident=" << BasicBlock::ssa_table.at(phi_ident_val)->toString() << ", oldVal (SSA) = " << oldVal->toString() << ", )" << std::endl;
         #endif
         seen.push_back(curr);
 

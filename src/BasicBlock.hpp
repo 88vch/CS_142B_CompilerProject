@@ -51,11 +51,12 @@ public:
     }
 
     std::string toString() const {
-        std::string res = " ------------------------------------------------------------------------------------------------------------ \n| BB" + std::to_string(this->blockNum) + ": ";
+        std::string res = "\n ------------------------------------------------------------------------------------------------------------ ";
+        res += "\n| BB" + std::to_string(this->blockNum) + ": \t\t\t\t\t\t\t\t\t\t\t\t\t\t";
 
         if (this->constList) 
         {
-            res += "[const]: \n| ";
+            res += "|\n| [const]: \t\t\t\t\t\t\t\t\t\t\t\t\t\t|\n| ";
             res += this->constList->listToString();
         } 
         // else 
@@ -63,34 +64,53 @@ public:
         //     res += this->instrListToString();
         // }
         
-        res += "|\n| newInstrs: ";
+        res += "|\n| newInstrs: \t\t\t\t\t\t\t\t\t";
         if (!this->newInstrs.empty()) {
             for (const auto &node : this->newInstrs) {
-                res += "|\n| \t" + node->instr->toString() + ", ";
+                res += "\t\t\t\t\t|\n| \t" + node->instr->toString() + ", ";
             }
         } else {
-            res += "none!";
+            res += "|\n| \tnone!\t\t\t\t\t\t\t\t\t\t\t\t\t";
         }
 
-        res += "|\n| varVals[" + std::to_string(this->varVals.size()) + "]: ((string) SymbolTable::symbol_table.at(key), (SSA *) BasicBlock::ssa_table.at(value)): ";
+        res += "|\n| varVals[" + std::to_string(this->varVals.size()) + "]: ((string) ST::symbol_table.at(key), (SSA *) BB::ssa_table.at(value)): \t\t";
         if (!this->varVals.empty()) {
             for (const auto &pair : this->varVals) {
-                res += "|\n| \tident: " + SymbolTable::symbol_table.at(pair.first) + ", value: " + BasicBlock::ssa_table.at(pair.second)->toString();
+                res += "|\n| \tident: ";
+                if (SymbolTable::symbol_table.find(pair.first) != SymbolTable::symbol_table.end()) {
+                    res += SymbolTable::symbol_table.at(pair.first);
+                } else {
+                    res += "[not found in [ST::symbol_table]!]";
+                    std::cout << res << std::endl;
+                    exit(EXIT_FAILURE);
+                }
+
+                res += ", value: ";
+                
+                if (BasicBlock::ssa_table.find(pair.second) != BasicBlock::ssa_table.end()) {
+                    res += BasicBlock::ssa_table.at(pair.second)->toString();
+                } else {
+                    res += "[not found in [BB::ssa_table]!]";
+                    std::cout << res << std::endl;
+                    exit(EXIT_FAILURE);
+                }
+                res += "\t\t\t\t";
             }
         } else {
-            res += "none!";
+            res += "|\n| \tnone!\t\t\t\t\t\t\t\t\t\t\t\t\t";
         }
+        res += "|\n";
 
         if (this->child) {
-            res +="|\n| child1: " + std::to_string(this->child->debugNum) + "";
+            res +="| child1: " + std::to_string(this->child->blockNum) + "\t\t\t\t\t\t\t\t\t\t\t\t\t|\n";
         } else {
-            res +="|\n| child1: nullptr";
+            res +="| child1: nullptr\t\t\t\t\t\t\t\t\t\t\t\t|\n";
         }
          
         if (this->child2) {
-            res +="|\n| child2: " + std::to_string(this->child2->debugNum) + "\n";
+            res +="| child2: " + std::to_string(this->child2->blockNum) + "\t\t\t\t\t\t\t\t\t\t\t\t\t|\n";
         } else {
-            res +="|\n| child2: nullptr\n";
+            res +="| child2: nullptr\t\t\t\t\t\t\t\t\t\t\t\t|\n";
         }
         res += " ------------------------------------------------------------------------------------------------------------ ";
         return res;

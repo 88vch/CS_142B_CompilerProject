@@ -414,9 +414,9 @@ SSA* Parser::p2_assignment() {
         std::cout << "current BB: " << this->currBB->toString() << std::endl;
     #endif
     // [10.29.2024]: Maybe we don't need to add into SSA here?
-    if (!value->get_constVal()) {
-        value = this->addSSA1(value->get_operator(), value->get_operand1(), value->get_operand2(), true);
-    }
+    // if (!value->get_constVal()) {
+    //     value = this->addSSA1(value->get_operator(), value->get_operand1(), value->get_operand2(), true);
+    // }
     // 11.04.2024 = dummy coommit
     int table_int = this->add_SSA_table(value);
     #ifdef DEBUG
@@ -506,7 +506,10 @@ SSA* Parser::p2_assignment() {
                 //     blk->varVals.insert_or_assign(ident, table_int); 
                 // }
             } else if (this->currBB->findSSA(oldVal)) {
-                
+                #ifdef DEBUG
+                    std::cout << "this path was traversed!" << std::endl;
+                    exit(EXIT_FAILURE);
+                #endif
             }
         } else {
             #ifdef DEBUG
@@ -915,7 +918,7 @@ SSA* Parser::p2_ifStatement() {
     join_blk = new BasicBlock(this->currBB->varVals, false, true);
 
     #ifdef DEBUG
-        std::cout << "created new BB (join), looks like: " << std::endl << join_blk->toString() << std::endl;
+        std::cout << "created new BB (join)" << std::endl;
     #endif
 
     then_blk->child2 = join_blk; // [11.11.2024]: set then_blk->child2 to join_blk
@@ -933,6 +936,10 @@ SSA* Parser::p2_ifStatement() {
         } else if (og_child->parent2 == if_parent) {
             og_child->parent2 = join_blk;
         }
+
+        #ifdef DEBUG
+            std::cout << "join looks like: "  << join_blk->toString() << std::endl;
+        #endif
     }
 
     // [11.09.2024]: warning unused var?
@@ -964,7 +971,9 @@ SSA* Parser::p2_ifStatement() {
         this->currBB = join_blk;
 
         #ifdef DEBUG
-            std::cout << "after if1 statSeq(), [if_parent->child2] looks like: " << std::endl;
+            std::cout << "after if1 statSeq(), [if_parent] looks like: " << if_parent->toString() << std::endl;
+            
+            std::cout << "[if_parent->child2 (BB[" << if_parent->child2->blockNum << "])] looks like: " << std::endl;
             if (if_parent->child2) {
                 std::cout << if_parent->child2->toString() << std::endl;
             } else {
@@ -1012,7 +1021,12 @@ SSA* Parser::p2_ifStatement() {
     join_blk->parent2 = else_blk;
 
     #ifdef DEBUG
-        std::cout << "\tset [else_blk]->child = join_blk; join_blk looks like: " << join_blk->toString() << std::endl;
+        std::cout << "\tset [else_blk]->child = join_blk; join_blk looks like: ";
+        if (join_blk) {
+            std::cout << join_blk->toString() << std::endl;
+        } else {
+            std::cout << "nullptr" << std::endl;
+        }
     #endif
 
     
@@ -1082,6 +1096,9 @@ SSA* Parser::p2_ifStatement() {
             SSA *then_phi = BasicBlock::ssa_table.at(then_blk->varVals.at(p));
             SSA *else_phi = BasicBlock::ssa_table.at(else_blk->varVals.at(p));
             
+            SSA *phi_instr = nullptr;
+            int phi_table_int;
+
             if (((then_phi->get_operator() == 6) && (else_phi->get_operator() == 6))) { 
                 // && then_phi->compare(else_phi) == false) { // we should already know this is false; same as the enclosing if-statement
                 #ifdef DEBUG
@@ -1143,19 +1160,23 @@ SSA* Parser::p2_ifStatement() {
                     std::cout << "this->currBB: " << std::endl << this->currBB->toString() << std::endl;
                 #endif
 
+                phi_instr = this->addSSA1(6, BasicBlock::ssa_table.at(then_blk->varVals.at(p)), BasicBlock::ssa_table.at(else_blk->varVals.at(p)), true);
+                phi_table_int = this->add_SSA_table(phi_instr);
+                this->propagateDown(this->currBB, p, else_phi, phi_table_int, true);
+
                 // delete the previous phi's now
                 this->currBB->removeSSA(then_phi, this->SSA_instrs);
                 this->currBB->removeSSA(else_phi, this->SSA_instrs);
+            } else {
+                phi_instr = this->addSSA1(6, BasicBlock::ssa_table.at(then_blk->varVals.at(p)), BasicBlock::ssa_table.at(else_blk->varVals.at(p)), true);
+                phi_table_int = this->add_SSA_table(phi_instr);
+                this->propagateDown(this->currBB, p, else_phi, phi_table_int, true);
             }
-
-
-            SSA *phi_instr = this->addSSA1(6, BasicBlock::ssa_table.at(then_blk->varVals.at(p)), BasicBlock::ssa_table.at(else_blk->varVals.at(p)), true);
             #ifdef DEBUG
                 std::cout << "phi_instr: " << phi_instr->toString() << std::endl;
             #endif
             
             // [10.28.2024]: Update BasicBlock's VV
-            int phi_table_int = this->add_SSA_table(phi_instr);
             this->currBB->varVals.insert_or_assign(p, phi_table_int);
             #ifdef DEBUG
                 std::cout << "currBB after update: " << this->currBB->toString() << std::endl;
