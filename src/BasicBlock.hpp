@@ -52,31 +52,32 @@ public:
 
     std::string toString() const {
         std::string res = "\n ------------------------------------------------------------------------------------------------------------ ";
-        res += "\n| BB" + std::to_string(this->blockNum) + ": \t\t\t\t\t\t\t\t\t\t\t\t\t\t";
+        res += "\n| \t\t\t\t\t\t[BB" + std::to_string(this->blockNum) + "] \t\t\t\t\t\t\t\t";
 
         if (this->constList) 
         {
-            res += "|\n| [const]: \t\t\t\t\t\t\t\t\t\t\t\t\t\t|\n| ";
+            res += "|\n| [const]: \t\t\t\t\t\t\t\t\t\t\t\t\t|\n| ";
             res += this->constList->listToString();
+            res += "\t\t\t\t\t\t";
         } 
         // else 
         // {
         //     res += this->instrListToString();
         // }
         
-        res += "|\n| newInstrs: \t\t\t\t\t\t\t\t\t";
+        res += "|\n| newInstrs: \t\t\t\t\t\t\t\t";
         if (!this->newInstrs.empty()) {
             for (const auto &node : this->newInstrs) {
                 res += "\t\t\t\t\t|\n| \t" + node->instr->toString() + ", ";
             }
         } else {
-            res += "|\n| \tnone!\t\t\t\t\t\t\t\t\t\t\t\t\t";
+            res += "|\n| \tnone!\t\t\t";
         }
 
-        res += "|\n| varVals[" + std::to_string(this->varVals.size()) + "]: ((string) ST::symbol_table.at(key), (SSA *) BB::ssa_table.at(value)): \t\t";
+        res += "\t\t\t\t\t\t\t\t\t\t|\n| varVals[" + std::to_string(this->varVals.size()) + "]: ((string) ST::symbol_table.at(key), (SSA *) BB::ssa_table.at(value)): \t\t\t\t|";
         if (!this->varVals.empty()) {
             for (const auto &pair : this->varVals) {
-                res += "|\n| \tident: ";
+                res += "\n| \tident: ";
                 if (SymbolTable::symbol_table.find(pair.first) != SymbolTable::symbol_table.end()) {
                     res += SymbolTable::symbol_table.at(pair.first);
                 } else {
@@ -97,7 +98,7 @@ public:
                 res += "\t\t\t\t";
             }
         } else {
-            res += "|\n| \tnone!\t\t\t\t\t\t\t\t\t\t\t\t\t";
+            res += "\n| \tnone!\t\t\t\t\t\t\t\t\t\t\t\t\t";
         }
         res += "|\n";
 
