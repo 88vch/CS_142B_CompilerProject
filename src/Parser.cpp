@@ -450,6 +450,8 @@ SSA* Parser::p2_assignment() {
                 // std::cout << "done p2_assignment value [p_expr()] returned: " << value->toString() << std::endl;
                 std::cout << "oldVal !DOM newVal OR child2-BB DOM currBB" << std::endl << "about to write new phi-instr into child2" << std::endl;
             #endif
+            // [11.19.2024]: here we need to somehow differentiate between a while-loop-back && the else-statement in a (if then else)
+            // - if we can somehow check that we're in the [else-blk] instead we don't need to create a phi since else will dom our path , we'll just join at the end?
 
             // [10.30.2024]: PHI-instr
             // if (blk->varVals.find(ident) != blk->varVals.end()) {
