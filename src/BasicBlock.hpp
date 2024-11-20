@@ -102,6 +102,17 @@ public:
         }
         res += "|\n";
 
+        if (this->parent) {
+            res += "| parent: " + std::to_string(this->parent->blockNum) + "\t\t\t\t\t\t\t\t\t\t\t\t\t|\n";
+        } else {
+            res +="| parent: nullptr\t\t\t\t\t\t\t\t\t\t\t\t|\n";
+        }
+        if (this->parent2) {
+            res += "| parent2: " + std::to_string(this->parent2->blockNum) + "\t\t\t\t\t\t\t\t\t\t\t\t\t|\n";
+        } else {
+            res +="| parent2: nullptr\t\t\t\t\t\t\t\t\t\t\t\t|\n";
+        }
+
         if (this->child) {
             res +="| child1: " + std::to_string(this->child->blockNum) + "\t\t\t\t\t\t\t\t\t\t\t\t\t|\n";
         } else {
@@ -126,7 +137,13 @@ public:
 
     // checks for SSA existence in [this->newInstrs]
     inline bool findSSA(SSA *s) {
+        #ifdef DEBUG
+            std::cout << "[BB::findSSA(s[" << s->toString() << "])]" << std::endl;
+        #endif
         for (const auto &n : this->newInstrs) {
+            #ifdef DEBUG
+                std::cout << "\tcomparing against instr: " << n->instr->toString() << std::endl;
+            #endif
             if (s->compare(n->instr)) {
                 return true;
             }

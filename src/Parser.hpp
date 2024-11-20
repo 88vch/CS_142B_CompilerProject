@@ -692,6 +692,7 @@ public:
         this->generateBlkBlksSeen.push_back(curr->blockNum);
         #ifdef DEBUG
             std::cout << "generateBlocks pushed_back: [" << curr->blockNum << "]" << std::endl;
+            std::cout << curr->toString() << std::endl;
         #endif
 
         if (curr->join) {
