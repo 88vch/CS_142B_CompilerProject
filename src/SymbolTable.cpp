@@ -116,7 +116,7 @@ namespace SymbolTable {
     //     {".", 30}
     // };
     
-    const std::unordered_map<std::string, int> operator_table = { // translate into operator from [operator_table]
+    std::unordered_map<std::string, int> operator_table = { // translate into operator from [operator_table]
         {"const", 0},       // special func
         {"add", 1},
         {"sub", 2},
@@ -147,7 +147,7 @@ namespace SymbolTable {
         {"writeNL", 25}
     };
 
-    const std::unordered_map<int, std::string> operator_table_reversed = { // translate into operator from [operator_table]
+    std::unordered_map<int, std::string> operator_table_reversed = { // translate into operator from [operator_table]
         {0, "const"},       // special func
         {1, "add"},
         {2, "sub"},

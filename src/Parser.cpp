@@ -146,7 +146,18 @@ void Parser::p_funcDecl(bool retVal) {
     this->CheckFor(Result(2, 13)); // check for `(`
     // check if [SymbolTable::operator_table(std::string, int) contains [getpar + std::to_string(paramNo)]]
     // - if contains then use it, else add new [getpar] (& respective [setpar]) entry into operator_table and use that
-    // new SSA(getpar + std::to_string(paramNo));
+    std::string curr_getPar = "getpar" + std::to_string(paramNo);
+    if (SymbolTable::operator_table.find(curr_getPar) == SymbolTable::operator_table.end()){ 
+        SymbolTable::operator_table.insert({curr_getPar, SymbolTable::operator_table.size()});
+    }
+    // [11.21.2024]: should we create the new SSA here in the [main Parser], or in the [func's Parser]???
+    // new SSA(SymbolTable::operator_table.at(curr_getPar), nullptr, nullptr);
+    
+    // todo - modify argument ident to be "funcName_ident" to prevent mixing of other args in main{}
+    // - leave extra [ident] (bc if its used in main?)(idents added during tokenizing)
+    SymbolTable::identifiers.insert({f.getName() + "_" + this->sym.get_value(), SymbolTable::symbol_table.size()});
+    SymbolTable::symbol_table.insert({SymbolTable::symbol_table.size(), f.getName() + "_" + this->sym.get_value()});
+
     // note: the getpar == SSA definition of the parameter value
     // - you can think of this as: if we're in the function's [p2_start()], 
     // - maybe the function should have it's own varVal table, or smtn to keep track of this SSA value???
@@ -162,6 +173,10 @@ void Parser::p_funcDecl(bool retVal) {
     // - then we need to get a copy of the old values for (whatever we need) before we make the recursive call
     // - and properly ensure everything is set back to the old values after we return from the recusive call
     // - AND, most importantly, somehow store all this information into our [Func] and be able to make these changes/updates per call
+    // [11.21.2024]: and if we're oging to do this, 
+    // - we need ot make sure we stop after the first [statSeq()] since we won't know where it ends.
+    // - so when we create a new [Parser] instance, we must add an additional parameter (bool func=false) 
+    //      - so that if we're in a func, we knwo to stop after a certain spot;
 
     this->CheckFor(Result(2, 4)); // check for `;` token
 
@@ -520,11 +535,6 @@ SSA* Parser::p2_assignment() {
                 }
 
                 // [11.09.2024]: ok modifications here will fuck up the phi's...but this is where the work needs to be done (FAWK)
-                // if (oldVal && ((this->currBB->parent) && (this->currBB->parent->varVals.find(ident) != this->currBB->parent->varVals.end()) 
-                //             && (oldVal->compare(BasicBlock::ssa_table.at(this->currBB->parent->varVals.at(ident)))))) {
-                //     #ifdef DEBUG    
-                //         std::cout << "oldVal != currBB->parent's oldVal (maybe we're in a loop that already [propagatedDown()]!)" << std::endl;
-                //     #endif
                 if (oldVal && (this->currBB->findSSA(oldVal) == false)) {
                     // this will add to currBB's [newInstrs]
                     SSA *phi_instr = this->addSSA1(6, oldVal, value, true);
@@ -614,22 +624,7 @@ SSA* Parser::p_funcCall() {
         // - we shouldn't because it doesn't take any values it's just the instruction for when we execute
         if (f.name == "InputNum") {
             this->CheckFor_udf_optional_paren();
-
-            // SSA *tmp = new SSA(23);
             res = this->addSSA1(23, nullptr, nullptr, true);
-            // if (res != tmp) {
-            //     #ifdef DEBUG
-            //         std::cout << "res: [" << res->toString() << "] != tmp: [" << tmp->toString() << "]" << std::endl;
-            //     #endif
-            //     delete tmp;
-            //     tmp = nullptr;
-            // }
-
-            // res = this->CheckExistence(23, nullptr, nullptr);
-            // if (!res) {
-            //     res = this->addSSA(new SSA(23));
-            // }
-            
             #ifdef DEBUG
                 std::cout << "\tend of [InputNum()] got res: " << res->toString() << std::endl;
             #endif
@@ -654,20 +649,7 @@ SSA* Parser::p_funcCall() {
                 Parser::printVVs(this->currBB->varVals);
             #endif
             if (this->currBB->varVals.find(num) != this->currBB->varVals.end()) {
-                // res = this->varVals.at(num);
-                // std::cout << res->toString() << std::endl;
-                
-                // SSA *tmp = new SSA(24, BasicBlock::ssa_table.at(this->VVs.at(num)));
                 res = this->addSSA1(24, BasicBlock::ssa_table.at(this->currBB->varVals.at(num)), nullptr, true);
-                // if (res != tmp) {
-                //     delete tmp;
-                //     tmp = nullptr;
-                // }
-                
-                // res = this->CheckExistence(24, BasicBlock::ssa_table.at(this->VVs.at(num)), nullptr);
-                // if (!res) {
-                //     res = this->addSSA(new SSA(24, this->VVs.at(num)));
-                // }
             } else {
                 try {
                     // [10/09/2024]: Can't modify constVal SSA call
