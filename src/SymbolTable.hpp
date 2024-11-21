@@ -2,7 +2,7 @@
 #define SYMBOL_TABLE_HPP
 
 
-// #include "Compiler.hpp"
+#include "Func.hpp"
 #include <iostream>
 #include <vector>
 #include <unordered_map>
@@ -19,12 +19,11 @@ namespace SymbolTable {
     extern std::unordered_map<std::string, int> identifiers;
     extern std::unordered_map<std::string, int> numbers;
     extern const std::unordered_map<std::string, int> keywords;
-    // extern std::unordered_map<std::string, int> symbol_table; // find() from [symbol_table]
     extern std::unordered_map<int, std::string> symbol_table; // find() from [symbol_table]
+    extern std::unordered_map<int, Func> func_table; // find() from [func_table]
     extern const std::unordered_map<std::string, int> operator_table; // BasicBlock; translate into operator from [operator_table]
     extern const std::unordered_map<int, std::string> operator_table_reversed;
 };
 
-// extern std::unordered_map<std::string, int> SymbolTable::symbol_table;
 
 #endif

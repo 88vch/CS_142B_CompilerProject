@@ -921,7 +921,7 @@ private:
 
     // Recursive Descent
     void p_varDecl();
-    void p_funcDecl(bool noRet = false);
+    void p_funcDecl(bool retVal = false);
     SSA* p_statSeq();
     SSA* p_statement(); 
     SSA* p_assignment();

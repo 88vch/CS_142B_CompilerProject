@@ -85,19 +85,20 @@ SSA* Parser::p2_start() {
 
     // [09/05/2024]: ToDo - check for [function start] token
     // check for `{`
-    while(this->CheckFor(Result(2, 15)) == false) {
-        bool isVoid = false;
+    while(this->CheckFor(Result(2, 15), true) == false) {
+        bool retVal = true;
 
-        if (this->CheckFor(Result(2, 27))) { // check for `void`
-            isVoid = true;
+        if (this->CheckFor(Result(2, 27), true)) { // check for `void`
+            retVal = false;
             next();
         }
 
         if (this->CheckFor(Result(2, 26))) { // check for `function`
             // p_funcDecl(noRet=true); // [noRet(urn)] indicates whether a func is void or not
-            p_funcDecl(isVoid); // ends with `;` = end of varDecl (consume it in the func)
+            p_funcDecl(retVal); // ends with `;` = end of varDecl (consume it in the func)
         }
     }
+    next(); // consume `{`
 
     SSA *statSeq = p2_statSeq();
 
@@ -132,10 +133,39 @@ void Parser::p_varDecl() {
     this->CheckFor(Result(2, 4)); // check for `;` token
 }
 
-void Parser::p_funcDecl(bool noRet) {
+void Parser::p_funcDecl(bool retVal) {
     #ifdef DEBUG
         std::cout << "[Parser::p_funcDecl(" << this->sym.to_string() << ")]: got new var: [" << this->sym.to_string() << "]" << std::endl;
     #endif
+    int ident = SymbolTable::identifiers.at(this->sym.get_value()); // unused for now
+    Func f(this->sym.get_value(), retVal);
+    next();
+
+    // formalParam
+    int paramNo = 1;
+    this->CheckFor(Result(2, 13)); // check for `(`
+    // check if [SymbolTable::operator_table(std::string, int) contains [getpar + std::to_string(paramNo)]]
+    // - if contains then use it, else add new [getpar] (& respective [setpar]) entry into operator_table and use that
+    // new SSA(getpar + std::to_string(paramNo));
+    // note: the getpar == SSA definition of the parameter value
+    // - you can think of this as: if we're in the function's [p2_start()], 
+    // - maybe the function should have it's own varVal table, or smtn to keep track of this SSA value???
+
+    while (this->CheckFor(Result(2, 17), true)) { // check for `,` token
+        next(); // consuming the `,`
+    }
+
+    this->CheckFor(Result(2, 14)); // check for `)`
+    this->CheckFor(Result(2, 4)); // check for `;` token
+
+    // funcBody: can't we just recursively call [p2_start()] here?
+    // - then we need to get a copy of the old values for (whatever we need) before we make the recursive call
+    // - and properly ensure everything is set back to the old values after we return from the recusive call
+    // - AND, most importantly, somehow store all this information into our [Func] and be able to make these changes/updates per call
+
+    this->CheckFor(Result(2, 4)); // check for `;` token
+
+    SymbolTable::func_table.insert({ident, f});
 }
 
 SSA* Parser::p_statSeq() {
