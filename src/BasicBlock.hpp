@@ -168,7 +168,7 @@ public:
 
     BasicBlock *parent, *parent2;
     BasicBlock *child, *child2;
-    std::unordered_map<int, int> varVals; // [variable (sym_table val) : value]
+    std::unordered_map<int, int> varVals; // [key (sym_table ident)][variable (sym_table val) : value]
     // an ssa instruction: std::vector<int>
     // [#: debugging] [operation] [operand(s)]
     std::vector<Node*> newInstrs;

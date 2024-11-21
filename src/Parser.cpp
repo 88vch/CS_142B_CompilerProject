@@ -1067,7 +1067,7 @@ SSA* Parser::p2_ifStatement() {
     // 11.04.2024::6:57;
     // if (!hasChild) {
         // join_blk->parent = then_blk; // [10.24.2024]: already did this earlier
-    join_blk->parent2 = else_blk;
+    // join_blk->parent2 = else_blk; // [11.20.2024]: removed this since it'll reset a move if we havae subsequent nested during [p2_statSeq()] in this branch
     if (then_blk->child == nullptr) { // [11.20.2024]: added condition to prevent accidental replacment of a nested blk
         then_blk->child = join_blk;
     }
@@ -1077,15 +1077,19 @@ SSA* Parser::p2_ifStatement() {
 
     this->currBB = join_blk;
 
+    // [11.20.2024]: here we make the assumption that [join_blk] has both [parent] && [parent2] ptr if we have (then) && (else) condition
+    BasicBlock *then_blk_last = join_blk->parent;
+    BasicBlock *else_blk_last = join_blk->parent2;
+
     std::unordered_set<int> vars = {};
 
     for (const auto &p : if_parent->varVals) {
         vars.insert(p.first);
     }
-    for (const auto &p : then_blk->varVals) {
+    for (const auto &p : then_blk_last->varVals) {
         vars.insert(p.first);
     }
-    for (const auto &p : else_blk->varVals) {
+    for (const auto &p : else_blk_last->varVals) {
         vars.insert(p.first);
     }
 
@@ -1093,29 +1097,39 @@ SSA* Parser::p2_ifStatement() {
     #ifdef DEBUG
         std::cout << "then_blk: " << std::endl << then_blk->toString() << std::endl;
         std::cout << "else_blk: " << std::endl << else_blk->toString() << std::endl;
+
+        std::cout << "then_blk_last: " << std::endl << then_blk_last->toString() << std::endl;
+        std::cout << "else_blk_last: " << std::endl << else_blk_last->toString() << std::endl;
     #endif
+    
     for (const auto &p : vars) {
-        if (then_blk->varVals.find(p) == then_blk->varVals.end()) {
+        #ifdef DEBUG
+            std::cout << "current ident: [" << SymbolTable::symbol_table.at(p) << "]" << std::endl;
+        #endif
+        if (then_blk_last->varVals.find(p) == then_blk_last->varVals.end()) {
             BasicBlock *prevCurr = this->currBB;
-            this->currBB = then_blk;
+            this->currBB = then_blk_last;
             this->handleUninitVar(p);
             this->currBB = prevCurr;
         }
 
-        if (else_blk->varVals.find(p) == else_blk->varVals.end()) {
+        if (else_blk_last->varVals.find(p) == else_blk_last->varVals.end()) {
             BasicBlock *prevCurr = this->currBB;
-            this->currBB = else_blk;
+            this->currBB = else_blk_last;
             this->handleUninitVar(p);
             this->currBB = prevCurr;
         }
         
         // if a ident from [if_parent] exists in [then_blk] with a different value, we need a phi
-        if (then_blk->varVals.at(p) != else_blk->varVals.at(p)) {
+        if (then_blk_last->varVals.at(p) != else_blk_last->varVals.at(p)) {
+            SSA *then_phi = BasicBlock::ssa_table.at(then_blk_last->varVals.at(p));
+            SSA *else_phi = BasicBlock::ssa_table.at(else_blk_last->varVals.at(p));
+            
             #ifdef DEBUG
-                std::cout << "then_blk's ident val != else_blk's ident val; consolidating to one..." << std::endl;
+                std::cout << "then_blk_last's ident val != else_blk_last's ident val; consolidating to one..." << std::endl;
+                std::cout << "then_phi: " << then_phi->toString() << std::endl;
+                std::cout << "else_phi: " << else_phi->toString() << std::endl;
             #endif
-            SSA *then_phi = BasicBlock::ssa_table.at(then_blk->varVals.at(p));
-            SSA *else_phi = BasicBlock::ssa_table.at(else_blk->varVals.at(p));
             
             SSA *phi_instr = nullptr;
             int phi_table_int;
@@ -1191,7 +1205,7 @@ SSA* Parser::p2_ifStatement() {
 
                 phi_instr->updateDebugNum(); // [11.18.2024]: added to ensure debugNum stays up to date (since removal allows for those previous values to be used for debug num)
             } else {
-                phi_instr = this->addSSA1(6, BasicBlock::ssa_table.at(then_blk->varVals.at(p)), BasicBlock::ssa_table.at(else_blk->varVals.at(p)), true);
+                phi_instr = this->addSSA1(6, BasicBlock::ssa_table.at(then_blk_last->varVals.at(p)), BasicBlock::ssa_table.at(else_blk_last->varVals.at(p)), true);
                 phi_table_int = this->add_SSA_table(phi_instr);
                 this->propagateDown(this->currBB, p, else_phi, phi_table_int, true);
             }
