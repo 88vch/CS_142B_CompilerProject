@@ -84,7 +84,20 @@ SSA* Parser::p2_start() {
     }
 
     // [09/05/2024]: ToDo - check for [function start] token
-    this->CheckFor(Result(2, 15)); // check for `{`
+    // check for `{`
+    while(this->CheckFor(Result(2, 15)) == false) {
+        bool isVoid = false;
+
+        if (this->CheckFor(Result(2, 27))) { // check for `void`
+            isVoid = true;
+            next();
+        }
+
+        if (this->CheckFor(Result(2, 26))) { // check for `function`
+            // p_funcDecl(noRet=true); // [noRet(urn)] indicates whether a func is void or not
+            p_funcDecl(isVoid); // ends with `;` = end of varDecl (consume it in the func)
+        }
+    }
 
     SSA *statSeq = p2_statSeq();
 
@@ -117,6 +130,12 @@ void Parser::p_varDecl() {
         next();
     }
     this->CheckFor(Result(2, 4)); // check for `;` token
+}
+
+void Parser::p_funcDecl(bool noRet) {
+    #ifdef DEBUG
+        std::cout << "[Parser::p_funcDecl(" << this->sym.to_string() << ")]: got new var: [" << this->sym.to_string() << "]" << std::endl;
+    #endif
 }
 
 SSA* Parser::p_statSeq() {
@@ -672,11 +691,9 @@ SSA* Parser::p_funcCall() {
                 this->CheckFor(Result(2, 14)); // check for `)`; sanity...irl could just call [next()]
             } 
             // [09/02/2024]: ToDo - call the function with the arguments (if they exist)
+            // [11.20.2024]: look through [SymbolTable::symbol_table] for the ident corresponding to the [func]
+            // - call that function (figure out what that menas)
         }
-    } else {
-        // check UDF's that return a num (or char?) 
-        // this->CheckFor(); // [08/27/2024]: Something like this?...
-        // [09/02/2024]: ORRRRR Don't they all start with the `call` token???? confirm this then delete this and js [CheckFor] `call`
     }
 
     #ifdef DEBUG
@@ -771,50 +788,9 @@ SSA* Parser::p2_funcCall() {
                 this->CheckFor(Result(2, 14)); // check for `)`; sanity...irl could just call [next()]
             } 
             // [09/02/2024]: ToDo - call the function with the arguments (if they exist)
+            // [11.20.2024]: look through [SymbolTable::symbol_table] for the ident corresponding to the [func]
+            // - call that function (figure out what that menas)
         }
-    } else {
-        // check UDF's that return a num (or char?) 
-        // this->CheckFor(); // [08/27/2024]: Something like this?...
-        // [09/02/2024]: ORRRRR Don't they all start with the `call` token???? confirm this then delete this and js [CheckFor] `call`
-        
-        // [10/14/2024]: Should we create a new BB for it(?)
-        // BasicBlock *parent_blk = this->currBB;
-        // this->currBB = new BasicBlock();
-        // #ifdef DEBUG
-        //     std::cout << "created new BB with instrList: " << std::endl << "\t";
-        //     this->currBB->printInstrList();
-        // #endif        
-        // this->currBB->parent = parent_blk;
-        // parent_blk->child = this->currBB;
-
-        this->currBB->child = new BasicBlock(this->currBB->varVals);
-        this->currBB->child->parent = this->currBB;
-        this->currBB = this->currBB->child;
-        #ifdef DEBUG
-            std::cout << "created new BB (pre-funcCall)" << std::endl;
-        #endif
-        // #ifdef DEBUG
-        //     std::cout << "created new BB with instrList: " << std::endl << "\t";
-        //     this->currBB->printInstrList();
-        // #endif
-
-        // [10.20.2024]: TODO function call...ASAP
-
-        // [10/14/2024]: Create a new BB here (for after the function call?)
-        this->currBB->child = new BasicBlock(this->currBB->varVals);
-        this->currBB->child->parent = this->currBB;
-        this->currBB = this->currBB->child;
-        // BasicBlock *func = this->currBB;
-        // this->currBB = new BasicBlock();
-        #ifdef DEBUG
-            std::cout << "created new BB (post-funcCall)" << std::endl;
-        #endif
-        // #ifdef DEBUG
-        //     std::cout << "created new BB with instrList: " << std::endl << "\t";
-        //     this->currBB->printInstrList();
-        // #endif
-        // this->currBB->parent = func;
-        // func->child = this->currBB;
     }
 
     #ifdef DEBUG

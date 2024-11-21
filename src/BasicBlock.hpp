@@ -173,7 +173,10 @@ public:
     // [#: debugging] [operation] [operand(s)]
     std::vector<Node*> newInstrs;
     LinkedList *constList;
-    // std::unordered_map<int, LinkedList*> instrList; // [10.22.2024]: May not need this 
+
+    // [11.20.2024]: moved to below
+    // [10.22.2024]: May not need this 
+    // std::unordered_map<int, LinkedList*> instrList; 
 
     Node *constPtr;
 
