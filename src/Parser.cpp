@@ -1010,6 +1010,8 @@ SSA* Parser::p2_ifStatement() {
     // jmpIf_instr = this->addSSA1(8, nullptr, nullptr); // [check=false(?)]
         // [10/10/2024]: this is the last SSA of the if-BasicBlock right?
     
+    SSA *if1_bra = new SSA(8, nullptr, nullptr);
+    this->addSSA1(if1_bra);
     next();
 
     // [10/14/2024];
@@ -1207,6 +1209,13 @@ SSA* Parser::p2_ifStatement() {
                 std::cout << "currBB after update: " << this->currBB->toString() << std::endl;
             #endif
         }
+    }
+
+    if (this->currBB->newInstrs.empty()) {
+        this->prevJump = true;
+        this->prevInstrs.push(if1_bra);
+    } else {
+        if1_bra->set_operand1(this->currBB->newInstrs.at(0)->instr);
     }
 
     return jmp_instr; // [11.07.2024]: ?

@@ -10,7 +10,6 @@
 #include <algorithm>
 // #include <stdio.h>
 // #include <cstdio>
-#include "Func.hpp"
 #include "Result.hpp"
 #include "BasicBlock.hpp"
 #include "SSA.hpp"
@@ -298,7 +297,11 @@ public:
                 std::cout << "\tprevJump exists with prevInstr: [" << this->prevInstr->toString() << "]!" << std::endl;
             #endif
             
-            this->prevInstr->set_operand2(instr);
+            if (this->prevInstr->get_operator() == 8) {
+                this->prevInstr->set_operand1(instr);
+            } else {
+                this->prevInstr->set_operand2(instr);
+            }
 
             // this->prevJump = false;
             this->prevInstr = nullptr;
