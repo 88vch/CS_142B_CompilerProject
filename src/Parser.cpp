@@ -1,5 +1,7 @@
 #include "Parser.hpp"
 
+std::unordered_map<Func, Parser*> Parser::funcMap = {};
+
 // Top-Down Recursive Descent LL(1) Parsing to generate BB IR-representation
 // [0ld Version]: assumes we've generated all SSA Instructions & Have done error checking
 // [09/03/2024]: Unable to pre-generate all SSA Instructions (bc some branch locations may be unknown still)
@@ -116,6 +118,55 @@ SSA* Parser::p2_start() {
     return statSeq;
 }
 
+// [11.22.2024]: handles [formalParam] && [funcBody]
+SSA* Parser::p2_funcStart() {
+    // formalParam
+    int paramNo = 1;
+    this->CheckFor(Result(2, 13)); // check for `(`
+    // check if [SymbolTable::operator_table(std::string, int) contains [getpar + std::to_string(paramNo)]]
+    // - if contains then use it, else add new [getpar] (& respective [setpar]) entry into operator_table and use that
+    std::string curr_getPar = "getpar" + std::to_string(paramNo);
+    if (SymbolTable::operator_table.find(curr_getPar) == SymbolTable::operator_table.end()){ 
+        SymbolTable::operator_table.insert({curr_getPar, SymbolTable::operator_table.size()});
+    }
+    // [11.21.2024]: should we create the new SSA here in the [main Parser], or in the [func's Parser]???
+    // new SSA(SymbolTable::operator_table.at(curr_getPar), nullptr, nullptr);
+    
+    // todo - modify argument ident to be "funcName_ident" to prevent mixing of other args in main{}
+    // - leave extra [ident] (bc if its used in main?)(idents added during tokenizing)
+    SymbolTable::identifiers.insert({this->func->getName() + "_" + this->sym.get_value(), SymbolTable::symbol_table.size()});
+    SymbolTable::symbol_table.insert({SymbolTable::symbol_table.size(), this->func->getName() + "_" + this->sym.get_value()});
+
+    // note: the getpar == SSA definition of the parameter value
+    // - you can think of this as: if we're in the function's [p2_start()], 
+    // - maybe the function should have it's own varVal table, or smtn to keep track of this SSA value???
+
+    while (this->CheckFor(Result(2, 17), true)) { // check for `,` token
+        next(); // consuming the `,`
+    }
+
+    this->CheckFor(Result(2, 14)); // check for `)`
+    this->CheckFor(Result(2, 4)); // check for `;` token
+
+    // funcBody: can't we just recursively call [p2_start()] here?
+    // - then we need to get a copy of the old values for (whatever we need) before we make the recursive call
+    // - and properly ensure everything is set back to the old values after we return from the recusive call
+    // - AND, most importantly, somehow store all this information into our [Func] and be able to make these changes/updates per call
+    // [11.21.2024]: and if we're oging to do this, 
+    // - we need ot make sure we stop after the first [statSeq()] since we won't know where it ends.
+    // - so when we create a new [Parser] instance, we must add an additional parameter (bool func=false) 
+    //      - so that if we're in a func, we knwo to stop after a certain spot;
+
+    // [11.22.2024]: todo - ensure that we stop once we're done parsing the [funcBody]
+    // - formalParam := "(" [ident {"," ident}]")"
+    // - ";"
+    // - funcBody := [varDecl] "{"[statSeq]"}"
+
+    // [11.22.2024]: compilation stub
+    SSA *statSeq = p2_statSeq();
+    return statSeq;
+}
+
 void Parser::p_varDecl() {
     #ifdef DEBUG
         std::cout << "[Parser::p_varDecl(" << this->sym.to_string() << ")]: got new var: [" << this->sym.to_string() << "]" << std::endl;
@@ -138,49 +189,26 @@ void Parser::p_funcDecl(bool retVal) {
         std::cout << "[Parser::p_funcDecl(" << this->sym.to_string() << ")]: got new var: [" << this->sym.to_string() << "]" << std::endl;
     #endif
     int ident = SymbolTable::identifiers.at(this->sym.get_value()); // unused for now
-    Func f(this->sym.get_value(), retVal);
+    Func *f = new Func(this->sym.get_value(), retVal);
     next();
 
-    // formalParam
-    int paramNo = 1;
-    this->CheckFor(Result(2, 13)); // check for `(`
-    // check if [SymbolTable::operator_table(std::string, int) contains [getpar + std::to_string(paramNo)]]
-    // - if contains then use it, else add new [getpar] (& respective [setpar]) entry into operator_table and use that
-    std::string curr_getPar = "getpar" + std::to_string(paramNo);
-    if (SymbolTable::operator_table.find(curr_getPar) == SymbolTable::operator_table.end()){ 
-        SymbolTable::operator_table.insert({curr_getPar, SymbolTable::operator_table.size()});
+    // Ensure the index is within bounds
+    if (this->s_index >= this->source_len) {
+        std::cerr << "Error: Index out of bounds!" << std::endl;
+        exit(EXIT_FAILURE);
     }
-    // [11.21.2024]: should we create the new SSA here in the [main Parser], or in the [func's Parser]???
-    // new SSA(SymbolTable::operator_table.at(curr_getPar), nullptr, nullptr);
+
+    // Create a subset vector from curr_idx to the end
+    std::vector<Result> subset(this->source.begin() + this->s_index, this->source.end());
     
-    // todo - modify argument ident to be "funcName_ident" to prevent mixing of other args in main{}
-    // - leave extra [ident] (bc if its used in main?)(idents added during tokenizing)
-    SymbolTable::identifiers.insert({f.getName() + "_" + this->sym.get_value(), SymbolTable::symbol_table.size()});
-    SymbolTable::symbol_table.insert({SymbolTable::symbol_table.size(), f.getName() + "_" + this->sym.get_value()});
-
-    // note: the getpar == SSA definition of the parameter value
-    // - you can think of this as: if we're in the function's [p2_start()], 
-    // - maybe the function should have it's own varVal table, or smtn to keep track of this SSA value???
-
-    while (this->CheckFor(Result(2, 17), true)) { // check for `,` token
-        next(); // consuming the `,`
-    }
-
-    this->CheckFor(Result(2, 14)); // check for `)`
-    this->CheckFor(Result(2, 4)); // check for `;` token
-
-    // funcBody: can't we just recursively call [p2_start()] here?
-    // - then we need to get a copy of the old values for (whatever we need) before we make the recursive call
-    // - and properly ensure everything is set back to the old values after we return from the recusive call
-    // - AND, most importantly, somehow store all this information into our [Func] and be able to make these changes/updates per call
-    // [11.21.2024]: and if we're oging to do this, 
-    // - we need ot make sure we stop after the first [statSeq()] since we won't know where it ends.
-    // - so when we create a new [Parser] instance, we must add an additional parameter (bool func=false) 
-    //      - so that if we're in a func, we knwo to stop after a certain spot;
+    // [11.22.2024]: create a new [Parser] object for this [func] starting from our currend position in the [Result] tokens
+    Parser *f1 = new Parser(subset, true, true, f);
+    f1->p2_funcStart();
 
     this->CheckFor(Result(2, 4)); // check for `;` token
 
     SymbolTable::func_table.insert({ident, f});
+    Parser::funcMap.insert({f, f1});
 }
 
 SSA* Parser::p_statSeq() {

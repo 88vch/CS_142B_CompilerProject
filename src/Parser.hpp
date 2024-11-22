@@ -26,7 +26,7 @@
 // Note: shouldn't need keywords bc we only care about computational code
 class Parser {
 public:
-    Parser(const std::vector<Result> &tkns, bool blk = false)
+    Parser(const std::vector<Result> &tkns, bool blk = false, bool isFunc = false, Func *f = nullptr)
     {
         this->source = tkns;
 
@@ -57,6 +57,12 @@ public:
         this->block = blk;
         this->generateBlkBlksSeen = {};
         // this->blocksSeen = {};
+
+        this->isFunc = false;
+        if (isFunc) {
+            this->isFunc = true;
+            this->func = f;
+        }
 
         next(); // [10/14/2024]: Why do we do this?
         // - load's first token into [this->sym]
@@ -906,9 +912,15 @@ private:
     std::unordered_set<int> varDeclarations; // the int in the symbol table
     std::unordered_set<int> funcDeclarations; // the int in the symbol table
 
+    bool isFunc;
+    Func *func;
+    static std::unordered_map<Func*, Parser*> funcMap; // [11.22.2024]: the map of [func:Parser*] since each [funcDecl] will define it's own [funcBody]
+
+    SSA *p2_funcStart(); // [11.22.2024]: UDF funcBody
+
     // [09/04/2024]: ToDo - transition into BasicBlocks
     SSA* p2_start();
-    void p2_varDecl();
+    // void p2_varDecl();
     SSA* p2_statSeq();
     SSA* p2_statement(); 
     SSA* p2_assignment();
@@ -917,10 +929,10 @@ private:
     SSA* p2_whileStatement();
     SSA* p2_return();
 
-    SSA* p2_relation();
-    BasicBlock* p2_expr();
-    BasicBlock* p2_term();
-    BasicBlock* p2_factor();
+    // SSA* p2_relation();
+    // BasicBlock* p2_expr();
+    // BasicBlock* p2_term();
+    // BasicBlock* p2_factor();
 
     // Recursive Descent
     void p_varDecl();

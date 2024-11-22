@@ -116,7 +116,7 @@ namespace SymbolTable {
     //     {".", 30}
     // };
 
-    std::unordered_map<int, Func> func_table = {};
+    std::unordered_map<int, Func*> func_table = {};
     
     std::unordered_map<std::string, int> operator_table = { // translate into operator from [operator_table]
         {"const", 0},       // special func

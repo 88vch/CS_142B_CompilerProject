@@ -20,7 +20,7 @@ namespace SymbolTable {
     extern std::unordered_map<std::string, int> numbers;
     extern const std::unordered_map<std::string, int> keywords;
     extern std::unordered_map<int, std::string> symbol_table; // find() from [symbol_table]
-    extern std::unordered_map<int, Func> func_table; // find() from [func_table]
+    extern std::unordered_map<int, Func*> func_table; // find() from [func_table]
     
     // [11.21.2024]: removed const for UDF if we ned to add more arg SSA's (getpar4, getpar5, etc...)
     extern std::unordered_map<std::string, int> operator_table; // BasicBlock; translate into operator from [operator_table]
