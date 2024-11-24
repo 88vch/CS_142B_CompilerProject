@@ -100,7 +100,7 @@ SSA* Parser::p2_start() {
             p_funcDecl(retVal); // ends with `;` = end of varDecl (consume it in the func)
         }
     }
-    next(); // consume `{`
+    this->CheckFor(Result(2, 15)); // check for `{`
 
     SSA *statSeq = p2_statSeq();
 
@@ -120,28 +120,51 @@ SSA* Parser::p2_start() {
 
 // [11.22.2024]: handles [formalParam] && [funcBody]
 SSA* Parser::p2_funcStart() {
+    #ifdef DEBUG
+        std::cout << "[Parser::p2_funcStart(" << this->sym.to_string() << ")]" << std::endl;
+    #endif
+
     // formalParam
     int paramNo = 1;
     this->CheckFor(Result(2, 13)); // check for `(`
+    
+    SSA *getparSSA = nullptr;
+    
     // check if [SymbolTable::operator_table(std::string, int) contains [getpar + std::to_string(paramNo)]]
     // - if contains then use it, else add new [getpar] (& respective [setpar]) entry into operator_table and use that
     std::string curr_getPar = "getpar" + std::to_string(paramNo);
     if (SymbolTable::operator_table.find(curr_getPar) == SymbolTable::operator_table.end()){ 
         SymbolTable::operator_table.insert({curr_getPar, SymbolTable::operator_table.size()});
     }
-    // [11.21.2024]: should we create the new SSA here in the [main Parser], or in the [func's Parser]???
-    // new SSA(SymbolTable::operator_table.at(curr_getPar), nullptr, nullptr);
+    // [11.21.2024]: we should create the new SSA in the [func's Parser] (aka: here)
+    getparSSA = this->addSSA1(SymbolTable::operator_table.at(curr_getPar), nullptr, nullptr);
     
-    // todo - modify argument ident to be "funcName_ident" to prevent mixing of other args in main{}
+    SymbolTable::update_table(this->func->getName() + "_" + this->sym.get_value(), "identifier");
+    // modify argument ident to be "funcName_ident" to prevent mixing of other args in main{}
     // - leave extra [ident] (bc if its used in main?)(idents added during tokenizing)
-    SymbolTable::identifiers.insert({this->func->getName() + "_" + this->sym.get_value(), SymbolTable::symbol_table.size()});
-    SymbolTable::symbol_table.insert({SymbolTable::symbol_table.size(), this->func->getName() + "_" + this->sym.get_value()});
+    // SymbolTable::identifiers.insert({this->func->getName() + "_" + this->sym.get_value(), SymbolTable::symbol_table.size()});
+    // [11.24.2024]: HOWEVER, not e that to access the value in the [SymbolTable::symbol_table], we must look for the variable as follows: [funcName_varName]
+    // SymbolTable::func_table.insert({SymbolTable::symbol_table.size(), this->func});
+    // SymbolTable::symbol_table.insert({SymbolTable::symbol_table.size(), this->func->getName() + "_" + this->sym.get_value()});
+    
 
-    // note: the getpar == SSA definition of the parameter value
-    // - you can think of this as: if we're in the function's [p2_start()], 
-    // - maybe the function should have it's own varVal table, or smtn to keep track of this SSA value???
+    paramNo++;
 
     while (this->CheckFor(Result(2, 17), true)) { // check for `,` token
+        curr_getPar = "getpar" + std::to_string(paramNo);
+        if (SymbolTable::operator_table.find(curr_getPar) == SymbolTable::operator_table.end()){ 
+            SymbolTable::operator_table.insert({curr_getPar, SymbolTable::operator_table.size()});
+        }
+        // [11.21.2024]: we should create the new SSA in the [func's Parser] (aka: here)
+        getparSSA = this->addSSA1(SymbolTable::operator_table.at(curr_getPar), nullptr, nullptr);
+        
+        SymbolTable::update_table(this->func->getName() + "_" + this->sym.get_value(), "identifier");
+        // SymbolTable::identifiers.insert({this->func->getName() + "_" + this->sym.get_value(), SymbolTable::symbol_table.size()});
+        // SymbolTable::func_table.insert({SymbolTable::symbol_table.size(), this->func});
+        // [11.24.2024]: HOWEVER, not e that to access the value in the [SymbolTable::symbol_table], we must look for the variable as follows: [funcName_varName]
+        // SymbolTable::symbol_table.insert({SymbolTable::symbol_table.size(), this->func->getName() + "_" + this->sym.get_value()});
+        
+        paramNo++;
         next(); // consuming the `,`
     }
 
@@ -157,13 +180,30 @@ SSA* Parser::p2_funcStart() {
     // - so when we create a new [Parser] instance, we must add an additional parameter (bool func=false) 
     //      - so that if we're in a func, we knwo to stop after a certain spot;
 
+    this->currBB = new BasicBlock(this->BB0->varVals);
+    this->BB0->child = this->currBB;
+    this->currBB->parent = this->BB0;
+    #ifdef DEBUG
+        std::cout << "created new BB (p2-funcStart)" << std::endl;
+    #endif
+
+    if (this->CheckFor(Result(2, 5), true)) { // check for `var` token
+        next(); // consumes `var` token
+        p_varDecl(); // ends with `;` = end of varDecl (consume it in the func)
+    }
+
     // [11.22.2024]: todo - ensure that we stop once we're done parsing the [funcBody]
     // - formalParam := "(" [ident {"," ident}]")"
     // - ";"
     // - funcBody := [varDecl] "{"[statSeq]"}"
 
+    this->CheckFor(Result(2, 15)); // check for `{`
+
     // [11.22.2024]: compilation stub
     SSA *statSeq = p2_statSeq();
+
+    this->CheckFor(Result(2, 16)); // check for `}`
+
     return statSeq;
 }
 
@@ -203,6 +243,7 @@ void Parser::p_funcDecl(bool retVal) {
     
     // [11.22.2024]: create a new [Parser] object for this [func] starting from our currend position in the [Result] tokens
     Parser *f1 = new Parser(subset, true, true, f);
+    
     f1->p2_funcStart();
 
     this->CheckFor(Result(2, 4)); // check for `;` token
@@ -733,6 +774,10 @@ SSA* Parser::p_funcCall() {
             // [09/02/2024]: ToDo - call the function with the arguments (if they exist)
             // [11.20.2024]: look through [SymbolTable::symbol_table] for the ident corresponding to the [func]
             // - call that function (figure out what that menas)
+
+            // [11.24.2024]: loop through the [f.args::[std::vector<std::string>]], assign each ident the form: x=[f.name_ident]; use this for [SymbolTable::symbol_table.at(x)]
+            // - for each [parameter], this->addSSA1(setpar, x, nullptr);
+            // - figure out how to assign this [setpar] to the func (must create a new function in Parser) and get proper return val (i.e. new SSA(?))
         }
     }
 

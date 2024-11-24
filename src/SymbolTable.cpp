@@ -39,7 +39,7 @@ namespace SymbolTable {
         {".", 30}
     };
 
-    // holds symbol_table key's that are identifiers [identifier: literal = std::string, value = int]
+    // holds symbol_table key's that are identifiers [identifier: literal = std::string, value = symboltable int]
     std::unordered_map<std::string, int> identifiers = {};  
 
     // holds symbol_table key's that are numbers [number: literal = std::string, value = int]
