@@ -1,6 +1,6 @@
 #include "Parser.hpp"
 
-std::unordered_map<Func, Parser*> Parser::funcMap = {};
+std::unordered_map<Func*, Parser*> Parser::funcMap = {};
 
 // Top-Down Recursive Descent LL(1) Parsing to generate BB IR-representation
 // [0ld Version]: assumes we've generated all SSA Instructions & Have done error checking
@@ -118,54 +118,63 @@ SSA* Parser::p2_start() {
     return statSeq;
 }
 
+void Parser::handle_getpar(Func *f, int paramNo) {
+    int VV_value;
+    SSA *getparSSA = nullptr;
+
+    std::string curr_getPar = "getpar" + std::to_string(paramNo);
+    if (SymbolTable::operator_table.find(curr_getPar) == SymbolTable::operator_table.end()){ 
+        SymbolTable::operator_table.insert({curr_getPar, SymbolTable::operator_table.size()});
+        // [11.24.2024]: must also create the linkedList for this new operator
+        BasicBlock::instrList.insert({SymbolTable::operator_table.at(curr_getPar), new LinkedList()});
+    }
+    // [11.21.2024]: we should create the new SSA in the [func's Parser] (aka: here)
+    getparSSA = this->addSSA1(SymbolTable::operator_table.at(curr_getPar), nullptr, nullptr);
+    VV_value = this->add_SSA_table(getparSSA);
+    
+    SymbolTable::update_table(this->func->getName() + "_" + this->sym.get_value(), "identifier");
+    this->varDeclarations.insert(SymbolTable::identifiers.at(f->getName() + "_" + this->sym.get_value()));
+    this->VVs.insert_or_assign(SymbolTable::identifiers.at(f->getName() + "_" + this->sym.get_value()), VV_value);
+    
+    #ifdef DEBUG
+        std::cout << "got new [getpar] SSA: " << getparSSA->toString() << std::endl;
+        std::cout << "successfully updated [SymbolTable::symbol_table] with func's identifier" << std::endl;
+        std::cout << "varVals looks like: " << std::endl;
+        this->printVVs(this->currBB->varVals);
+    #endif
+    // modify argument ident to be "funcName_ident" to prevent mixing of other args in main{}
+    // - leave extra [ident] (bc if its used in main?)(idents added during tokenizing)
+
+    next(); // [11.24.2024]: consuming the `ident`
+}
+
 // [11.22.2024]: handles [formalParam] && [funcBody]
-SSA* Parser::p2_funcStart() {
+SSA* Parser::p2_funcStart(Func *f) {
     #ifdef DEBUG
         std::cout << "[Parser::p2_funcStart(" << this->sym.to_string() << ")]" << std::endl;
+    #endif
+
+    this->currBB = new BasicBlock(this->BB0->varVals);
+    this->BB0->child = this->currBB;
+    this->currBB->parent = this->BB0;
+
+    #ifdef DEBUG
+        std::cout << "created new BB (p2_funcStart)" << std::endl;
     #endif
 
     // formalParam
     int paramNo = 1;
     this->CheckFor(Result(2, 13)); // check for `(`
     
-    SSA *getparSSA = nullptr;
-    
     // check if [SymbolTable::operator_table(std::string, int) contains [getpar + std::to_string(paramNo)]]
     // - if contains then use it, else add new [getpar] (& respective [setpar]) entry into operator_table and use that
-    std::string curr_getPar = "getpar" + std::to_string(paramNo);
-    if (SymbolTable::operator_table.find(curr_getPar) == SymbolTable::operator_table.end()){ 
-        SymbolTable::operator_table.insert({curr_getPar, SymbolTable::operator_table.size()});
-    }
-    // [11.21.2024]: we should create the new SSA in the [func's Parser] (aka: here)
-    getparSSA = this->addSSA1(SymbolTable::operator_table.at(curr_getPar), nullptr, nullptr);
-    
-    SymbolTable::update_table(this->func->getName() + "_" + this->sym.get_value(), "identifier");
-    // modify argument ident to be "funcName_ident" to prevent mixing of other args in main{}
-    // - leave extra [ident] (bc if its used in main?)(idents added during tokenizing)
-    // SymbolTable::identifiers.insert({this->func->getName() + "_" + this->sym.get_value(), SymbolTable::symbol_table.size()});
-    // [11.24.2024]: HOWEVER, not e that to access the value in the [SymbolTable::symbol_table], we must look for the variable as follows: [funcName_varName]
-    // SymbolTable::func_table.insert({SymbolTable::symbol_table.size(), this->func});
-    // SymbolTable::symbol_table.insert({SymbolTable::symbol_table.size(), this->func->getName() + "_" + this->sym.get_value()});
-    
-
+    this->handle_getpar(f, paramNo);
     paramNo++;
 
     while (this->CheckFor(Result(2, 17), true)) { // check for `,` token
-        curr_getPar = "getpar" + std::to_string(paramNo);
-        if (SymbolTable::operator_table.find(curr_getPar) == SymbolTable::operator_table.end()){ 
-            SymbolTable::operator_table.insert({curr_getPar, SymbolTable::operator_table.size()});
-        }
-        // [11.21.2024]: we should create the new SSA in the [func's Parser] (aka: here)
-        getparSSA = this->addSSA1(SymbolTable::operator_table.at(curr_getPar), nullptr, nullptr);
-        
-        SymbolTable::update_table(this->func->getName() + "_" + this->sym.get_value(), "identifier");
-        // SymbolTable::identifiers.insert({this->func->getName() + "_" + this->sym.get_value(), SymbolTable::symbol_table.size()});
-        // SymbolTable::func_table.insert({SymbolTable::symbol_table.size(), this->func});
-        // [11.24.2024]: HOWEVER, not e that to access the value in the [SymbolTable::symbol_table], we must look for the variable as follows: [funcName_varName]
-        // SymbolTable::symbol_table.insert({SymbolTable::symbol_table.size(), this->func->getName() + "_" + this->sym.get_value()});
-        
+        next(); // [11.24.2024]: consume the `,`
+        this->handle_getpar(f, paramNo);
         paramNo++;
-        next(); // consuming the `,`
     }
 
     this->CheckFor(Result(2, 14)); // check for `)`
@@ -179,13 +188,6 @@ SSA* Parser::p2_funcStart() {
     // - we need ot make sure we stop after the first [statSeq()] since we won't know where it ends.
     // - so when we create a new [Parser] instance, we must add an additional parameter (bool func=false) 
     //      - so that if we're in a func, we knwo to stop after a certain spot;
-
-    this->currBB = new BasicBlock(this->BB0->varVals);
-    this->BB0->child = this->currBB;
-    this->currBB->parent = this->BB0;
-    #ifdef DEBUG
-        std::cout << "created new BB (p2-funcStart)" << std::endl;
-    #endif
 
     if (this->CheckFor(Result(2, 5), true)) { // check for `var` token
         next(); // consumes `var` token
@@ -230,7 +232,7 @@ void Parser::p_funcDecl(bool retVal) {
     #endif
     int ident = SymbolTable::identifiers.at(this->sym.get_value()); // unused for now
     Func *f = new Func(this->sym.get_value(), retVal);
-    next();
+    // next(); // [11.24.2024]: is this skipping over the next Token? yes LO
 
     // Ensure the index is within bounds
     if (this->s_index >= this->source_len) {
@@ -240,11 +242,16 @@ void Parser::p_funcDecl(bool retVal) {
 
     // Create a subset vector from curr_idx to the end
     std::vector<Result> subset(this->source.begin() + this->s_index, this->source.end());
+
+    #ifdef DEBUG
+        std::cout << "created [std::vector<Result> subset]; looks like: " << std::endl;
+        Parser::printResultVec(subset);
+    #endif
     
     // [11.22.2024]: create a new [Parser] object for this [func] starting from our currend position in the [Result] tokens
     Parser *f1 = new Parser(subset, true, true, f);
     
-    f1->p2_funcStart();
+    f1->p2_funcStart(f);
 
     this->CheckFor(Result(2, 4)); // check for `;` token
 

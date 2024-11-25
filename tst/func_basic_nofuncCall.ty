@@ -11,6 +11,6 @@ void function println(n); {
 };
 
 {
-    let x <- call add(1, 1);
-    call println(x)
+    let a <- call InputNum() + call InputNum();
+    let b <- 2 * 5;
 }.

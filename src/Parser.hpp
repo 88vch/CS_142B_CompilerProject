@@ -397,6 +397,7 @@ public:
         return instr;
     }
 
+    // [11.24.2024]: segfault here when [getparX] new [X] since LL wasn't added into [BB::instrList]
     inline SSA* addSSA(SSA *instr) {
         #ifdef DEBUG
             std::cout << "\t[Parser::addSSA(instr=" << instr->toString() << ")]" << std::endl;
@@ -435,7 +436,13 @@ public:
                     this->currBB->newInstrs.insert(this->currBB->newInstrs.begin(), BasicBlock::instrList.at(instr->get_operator())->InsertAtTail(instr));
                 } else {
                     // [10.23.2024]: [LinkedList::InsertAtTail()] returns [Node*]
-                    this->currBB->newInstrs.push_back(BasicBlock::instrList.at(instr->get_operator())->InsertAtTail(instr));
+                    Node *retVal = BasicBlock::instrList.at(instr->get_operator())->InsertAtTail(instr);
+
+                    #ifdef DEBUG
+                        std::cout << "successfully inserted Node* into BB's :: LL ; instr looks like: " << retVal->instr->toString() << std::endl;
+                    #endif
+
+                    this->currBB->newInstrs.push_back(retVal);
                 }
                 #ifdef DEBUG
                     std::cout << "done pushing into [currBB]'s [newInstrs]" << std::endl;
@@ -628,6 +635,24 @@ public:
         #ifdef DEBUG
             std::cout << "BB after handleUninitVar: " << std::endl << this->currBB->toString() << std::endl;
         #endif
+    }
+
+    static void printResultVec(std::vector<Result> r) { // [11.24.2024]: print result vector subset (for testing) in [funcDecl()]
+        std::string resultStr = "";
+        
+        resultStr += "Result Vector Subset;\n[KIND]: \t\t\t\t[VALUE]\n";
+        for (const Result &res : r) { 
+            std::string kind = res.get_kind(), value = res.get_value();
+            if ((kind).length() > 7) {
+                resultStr += "[" + kind + "]" + ": \t\t\t[" + value + "]\n";
+            } else if ((kind).length() > 3) {
+                resultStr += "[" + kind + "]" + ": \t\t\t\t[" + value + "]\n";
+            } else {
+                resultStr += "[" + kind + "]" + ": \t\t\t\t\t[" + value + "]\n";
+            }
+        }
+        
+        std::cout << resultStr << std::endl;
     }
 
     static void printVVs(std::unordered_map<int, int> res) { // print varVals
@@ -916,7 +941,8 @@ private:
     Func *func;
     static std::unordered_map<Func*, Parser*> funcMap; // [11.22.2024]: the map of [func:Parser*] since each [funcDecl] will define it's own [funcBody]
 
-    SSA *p2_funcStart(); // [11.22.2024]: UDF funcBody
+    SSA *p2_funcStart(Func *f); // [11.22.2024]: UDF funcBody
+    void handle_getpar(Func *f, int paramNo);
 
     // [09/04/2024]: ToDo - transition into BasicBlocks
     SSA* p2_start();
