@@ -864,7 +864,53 @@ public:
         return res;
     }
 
-    inline void generateDOT() {
+    inline void generateFuncDOTS() {
+        // [11.26.2024]: todo - iterate through [funcMap]
+        // - put all of this in a while loop and generate a new [dot] for each [func]
+        // - this function will be called ONCE by the MAIN PARSER obj 
+        // - and will loop through every [func] found in [funcMap]
+
+        #ifdef DEBUG
+            std::cout << "generating DOT..." << std::endl;
+        #endif
+
+        std::string fileName = "DOT";
+        if (isFunc) {
+            fileName = this->func->getName() + "_" + fileName;
+        }
+
+        // Open the file for writing
+        std::ofstream file("res/" + fileName + ".dot");
+
+        // Check if the file was opened successfully
+        if (!file.is_open()) {
+            std::cerr << "Failed to open the file." << std::endl;
+            exit(EXIT_FAILURE); // Return false to indicate failure
+        }
+
+        #ifdef DEBUG
+            std::cout << "file was opened successfullly" << std::endl;
+        #endif
+
+        // Get content
+        std::string content = this->BBtoDOT();
+
+        #ifdef DEBUG
+            std::cout << "got content" << std::endl;
+        #endif
+
+        // Write content to the file
+        file << content;
+
+        // Close the file
+        file.close();
+
+        #ifdef DEBUG    
+            std::cout << "file was closed successfully; done generating..." << std::endl;
+        #endif
+    }
+
+    inline void generateMainDOT() const {
         #ifdef DEBUG
             std::cout << "generating DOT..." << std::endl;
         #endif
@@ -916,6 +962,17 @@ public:
 
     inline size_t getS_idx() const {
         return this->s_index;
+    }
+
+    static void clearFuncMap() {
+        SymbolTable::clearFuncTable();
+
+        for (auto &f : Parser::funcMap) {
+            delete f.first;
+            delete f.second;
+        }
+        // [11.26.2024]: will-this-work / is-this-necessary?
+        Parser::funcMap.clear();
     }
 
     SSA* p_start();

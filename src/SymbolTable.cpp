@@ -117,6 +117,13 @@ namespace SymbolTable {
     // };
 
     std::unordered_map<int, Func*> func_table = {};
+
+    // [11.26.2204]: don't delete here, rather in [funcMap]
+    void clearFuncTable() {
+        for (auto &f : func_table) {
+            f.second = nullptr;
+        }
+    }
     
     std::unordered_map<std::string, int> operator_table = { // translate into operator from [operator_table]
         {"const", 0},       // special func

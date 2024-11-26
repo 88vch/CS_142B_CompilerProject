@@ -151,7 +151,8 @@ int main() {
         std::cout << "[Parser]: After SECOND [parse.parse()]" << std::endl;
     #endif
 
-    parser2.generateDOT();
+    parser2.generateMainDOT();
+    parser2.generateFuncDOTS();
 
     std::vector<SSA*> SSA_instrs2 = parser2.getSSA();
     bool SSA_exists2 = fr.write_file_contents(parser2_f, SSA_instrs2, "SSA Instructions");
@@ -171,7 +172,10 @@ int main() {
 
     // [11.25.2024]: need to remember to:
     // - delete [Parser] obj's for [Func]'s
+    Parser::clearFuncMap();
     // - generate and output all the diff [Func]'s DOT graph's
+    //      - do this by lookin in the [res/*.dot]; 
+    //          `res` folder for files with the `.dot` ext
 
     return 0;
 }
