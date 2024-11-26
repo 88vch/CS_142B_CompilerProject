@@ -3,6 +3,7 @@ CFLAGS = -g -Wall -Wextra -std=c++20
 SRCDIR = src
 BINDIR = bin
 RESDIR = res
+DOTDIR = dot
 
 # List of source files
 SOURCES := $(wildcard $(SRCDIR)/*.cpp)
@@ -28,6 +29,7 @@ $(EXECUTABLE): $(OBJECTS)
 dir:
 	@mkdir -p $(BINDIR)
 	@mkdir -p $(RESDIR)
+	@mkdir -p $(DOTDIR)
 
 mv_dir:
 	@mv src/*.o $(BINDIR)
@@ -36,5 +38,6 @@ mv_dir:
 clean:
 	@rm -rf $(BINDIR)
 	@rm -rf $(RESDIR)
+	# @rm -rf $(DOTDIR)
 	@rm -f src/*.o
 	@rm -rf tst/Lexer_results.txt

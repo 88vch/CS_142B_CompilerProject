@@ -88,6 +88,9 @@ SSA* Parser::p2_start() {
     // [09/05/2024]: ToDo - check for [function start] token
     // check for `{`
     while(this->CheckFor(Result(2, 15), true) == false) {
+        #ifdef DEBUG
+            std::cout << "haven't found `{` for main->statSeq; in [p2_start()] found funcDecl() " << std::endl;
+        #endif
         bool retVal = true;
 
         if (this->CheckFor(Result(2, 27), true)) { // check for `void`
@@ -206,6 +209,10 @@ SSA* Parser::p2_funcStart(Func *f) {
 
     this->CheckFor(Result(2, 16)); // check for `}`
 
+    #ifdef DEBUG
+        std::cout << "after funcStart, this->s_index = " << this->s_index << std::endl;
+    #endif
+
     return statSeq;
 }
 
@@ -252,6 +259,18 @@ void Parser::p_funcDecl(bool retVal) {
     Parser *f1 = new Parser(subset, true, true, f);
     
     f1->p2_funcStart(f);
+
+    // [11.25.2024]: update [this->s_idx] if needed (after parsing [funcDecl()] in [Parser::f1])
+    // if (this->s_index < f1->getS_idx()) { // this condition should always be true since we assume there is a [funcDecl] to parse
+    #ifdef DEBUG
+        std::cout << "after [Parser::f1] parse, [this->s_idx(" << this->s_index << ", " << this->sym.to_string() << "), f1->getS_idx(" << f1->getS_idx() << ", " << f1->getSym().to_string() << ")]" << std::endl;
+    #endif
+    this->s_index += f1->getS_idx() - 1;
+    this->sym = this->source.at(this->s_index++);
+    // }
+    #ifdef DEBUG
+        std::cout << "this->s_index = " << this->s_index << ", " << this->sym.to_string() << std::endl;
+    #endif
 
     this->CheckFor(Result(2, 4)); // check for `;` token
 
@@ -454,7 +473,13 @@ SSA* Parser::p2_assignment() {
     this->CheckFor(Result(2, 6)); // check for `let`
 
     // IDENT: not checking for a specific since this is a [variable]
-    int ident = SymbolTable::identifiers.at(this->sym.get_value()); // unused for now
+    // [11.25.2024]: modified to handle [func]'s ident if exists
+    int ident;
+    if (this->isFunc) {
+        ident = this->generateFuncIdent();
+    } else {
+        ident = SymbolTable::identifiers.at(this->sym.get_value()); // unused for now
+    }
     // int oldInt;
     SSA *oldVal = nullptr;
 
@@ -709,7 +734,14 @@ SSA* Parser::p_funcCall() {
             // [09/22/2024]: But what are we supposed to do with the args?
             // [08/31/2024]: ToDo: handle args for this to work
             this->CheckFor(Result(2, 13)); // check for `(`
-            num = this->sym.get_value_literal();
+            
+            // [11.25.2024]: modified to handle [func]'s ident if exists
+            // - added if-statement since we don't want [const] to get into this func
+            if (this->isFunc && this->sym.get_kind_literal() != 0) {
+                num = this->generateFuncIdent(); 
+            } else {
+                num = this->sym.get_value_literal();
+            }
 
             #ifdef DEBUG
                 std::cout << "\tgot: [" << num << "]" << std::endl;
@@ -828,7 +860,14 @@ SSA* Parser::p2_funcCall() {
             // [09/22/2024]: But what are we supposed to do with the args?
             // [08/31/2024]: ToDo: handle args for this to work
             this->CheckFor(Result(2, 13)); // check for `(`
-            num = this->sym.get_value_literal();
+            
+            // [11.25.2024]: modified to handle [func]'s ident if exists
+            // - added if-statement since we don't want [const] to get into this func
+            if (this->isFunc && this->sym.get_kind_literal() != 0) {
+                num = this->generateFuncIdent(); 
+            } else {
+                num = this->sym.get_value_literal();
+            }
 
             #ifdef DEBUG
                 std::cout << "\tgot: [" << num << "]" << std::endl;
@@ -850,10 +889,6 @@ SSA* Parser::p2_funcCall() {
                     // [10/09/2024]: Can't modify constVal SSA call
                     SSA *tmp = new SSA(0, num);
                     res = this->addSSA1(tmp, true);
-                    // if (res != tmp) {
-                    //     delete tmp;
-                    //     tmp = nullptr;
-                    // }
                     tmp = nullptr;
 
                     // tmp = new SSA(24, res);
@@ -1173,27 +1208,33 @@ SSA* Parser::p2_ifStatement() {
     #endif
     
     for (const auto &p : vars) {
+        int curr = p;
+
+        // [11.25.2024]: modified to handle [func]'s ident if exists
+        if (this->isFunc) {
+            curr = this->generateFuncIdent();
+        }
         #ifdef DEBUG
-            std::cout << "current ident: [" << SymbolTable::symbol_table.at(p) << "]" << std::endl;
+            std::cout << "current ident: [" << SymbolTable::symbol_table.at(curr) << "]" << std::endl;
         #endif
-        if (then_blk_last->varVals.find(p) == then_blk_last->varVals.end()) {
+        if (then_blk_last->varVals.find(curr) == then_blk_last->varVals.end()) {
             BasicBlock *prevCurr = this->currBB;
             this->currBB = then_blk_last;
-            this->handleUninitVar(p);
+            this->handleUninitVar(curr);
             this->currBB = prevCurr;
         }
 
-        if (else_blk_last->varVals.find(p) == else_blk_last->varVals.end()) {
+        if (else_blk_last->varVals.find(curr) == else_blk_last->varVals.end()) {
             BasicBlock *prevCurr = this->currBB;
             this->currBB = else_blk_last;
-            this->handleUninitVar(p);
+            this->handleUninitVar(curr);
             this->currBB = prevCurr;
         }
         
         // if a ident from [if_parent] exists in [then_blk] with a different value, we need a phi
-        if (then_blk_last->varVals.at(p) != else_blk_last->varVals.at(p)) {
-            SSA *then_phi = BasicBlock::ssa_table.at(then_blk_last->varVals.at(p));
-            SSA *else_phi = BasicBlock::ssa_table.at(else_blk_last->varVals.at(p));
+        if (then_blk_last->varVals.at(curr) != else_blk_last->varVals.at(curr)) {
+            SSA *then_phi = BasicBlock::ssa_table.at(then_blk_last->varVals.at(curr));
+            SSA *else_phi = BasicBlock::ssa_table.at(else_blk_last->varVals.at(curr));
             
             #ifdef DEBUG
                 std::cout << "then_blk_last's ident val != else_blk_last's ident val; consolidating to one..." << std::endl;
@@ -1256,8 +1297,8 @@ SSA* Parser::p2_ifStatement() {
                 // [11.13.2024]: should join the phi's if we can
                 // [11.14.2024]: we could 1) assign each BB's varVal to the modification (before phi), then 2) delete these SSA's 
                 // - since below we create the SSA using the value found in the bb's varVals
-                then_blk->varVals.insert_or_assign(p, BasicBlock::ssa_table_reversed.at(old_then));
-                else_blk->varVals.insert_or_assign(p, BasicBlock::ssa_table_reversed.at(old_else));
+                then_blk->varVals.insert_or_assign(curr, BasicBlock::ssa_table_reversed.at(old_then));
+                else_blk->varVals.insert_or_assign(curr, BasicBlock::ssa_table_reversed.at(old_else));
                 
                 #ifdef DEBUG
                     std::cout << "assumption: updated [then_blk] && [else_blk]'s varVal table at ident...printing both blocks (then, else)" << std::endl;
@@ -1613,16 +1654,23 @@ SSA* Parser::p_factor() {
         tmp = nullptr; 
         next(); // [08/05/2024]: we can consume the [const-val]?
     } else if (this->sym.get_kind_literal() == 1) { // check [ident]
-        // if (this->varVals.find(this->sym.get_value()) == this->varVals.end()) {
-        if (this->currBB->varVals.find(this->sym.get_value_literal()) == this->currBB->varVals.end()) {
+        // [11.25.2024]: modified to handle [func]'s ident if exists
+        int ident;
+        if (this->isFunc) {
+            ident = this->generateFuncIdent();
+        } else {
+            ident = this->sym.get_value_literal();
+        }
+
+        if (this->currBB->varVals.find(ident) == this->currBB->varVals.end()) {
             std::cout << "Warning: p_factor(ident) expected a defined variable (in [varVals]), got (uninitialized): [" << this->sym.to_string() << "]! Default: setting to 0..." << std::endl;
-            this->handleUninitVar(this->sym.get_value_literal());
+            this->handleUninitVar(ident);
             #ifdef DEBUG
                 std::cout << "uninitialized variable has now been set to 0. this->currBB looks like: " << std::endl << this->currBB->toString() << std::endl;
             #endif
             // exit(EXIT_FAILURE);
         }
-        res = BasicBlock::ssa_table.at(this->currBB->varVals.at(this->sym.get_value_literal()));
+        res = BasicBlock::ssa_table.at(this->currBB->varVals.at(ident));
         #ifdef DEBUG
             std::cout << "got ident with value: " << res->toString() << std::endl;
         #endif

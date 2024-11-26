@@ -167,7 +167,11 @@ int main() {
     if (ll2) { std::cout << "Results have successfully been written to: " << linkedList2_f << "(size=[" << parser2.getInstrListSize() << "])" << std::endl; }
     else { std::cout << "Error occured when trying to write results!" << std::endl; }
 
-    system("dot -Tpng res/DOT.dot -o DOT.png");
+    system("dot -Tpng res/DOT.dot -o dot/DOT.png");
+
+    // [11.25.2024]: need to remember to:
+    // - delete [Parser] obj's for [Func]'s
+    // - generate and output all the diff [Func]'s DOT graph's
 
     return 0;
 }

@@ -58,10 +58,11 @@ public:
         this->generateBlkBlksSeen = {};
         // this->blocksSeen = {};
 
+        this->func = nullptr;
         this->isFunc = false;
         if (isFunc) {
-            this->isFunc = true;
             this->func = f;
+            this->isFunc = true;
         }
 
         next(); // [10/14/2024]: Why do we do this?
@@ -899,6 +900,24 @@ public:
         #endif
     }
 
+    // [11.25.2024]: must ensure that [generateFuncIdent()] is only called when we KNOW that a func's ident is contained in [SymbolTable::identifiers]
+    inline int generateFuncIdent() const {
+        std::string res = "";
+
+        if (this->isFunc) {
+            res += this->func->getName() + "_" + this->sym.get_value();
+        }
+        return SymbolTable::identifiers.at(res);
+    }
+
+    inline Result getSym() const {
+        return this->sym;
+    }
+
+    inline size_t getS_idx() const {
+        return this->s_index;
+    }
+
     SSA* p_start();
     BasicBlock* parse(); // IR BB-representation 
     void parse_generate_SSA(); // generate all SSA Instructions
@@ -996,9 +1015,9 @@ private:
 
     // consumes [non-optional's]
     inline bool CheckFor(Result expected_token, bool optional = false) {
-        // #ifdef DEBUG
-        //     std::cout << "Checking For [expected: " << expected_token.to_string() << "], [got: " << this->sym.to_string() << "]" << std::endl;
-        // #endif
+        #ifdef DEBUG
+            std::cout << "Checking For [expected: " << expected_token.to_string() << "], [got: " << this->sym.to_string() << "]" << std::endl;
+        #endif
         bool retVal = false;
         
         // Note: there might be some logic messed up abt this (relation: [expected_token, Result(2, -1)])
