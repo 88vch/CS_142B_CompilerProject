@@ -1442,7 +1442,12 @@ SSA* Parser::p2_return() {
     #ifdef DEBUG
         std::cout << "[Parser::p2_return(" << this->sym.to_string() << ")]" << std::endl;
     #endif
+    next(); // consume `return` token
     SSA *retVal = p_expr();
+
+    #ifdef DEBUG
+        std::cout << "retVal looks like: " << retVal->toString() << std::endl;
+    #endif
 
     SSA *ret = this->addSSA1(16, retVal, nullptr, true);
     this->add_SSA_table(ret);
