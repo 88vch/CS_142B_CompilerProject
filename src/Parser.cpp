@@ -137,6 +137,7 @@ void Parser::handle_getpar(Func *f, int paramNo) {
     
     SymbolTable::update_table(this->func->getName() + "_" + this->sym.get_value(), "identifier");
     this->varDeclarations.insert(SymbolTable::identifiers.at(f->getName() + "_" + this->sym.get_value()));
+    this->currBB->varVals.insert_or_assign(SymbolTable::identifiers.at(f->getName() + "_" + this->sym.get_value()), VV_value);
     this->VVs.insert_or_assign(SymbolTable::identifiers.at(f->getName() + "_" + this->sym.get_value()), VV_value);
     
     #ifdef DEBUG
@@ -180,6 +181,11 @@ SSA* Parser::p2_funcStart(Func *f) {
         paramNo++;
     }
 
+    #ifdef DEBUG
+        std::cout << "after handling getpar this->varVals looks like: " << std::endl;
+        this->printVVs(this->currBB->varVals);
+    #endif
+
     this->CheckFor(Result(2, 14)); // check for `)`
     this->CheckFor(Result(2, 4)); // check for `;` token
 
@@ -211,6 +217,8 @@ SSA* Parser::p2_funcStart(Func *f) {
 
     #ifdef DEBUG
         std::cout << "after funcStart, this->s_index = " << this->s_index << std::endl;
+        std::cout << "this->varVals looks like: " << std::endl;
+        this->printVVs(this->currBB->varVals);
     #endif
 
     return statSeq;
@@ -438,14 +446,22 @@ SSA* Parser::p_assignment() {
     // [07/28/2024]: Add [ident : value] mapping into [symbol_table], that's it.
     #ifdef DEBUG
         std::cout << "in [Parser::p_assignment]: key=" << SymbolTable::symbol_table.at(ident) << ", current varVal value="; 
-        
+
+        // [Parser::p_assignment()] 
         if (this->VVs.find(ident) != this->VVs.end()) {
             std::cout << BasicBlock::ssa_table.at(this->VVs.at(ident))->toString() << std::endl;
         } else {
             std::cout << "none!" << std::endl;
         }
+        // if (this->currBB->varVals.find(ident) != this->currBB->varVals.end()) {
+        //     std::cout << BasicBlock::ssa_table.at(this->currBB->varVals.at(ident))->toString() << std::endl;
+        // } else {
+        //     std::cout << "none!" << std::endl;
+        // }
     #endif
+    // [Parser::p_assignment()]
     this->VVs.insert_or_assign(ident, VV_value);
+    // this->currBB->varVals.insert_or_assign(ident, VV_value);
     Parser::printVVs(this->currBB->varVals);
 
 
@@ -683,13 +699,15 @@ SSA* Parser::p2_assignment() {
             #ifdef DEBUG
                 std::cout << "oldVal DOM's newVal! no need to create phi, simply performing a [valid] overwrite" << std::endl;
             #endif
-            this->currBB->varVals.insert_or_assign(ident, table_int);    
+            this->currBB->varVals.insert_or_assign(ident, table_int);
+            this->VVs.insert_or_assign(ident, table_int);
         }
     } else {
         #ifdef DEBUG
             std::cout << "not overwriting a ident, inserting in currBB" << std::endl;
         #endif
         this->currBB->varVals.insert_or_assign(ident, table_int);
+        this->VVs.insert_or_assign(ident, table_int);
     }
 
     Parser::printVVs(this->currBB->varVals);
@@ -1112,6 +1130,7 @@ SSA* Parser::p2_ifStatement() {
                     // [10.28.2024]: Update BasicBlock's VV
                     int phi_table_int = this->add_SSA_table(phi_instr);
                     this->currBB->varVals.insert_or_assign(p.first, phi_table_int);
+                    this->VVs.insert_or_assign(p.first, phi_table_int);
             }
         }
         
@@ -1326,6 +1345,7 @@ SSA* Parser::p2_ifStatement() {
             
             // [10.28.2024]: Update BasicBlock's VV
             this->currBB->varVals.insert_or_assign(p, phi_table_int);
+            this->VVs.insert_or_assign(p, phi_table_int);
             #ifdef DEBUG
                 std::cout << "currBB after update: " << this->currBB->toString() << std::endl;
             #endif

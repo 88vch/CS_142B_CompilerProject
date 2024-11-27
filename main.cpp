@@ -61,7 +61,8 @@ int main() {
     std::string parser1_f = "res/Parser1_results.txt";
     std::string parser2_f = "res/Parser2_results.txt";
     std::string varVal1_f = "res/VarVal1_results.txt";
-    std::string varVal2_f = "res/VarVal2_results.txt";
+    std::string varVal2_f = "res/VarVal2_Parser_getSSA_results.txt";
+    std::string varVal3_f = "res/VarVal3_BB_ssa_table_results.txt";
     std::string linkedList1_f = "res/LinkedList1_results.txt";
     std::string linkedList2_f = "res/LinkedList2_results.txt";
 
@@ -161,33 +162,28 @@ int main() {
 
     std::unordered_map<std::string, SSA*> varVals2 = parser2.getVarVal();
     bool vv2 = fr.write_file_contents(varVal2_f, varVals2, "Var-Val");
-    if (st) { std::cout << "Results have successfully been written to: " << varVal2_f << "(size=[" << varVals2.size() << "])" << std::endl; }
+    if (vv2) { std::cout << "Results have successfully been written to: " << varVal2_f << "(size=[" << varVals2.size() << "])" << std::endl; }
     else { std::cout << "Error occured when trying to write results!" << std::endl; }
     
     bool ll2 = fr.write_file_contents(linkedList2_f, parser2.instrListToString(), "LinkedList");
     if (ll2) { std::cout << "Results have successfully been written to: " << linkedList2_f << "(size=[" << parser2.getInstrListSize() << "])" << std::endl; }
     else { std::cout << "Error occured when trying to write results!" << std::endl; }
 
-    
+    std::unordered_map<std::string, SSA*> varVals3 = parser2.getVarVal();
+    bool vv3 = fr.write_file_contents(varVal3_f, varVals3, "Var-Val");
+    if (vv3) { std::cout << "Results have successfully been written to: " << varVal3_f << "(size=[" << varVals3.size() << "])" << std::endl; }
+    else { std::cout << "Error occured when trying to write results!" << std::endl; }
 
-    // [11.25.2024]: need to remember to:
-    // - delete [Parser] obj's for [Func]'s
-    Parser::clearFuncMap();
-    // - generate and output all the diff [Func]'s DOT graph's
-    //      - do this by lookin in the [res/*.dot]; 
-    //          `res` folder for files with the `.dot` ext
-    FileReader::generateDOTsGraph();
-// static void generateDOTsGraph() {
-    // std::vector<std::string> dotFiles = FileReader::getDotFiles();
-    // std::string fileName;
-
-    // for (const auto &file : dotFiles) {
-    //     fileName = file.substr(0, file.find('.'));
-    //     system("dot -Tpng res/" + file + " -o dot/" + fileName + ".png");
-    // }
     // generate main DOT grpah
     // system("dot -Tpng res/DOT.dot -o dot/DOT.png");
-// }
+
+    // [11.25.2024]: delete [Parser] obj's for [Func]'s
+    Parser::clearFuncMap();
+    // [11.25.2024]: generate and output all the diff [Func]'s DOT graph's
+    FileReader::generateDOTsGraph();
+    #ifdef DEBUG
+        std::cout << "done clearing [Parser::funcMap] && generating DOT graphs (main & func's)" << std::endl;
+    #endif
 
     return 0;
 }

@@ -607,11 +607,16 @@ public:
 
     inline std::vector<SSA*> getSSA() const { return this->SSA_instrs; }
 
-    // [09/30/2024]: Converts to original varVal mapping
+    // [09/30/2024]: Converts to original varVal mapping from [this->VVs]
     std::unordered_map<std::string, SSA*> getVarVal() const { 
+        #ifdef DEBUG
+            std::cout << "getVarVal()" << std::endl;
+            // std::cout << "this->currBB: " << std::endl << this->currBB->toString() << std::endl;
+        #endif
         std::unordered_map<std::string, SSA *> res = {};
 
         for (const auto pair : this->VVs) {
+        // for (const auto pair : this->currBB->varVals) {
             res.insert(std::pair<std::string, SSA *>(SymbolTable::symbol_table.at(pair.first), BasicBlock::ssa_table.at(pair.second)));
         }
         
@@ -633,6 +638,7 @@ public:
         }
         
         this->currBB->varVals.insert_or_assign(ident, constInt);
+        this->VVs.insert_or_assign(ident, constInt);
         #ifdef DEBUG
             std::cout << "BB after handleUninitVar: " << std::endl << this->currBB->toString() << std::endl;
         #endif
@@ -659,7 +665,7 @@ public:
     static void printVVs(std::unordered_map<int, int> res) { // print varVals
         std::cout << "printing [varVals(size=" << res.size() << ")]:" << std::endl;
         for (const auto &p : res) {
-            std::cout << "[" << SymbolTable::symbol_table.at(p.first) << "], [" << BasicBlock::ssa_table.at(p.second)->toString() << "]" << std::endl;
+            std::cout << "[" << p.first << ": " << SymbolTable::symbol_table.at(p.first) << "], [" << BasicBlock::ssa_table.at(p.second)->toString() << "]" << std::endl;
         }
         std::cout << std::endl;
     }

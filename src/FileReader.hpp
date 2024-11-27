@@ -249,6 +249,27 @@ public:
         return true; // Return true to indicate success
     }
 
+    // static bool write_file_contents(const std::string &out_f, const std::unordered_map<int, SSA*>& content, const std::string &tableName) {
+    //     // Open the file for writing
+    //     std::ofstream file(out_f);
+
+    //     // Check if the file was opened successfully
+    //     if (!file.is_open()) {
+    //         std::cerr << "Failed to open the file." << std::endl;
+    //         return false; // Return false to indicate failure
+    //     }
+
+    //     // Write content to the file
+    //     file << tableName << ";" << std::endl << "[KEYWORD/TERMINAL Literal]: \t[SSA Instruction]" << std::endl;
+    //     for (const auto &pair : content) { 
+    //         file << "[" << pair.first << "]" << ": [" << pair.second->toString() << "]" << std::endl;
+    //     }
+
+    //     // Close the file
+    //     file.close();
+    //     return true; // Return true to indicate success
+    // }
+
     static std::vector<std::string> getDotFiles() {
         std::string directory = "res";
         std::vector<std::string> dotFiles;
@@ -260,11 +281,12 @@ public:
                 dotFiles.push_back(entry.path().filename().string()); // Add full path to the vector
             }
         }
-
         return dotFiles;
     }
 
-    // [11.26.2024]: generateDOTs()
+    // [11.26.2024]: getDotFiles (right above)
+    //      - do this by lookin in the [res/*.dot]; 
+    //          `res` folder for files with the `.dot` ext
     static void generateDOTsGraph() {
         std::vector<std::string> dotFiles = FileReader::getDotFiles();
         std::string fileName;
@@ -274,10 +296,6 @@ public:
             std::string syss = "dot -Tpng res/" + file + " -o dot/" + fileName + ".png";
             system(syss.c_str());
         }
-        
-
-        // generate main DOT grpah
-        // system("dot -Tpng res/DOT.dot -o dot/DOT.png");
     }
 
 private:
