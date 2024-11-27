@@ -869,48 +869,55 @@ public:
         // - put all of this in a while loop and generate a new [dot] for each [func]
         // - this function will be called ONCE by the MAIN PARSER obj 
         // - and will loop through every [func] found in [funcMap]
+        Func *f = nullptr;
+        Parser *p = nullptr;
+        
+        for (const auto &fun : this->funcMap) {
+            f = fun.first;
+            p = fun.second;
 
-        #ifdef DEBUG
-            std::cout << "generating DOT..." << std::endl;
-        #endif
+            std::string fileName = "DOT";
+            if (p->isFunc) {
+                fileName = f->getName() + "_" + fileName;
+            }
 
-        std::string fileName = "DOT";
-        if (isFunc) {
-            fileName = this->func->getName() + "_" + fileName;
+            #ifdef DEBUG
+                std::cout << "generating DOT for [" << fileName << "]" << std::endl;
+            #endif
+
+            // Open the file for writing
+            std::ofstream file("res/" + fileName + ".dot");
+
+            // Check if the file was opened successfully
+            if (!file.is_open()) {
+                std::cerr << "Failed to open the file." << std::endl;
+                exit(EXIT_FAILURE); // Return false to indicate failure
+            }
+
+            #ifdef DEBUG
+                std::cout << "file was opened successfullly" << std::endl;
+            #endif
+            
+            // Get content
+            std::string content = p->BBtoDOT();
+
+            #ifdef DEBUG
+                std::cout << "got content" << std::endl;
+            #endif
+
+            // Write content to the file
+            file << content;
+
+            // Close the file
+            file.close();
+
+            #ifdef DEBUG    
+                std::cout << "file was closed successfully; done generating..." << std::endl;
+            #endif
         }
-
-        // Open the file for writing
-        std::ofstream file("res/" + fileName + ".dot");
-
-        // Check if the file was opened successfully
-        if (!file.is_open()) {
-            std::cerr << "Failed to open the file." << std::endl;
-            exit(EXIT_FAILURE); // Return false to indicate failure
-        }
-
-        #ifdef DEBUG
-            std::cout << "file was opened successfullly" << std::endl;
-        #endif
-
-        // Get content
-        std::string content = this->BBtoDOT();
-
-        #ifdef DEBUG
-            std::cout << "got content" << std::endl;
-        #endif
-
-        // Write content to the file
-        file << content;
-
-        // Close the file
-        file.close();
-
-        #ifdef DEBUG    
-            std::cout << "file was closed successfully; done generating..." << std::endl;
-        #endif
     }
 
-    inline void generateMainDOT() const {
+    inline void generateMainDOT() {
         #ifdef DEBUG
             std::cout << "generating DOT..." << std::endl;
         #endif

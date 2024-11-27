@@ -168,7 +168,7 @@ int main() {
     if (ll2) { std::cout << "Results have successfully been written to: " << linkedList2_f << "(size=[" << parser2.getInstrListSize() << "])" << std::endl; }
     else { std::cout << "Error occured when trying to write results!" << std::endl; }
 
-    system("dot -Tpng res/DOT.dot -o dot/DOT.png");
+    
 
     // [11.25.2024]: need to remember to:
     // - delete [Parser] obj's for [Func]'s
@@ -176,6 +176,18 @@ int main() {
     // - generate and output all the diff [Func]'s DOT graph's
     //      - do this by lookin in the [res/*.dot]; 
     //          `res` folder for files with the `.dot` ext
+    FileReader::generateDOTsGraph();
+// static void generateDOTsGraph() {
+    // std::vector<std::string> dotFiles = FileReader::getDotFiles();
+    // std::string fileName;
+
+    // for (const auto &file : dotFiles) {
+    //     fileName = file.substr(0, file.find('.'));
+    //     system("dot -Tpng res/" + file + " -o dot/" + fileName + ".png");
+    // }
+    // generate main DOT grpah
+    // system("dot -Tpng res/DOT.dot -o dot/DOT.png");
+// }
 
     return 0;
 }

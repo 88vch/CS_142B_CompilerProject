@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <string>
 #include <vector>
+#include <filesystem>
 #include <unordered_map>
 
 #include "Result.hpp"
@@ -246,6 +247,37 @@ public:
         // Close the file
         file.close();
         return true; // Return true to indicate success
+    }
+
+    static std::vector<std::string> getDotFiles() {
+        std::string directory = "res";
+        std::vector<std::string> dotFiles;
+
+        // Iterate over files in the given directory
+        for (const auto& entry : std::filesystem::directory_iterator(directory)) {
+            // Check if the entry is a regular file and ends with ".dot"
+            if (entry.is_regular_file() && entry.path().extension() == ".dot") {
+                dotFiles.push_back(entry.path().filename().string()); // Add full path to the vector
+            }
+        }
+
+        return dotFiles;
+    }
+
+    // [11.26.2024]: generateDOTs()
+    static void generateDOTsGraph() {
+        std::vector<std::string> dotFiles = FileReader::getDotFiles();
+        std::string fileName;
+
+        for (const auto &file : dotFiles) {
+            fileName = file.substr(0, file.find('.'));
+            std::string syss = "dot -Tpng res/" + file + " -o dot/" + fileName + ".png";
+            system(syss.c_str());
+        }
+        
+
+        // generate main DOT grpah
+        // system("dot -Tpng res/DOT.dot -o dot/DOT.png");
     }
 
 private:
