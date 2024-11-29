@@ -264,16 +264,16 @@ void Parser::p_funcDecl(bool retVal) {
     #endif
     
     // [11.22.2024]: create a new [Parser] object for this [func] starting from our currend position in the [Result] tokens
-    Parser *f1 = new Parser(subset, true, true, f);
+    Parser *p = new Parser(subset, true, true, f);
     
-    f1->p2_funcStart(f);
+    p->p2_funcStart(f);
 
-    // [11.25.2024]: update [this->s_idx] if needed (after parsing [funcDecl()] in [Parser::f1])
-    // if (this->s_index < f1->getS_idx()) { // this condition should always be true since we assume there is a [funcDecl] to parse
+    // [11.25.2024]: update [this->s_idx] if needed (after parsing [funcDecl()] in [Parser::p])
+    // if (this->s_index < p->getS_idx()) { // this condition should always be true since we assume there is a [funcDecl] to parse
     #ifdef DEBUG
-        std::cout << "after [Parser::f1] parse, [this->s_idx(" << this->s_index << ", " << this->sym.to_string() << "), f1->getS_idx(" << f1->getS_idx() << ", " << f1->getSym().to_string() << ")]" << std::endl;
+        std::cout << "after [Parser::p] parse, [this->s_idx(" << this->s_index << ", " << this->sym.to_string() << "), p->getS_idx(" << p->getS_idx() << ", " << p->getSym().to_string() << ")]" << std::endl;
     #endif
-    this->s_index += f1->getS_idx() - 1;
+    this->s_index += p->getS_idx() - 1;
     this->sym = this->source.at(this->s_index++);
     // }
     #ifdef DEBUG
@@ -283,7 +283,9 @@ void Parser::p_funcDecl(bool retVal) {
     this->CheckFor(Result(2, 4)); // check for `;` token
 
     SymbolTable::func_table.insert({ident, f});
-    Parser::funcMap.insert({f, f1});
+    Parser::funcMap.insert({f, p});
+
+    this->updateConstBlk(p);
 }
 
 SSA* Parser::p_statSeq() {
@@ -779,26 +781,10 @@ SSA* Parser::p_funcCall() {
             } else {
                 try {
                     // [10/09/2024]: Can't modify constVal SSA call
-                    SSA *tmp = new SSA(0, num);
-                    res = this->addSSA1(tmp, true);
-                    if (res != tmp) {
-                        delete tmp;
-                        tmp = nullptr;
-                    }
+                    res = this->addSSA1(0, num, true);
 
                     // tmp = new SSA(24, res);
-                    res = this->addSSA1(24, res, nullptr);
-                    // if (res != tmp) {
-                    //     delete tmp;
-                    //     tmp = nullptr;
-                    // }
-                    
-                    // res = this->CheckConstExistence(num);
-                    // // [09/27/2024]: then add to basicblock
-                    // if (!res) {
-                    //     // [09/27/2024]: if [const-SSA] dne, create & return it [addSSA()]; use that as argument for [write-SSA]
-                    //     res = this->addSSA(new SSA(24, this->addSSA(new SSA(0, num))));
-                    // }
+                    res = this->addSSA1(24, res, nullptr); 
                 } catch(...) {
                     std::cout << "could not recognize identifier corresponding to: [" << num << "]; exiting prematurely..." << std::endl;
                     exit(EXIT_FAILURE);
@@ -905,9 +891,7 @@ SSA* Parser::p2_funcCall() {
             } else {
                 try {
                     // [10/09/2024]: Can't modify constVal SSA call
-                    SSA *tmp = new SSA(0, num);
-                    res = this->addSSA1(tmp, true);
-                    tmp = nullptr;
+                    res = this->addSSA1(0, num, true);
 
                     // tmp = new SSA(24, res);
                     res = this->addSSA1(24, res, nullptr);
@@ -1667,11 +1651,7 @@ SSA* Parser::p_factor() {
         #ifdef DEBUG
             std::cout << "\tgot [const], checking existence in [this->instrList]" << std::endl;
         #endif
-        SSA *tmp = new SSA(0, this->sym.get_value_literal());
-        res = this->addSSA1(tmp, true);
-
-        // [10.23.2024]: it'll get handled, & either way we won't need tmp anymore so assigning it to [nullptr] is fine here
-        tmp = nullptr; 
+        res = this->addSSA1(0, this->sym.get_value_literal(), true);
         next(); // [08/05/2024]: we can consume the [const-val]?
     } else if (this->sym.get_kind_literal() == 1) { // check [ident]
         // [11.25.2024]: modified to handle [func]'s ident if exists

@@ -154,6 +154,9 @@ int main() {
 
     parser2.generateMainDOT();
     parser2.generateFuncDOTS();
+    #ifdef DEBUG
+        std::cout << "done generating main && funcDOTS" << std::endl;
+    #endif
 
     std::vector<SSA*> SSA_instrs2 = parser2.getSSA();
     bool SSA_exists2 = fr.write_file_contents(parser2_f, SSA_instrs2, "SSA Instructions");

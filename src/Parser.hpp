@@ -321,10 +321,41 @@ public:
         }
     }
 
+    // [11.29.2024]: created [addSSA1()] for const
+    inline SSA* addSSA1(int op, int val, bool check = false) {
+        // [10.23.2024]: Assume addSSA1() handles deletion properly...
+        if (op != 0) {
+            std::cout << "addSSA1() overload expected constVal" << std::endl;
+            exit(EXIT_FAILURE);
+        }
+        SSA *tmp = new SSA(op, val);
+        SSA *res = this->addSSA1(tmp, check);
+        
+        // #ifdef DEBUG
+        //     std::cout << "in addSSA1(const) returned from [addSSA1()] with val: " << res->toString() << std::endl;
+        //     std::cout << "tmp looks like: ";
+        //     if (tmp) {
+        //         std::cout << tmp->toString() << std::endl;
+        //     } else {
+        //         std::cout << "nullptr!" << std::endl;
+        //     }
+        // #endif
+        // if (tmp && tmp->compare(res) == false) {
+        //     delete tmp;
+        // }
+
+        tmp = nullptr;
+        return res;
+    }
+
     inline SSA* addSSA1(int op, SSA *x = nullptr, SSA *y = nullptr, bool check = false) {
         // [10.23.2024]: Assume addSSA1() handles deletion properly...
         SSA *tmp = new SSA(op, x, y);
         SSA *res = this->addSSA1(tmp, check);
+
+        // if (tmp && tmp->compare(res) == false) {
+        //     delete tmp;
+        // }
         
         tmp = nullptr;
         return res;
@@ -605,7 +636,35 @@ public:
         return false;
     }
 
-    inline std::vector<SSA*> getSSA() const { return this->SSA_instrs; }
+    // [11/28/2024]: adds SSA_instrs from other [func]'s into main Parser's SSA_instrs
+    // - this function is only called in [Parser::getSSA()]
+    void updateSSA_instrs() {
+        if (!this->isFunc) {
+            for (const auto &f : this->funcMap) {
+                std::vector<SSA*> currInstrs = f.second->getSSA();
+                #ifdef DEBUG
+                    std::cout << "got currInstrs for func [" << f.first->getName() << "] with size[" << currInstrs.size() << "]" << std::endl;
+                #endif
+                for (SSA *instr : currInstrs) {
+                    #ifdef DEBUG
+                        std::cout << "pushing instr [" << instr->toString() << "] into [this->SSA_instrs]" << std::endl;
+                    #endif
+                    // [11.28.2024]: segfaulting here
+                    // - there's no way difff func's would use the same SSA? i lie but will ther be dupes here if we dont' check for existence?
+                    // if (std::find(this->SSA_instrs.begin(), this->SSA_instrs.end(), instr) == this->SSA_instrs.end()) {
+                    //     this->SSA_instrs.push_back(instr);
+                    // }
+                    this->SSA_instrs.push_back(instr);
+                }
+            }
+        }
+    }
+
+    // [11.28.2024]: this function is only called once in [main.cpp] after parsing to geneerate resuilt file
+    inline std::vector<SSA*> getSSA() { 
+        this->updateSSA_instrs();
+        return this->SSA_instrs; 
+    }
 
     // [09/30/2024]: Converts to original varVal mapping from [this->VVs]
     std::unordered_map<std::string, SSA*> getVarVal() const { 
@@ -884,7 +943,7 @@ public:
 
             std::string fileName = "DOT";
             if (p->isFunc) {
-                fileName = f->getName() + "_" + fileName;
+                fileName += "_" + f->getName();
             }
 
             #ifdef DEBUG
@@ -986,6 +1045,19 @@ public:
         }
         // [11.26.2024]: will-this-work / is-this-necessary?
         Parser::funcMap.clear();
+    }
+
+    // [11.29.2024]: called after each func to check & add new CONST-SSA to main-BB0
+    inline void updateConstBlk(Parser *p) {
+        LinkedList *toAdd = p->BB0->constList;
+        Node *curr = toAdd->tail;
+
+        while (curr) {
+            if (this->BB0->constList->contains(curr->instr) == nullptr) {
+                this->BB0->constList->InsertAtTail(curr->instr);
+            }
+            curr = curr->prev;
+        }
     }
 
     SSA* p_start();
