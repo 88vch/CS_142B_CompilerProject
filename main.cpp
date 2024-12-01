@@ -61,8 +61,7 @@ int main() {
     std::string parser1_f = "res/Parser1_results.txt";
     std::string parser2_f = "res/Parser2_results.txt";
     std::string varVal1_f = "res/VarVal1_results.txt";
-    std::string varVal2_f = "res/VarVal2_Parser_getSSA_results.txt";
-    std::string varVal3_f = "res/VarVal3_BB_ssa_table_results.txt";
+    std::string varVal2_f = "res/VarVal3_BB_ssa_table_results.txt";
     std::string linkedList1_f = "res/LinkedList1_results.txt";
     std::string linkedList2_f = "res/LinkedList2_results.txt";
 
@@ -170,11 +169,6 @@ int main() {
     
     bool ll2 = fr.write_file_contents(linkedList2_f, parser2.instrListToString(), "LinkedList");
     if (ll2) { std::cout << "Results have successfully been written to: " << linkedList2_f << "(size=[" << parser2.getInstrListSize() << "])" << std::endl; }
-    else { std::cout << "Error occured when trying to write results!" << std::endl; }
-
-    std::unordered_map<std::string, SSA*> varVals3 = parser2.getVarVal();
-    bool vv3 = fr.write_file_contents(varVal3_f, varVals3, "Var-Val");
-    if (vv3) { std::cout << "Results have successfully been written to: " << varVal3_f << "(size=[" << varVals3.size() << "])" << std::endl; }
     else { std::cout << "Error occured when trying to write results!" << std::endl; }
 
     // generate main DOT grpah

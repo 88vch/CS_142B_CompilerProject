@@ -26,6 +26,8 @@
 // Note: shouldn't need keywords bc we only care about computational code
 class Parser {
 public:
+    static std::unordered_map<Func*, Parser*> funcMap; // [11.22.2024]: the map of [func:Parser*] since each [funcDecl] will define it's own [funcBody]
+
     Parser(const std::vector<Result> &tkns, bool blk = false, bool isFunc = false, Func *f = nullptr)
     {
         this->source = tkns;
@@ -356,7 +358,7 @@ public:
         // if (tmp && tmp->compare(res) == false) {
         //     delete tmp;
         // }
-        
+
         tmp = nullptr;
         return res;
     }
@@ -639,46 +641,82 @@ public:
     // [11/28/2024]: adds SSA_instrs from other [func]'s into main Parser's SSA_instrs
     // - this function is only called in [Parser::getSSA()]
     void updateSSA_instrs() {
-        if (!this->isFunc) {
-            for (const auto &f : this->funcMap) {
-                std::vector<SSA*> currInstrs = f.second->getSSA();
+        for (const auto &f : Parser::funcMap) {
+            std::vector<SSA*> currInstrs = f.second->getSSA();
+            #ifdef DEBUG
+                std::cout << "got currInstrs for func [" << f.first->getName() << "] with size[" << currInstrs.size() << "]" << std::endl;
+            #endif
+
+            // [12.01.2024]: does this work instead of below?
+            this->SSA_instrs.insert(this->SSA_instrs.end(), currInstrs.begin(), currInstrs.end());
+
+            for (SSA *instr : currInstrs) {
                 #ifdef DEBUG
-                    std::cout << "got currInstrs for func [" << f.first->getName() << "] with size[" << currInstrs.size() << "]" << std::endl;
+                    std::cout << "pushing instr [" << instr->toString() << "] into [this->SSA_instrs]" << std::endl;
                 #endif
-                for (SSA *instr : currInstrs) {
-                    #ifdef DEBUG
-                        std::cout << "pushing instr [" << instr->toString() << "] into [this->SSA_instrs]" << std::endl;
-                    #endif
-                    // [11.28.2024]: segfaulting here
-                    // - there's no way difff func's would use the same SSA? i lie but will ther be dupes here if we dont' check for existence?
-                    // if (std::find(this->SSA_instrs.begin(), this->SSA_instrs.end(), instr) == this->SSA_instrs.end()) {
-                    //     this->SSA_instrs.push_back(instr);
-                    // }
-                    this->SSA_instrs.push_back(instr);
-                }
+                // [11.28.2024]: segfaulting here
+                // - there's no way difff func's would use the same SSA? i lie but will ther be dupes here if we dont' check for existence?
+                // if (std::find(this->SSA_instrs.begin(), this->SSA_instrs.end(), instr) == this->SSA_instrs.end()) {
+                //     this->SSA_instrs.push_back(instr);
+                // }
+                this->SSA_instrs.push_back(instr);
             }
         }
     }
 
     // [11.28.2024]: this function is only called once in [main.cpp] after parsing to geneerate resuilt file
     inline std::vector<SSA*> getSSA() { 
-        this->updateSSA_instrs();
+        if (!this->isFunc) {
+            this->updateSSA_instrs();
+        }
         return this->SSA_instrs; 
     }
 
+    // [11/28/2024]: adds SSA_instrs from other [func]'s into main Parser's SSA_instrs
+    // - this function is only called in [Parser::getSSA()]
+    void updateVarVals() {
+        for (const auto &f : Parser::funcMap) {
+            std::unordered_map<int, int> currVVs = f.second->VVs;
+            #ifdef DEBUG
+                std::cout << "got currVVs for func [" << f.first->getName() << "] with size[" << currVVs.size() << "]" << std::endl;
+            #endif
+            
+            // [12.01.2024]: does this work instead of below?
+            // this->VVs.insert(this->VVs.end(), currVVs.begin(), currVVs.end());
+            
+            for (const auto &instr : currVVs) {
+                #ifdef DEBUG
+                    std::cout << "pushing varVal [idnet: " << instr.first << ", val: " << instr.second << "] into [this->VVs]" << std::endl;
+                #endif
+                // [11.28.2024]: segfaulting here
+                // - there's no way difff func's would use the same SSA? i lie but will ther be dupes here if we dont' check for existence?
+                // if (std::find(this->SSA_instrs.begin(), this->SSA_instrs.end(), instr) == this->SSA_instrs.end()) {
+                //     this->SSA_instrs.push_back(instr);
+                // }
+                this->VVs.insert(instr);
+            }
+        }
+    }
+    
+
+    // [11.30.2024]: MUST add [func]'s varVals as well
     // [09/30/2024]: Converts to original varVal mapping from [this->VVs]
-    std::unordered_map<std::string, SSA*> getVarVal() const { 
+    std::unordered_map<std::string, SSA*> getVarVal() { 
         #ifdef DEBUG
-            std::cout << "getVarVal()" << std::endl;
+            std::cout << "in getVarVal()" << std::endl;
             // std::cout << "this->currBB: " << std::endl << this->currBB->toString() << std::endl;
         #endif
         std::unordered_map<std::string, SSA *> res = {};
 
+        if (!this->isFunc) {
+            this->updateVarVals();
+        }
+
         for (const auto pair : this->VVs) {
-        // for (const auto pair : this->currBB->varVals) {
+        // for (const auto  pair : this->currBB->varVals) {
             res.insert(std::pair<std::string, SSA *>(SymbolTable::symbol_table.at(pair.first), BasicBlock::ssa_table.at(pair.second)));
         }
-        
+
         return res; 
     }
 
@@ -812,27 +850,14 @@ public:
         }
 
         return res;
-    } 
+    }
 
     inline std::string BBtoDOT() {
         std::string res = "digraph G {\n\trankdir=TB;\n\n";
         std::string c_res = "";
 
         // block definitions
-        // for (BasicBlock *blk : this->blocksSeen) {
-        //     blk = nullptr;
-        // }
-        // #ifdef DEBUG
-        //     std::cout << "entering [generateBlocks]..." << std::endl;
-        // #endif
         res = this->generateBlocks(this->BB0, res);
-
-        // BasicBlock *curr = this->BB0;
-
-        // while (curr != nullptr) {
-        //     res += "\tbb" + std::to_string(curr->blockNum) + " [shape=record, label=\"" + curr->toDOT() + "\"];\n";
-        //     curr = curr->child;
-        // }
 
         #ifdef DEBUG
             std::cout << "done creating block definitions res: " << res << std::endl;
@@ -872,9 +897,6 @@ public:
             if (curr->child) {
                 res += "\tbb" + std::to_string(curr->blockNum) +  ":s -> bb" + std::to_string(curr->child->blockNum) + ":n [label=\"fall-through\"];\n";
                 tmp.push(curr->child);
-                // #ifdef DEBUG
-                //     std::cout << "pushed child [" << std::to_string(curr->child->blockNum) << "] onto tmp" << std::endl << curr->child->toString() << std::endl;
-                // #endif
             }
             if (curr->child2) {
                 res += "\tbb" + std::to_string(curr->blockNum) +  ":s -> bb" + std::to_string(curr->child2->blockNum) + ":n";
@@ -885,9 +907,6 @@ public:
                     res += "[label=\"fall-through\"];\n";
                 }
                 tmp.push(curr->child2);
-                // #ifdef DEBUG
-                //     std::cout << "pushed child2 [" << std::to_string(curr->child2->blockNum) << "] onto tmp" << std::endl;
-                // #endif
             }
         }
 
@@ -907,16 +926,10 @@ public:
             if (curr->child && (std::find(seen.begin(), seen.end(), curr->child) == seen.end())) {
                 res += "\tbb" + std::to_string(curr->blockNum) +  ":b -> bb" + std::to_string(curr->child->blockNum) + ":b [color=blue, style=dotted, label=\"dom\"];\n";
                 tmp.push(curr->child);
-                // #ifdef DEBUG
-                //     std::cout << "pushed child [" << std::to_string(curr->child->blockNum) << "] onto tmp" << std::endl << curr->child->toString() << std::endl;
-                // #endif
             }
             if (curr->child2 && (std::find(seen.begin(), seen.end(), curr->child2) == seen.end())) {
                 res += "\tbb" + std::to_string(curr->blockNum) +  ":b -> bb" + std::to_string(curr->child2->blockNum) + ":b [color=blue, style=dotted, label=\"dom\"];\n";
                 tmp.push(curr->child2);
-                // #ifdef DEBUG
-                //     std::cout << "pushed child2 [" << std::to_string(curr->child2->blockNum) << "] onto tmp" << std::endl;
-                // #endif
             }
         }
 
@@ -937,7 +950,7 @@ public:
         Func *f = nullptr;
         Parser *p = nullptr;
         
-        for (const auto &fun : this->funcMap) {
+        for (const auto &fun : Parser::funcMap) {
             f = fun.first;
             p = fun.second;
 
@@ -1100,7 +1113,6 @@ private:
 
     bool isFunc;
     Func *func;
-    static std::unordered_map<Func*, Parser*> funcMap; // [11.22.2024]: the map of [func:Parser*] since each [funcDecl] will define it's own [funcBody]
 
     SSA *p2_funcStart(Func *f); // [11.22.2024]: UDF funcBody
     void handle_getpar(Func *f, int paramNo);
