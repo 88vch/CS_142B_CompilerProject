@@ -708,9 +708,8 @@ public:
         #endif
         std::unordered_map<std::string, SSA *> res = {};
 
-        if (!this->isFunc) {
-            this->updateVarVals();
-        }
+        // [12.01.2024]: add [func]'s VVs into [Parser::mainObj]
+        this->updateVarVals();
 
         for (const auto pair : this->VVs) {
         // for (const auto  pair : this->currBB->varVals) {
@@ -1060,6 +1059,15 @@ public:
         Parser::funcMap.clear();
     }
 
+    Parser* getFuncParser(Func *f) const {
+        for (const auto &fc : Parser::funcMap) {
+            if (fc.first->getName() == f->getName()) {
+                return fc.second;
+            }
+        }
+        return nullptr;
+    }
+
     // [11.29.2024]: called after each func to check & add new CONST-SSA to main-BB0
     inline void updateConstBlk(Parser *p) {
         LinkedList *toAdd = p->BB0->constList;
@@ -1136,6 +1144,7 @@ private:
     // Recursive Descent
     void p_varDecl();
     void p_funcDecl(bool retVal = false);
+    void p_funcCallUDF(Parser *p);
     SSA* p_statSeq();
     SSA* p_statement(); 
     SSA* p_assignment();

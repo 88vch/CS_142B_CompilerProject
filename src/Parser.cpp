@@ -288,6 +288,13 @@ void Parser::p_funcDecl(bool retVal) {
     this->updateConstBlk(p);
 }
 
+// [12.02.2024]: must figure out a way to return the SSA's from p's func-call to [this] parser obj
+void Parser::p_funcCallUDF(Parser *p) {
+    // [Parser *p] has updated [func.args]
+    // - need to call the func 
+    // - and then transfer the new SSA's that're created into [this] Parser obj
+}
+
 SSA* Parser::p_statSeq() {
     #ifdef DEBUG
         std::cout << "[Parser::p_statSeq(" << this->sym.to_string() << ")]: found a statement to parse" << std::endl;
@@ -736,20 +743,20 @@ SSA* Parser::p_funcCall() {
         next(); 
 
         // check UDF's that return void
-        Func f(this->sym.get_value());
+        Func *f = new Func(this->sym.get_value());
         next();
         #ifdef DEBUG
-            std::cout << "\tcreated func f: [" << f.getName() << "]" << std::endl;
+            std::cout << "\tcreated func f: [" << f->getName() << "]" << std::endl;
         #endif
         // [09/30/2024]: NOTE - do we need multiple SSA-instr's for read bc of the different input values that may come in from this function call?
         // - we shouldn't because it doesn't take any values it's just the instruction for when we execute
-        if (f.name == "InputNum") {
+        if (f->name == "InputNum") {
             this->CheckFor_udf_optional_paren();
             res = this->addSSA1(23, nullptr, nullptr, true);
             #ifdef DEBUG
                 std::cout << "\tend of [InputNum()] got res: " << res->toString() << std::endl;
             #endif
-        } else if (f.name == "OutputNum") {
+        } else if (f->name == "OutputNum") {
             int num;
             // [09/22/2024]: But what are we supposed to do with the args?
             // [08/31/2024]: ToDo: handle args for this to work
@@ -802,31 +809,15 @@ SSA* Parser::p_funcCall() {
 
             // res = this->addSSA(new SSA(25));
         } else {
-            // [09/02/2024]: User-Defined Function (?)
-            // check for optional `(`: determine whether a UD-function may/will have arguments or not
-            if (this->CheckFor(Result(2, 13), true)) {    
-                while (this->CheckFor(Result(2, 14), true) == false) { // while the next token is NOT `)`
-                    #ifdef DEBUG
-                        std::cout << "iterating through args, token looks like: [" << this->sym.to_string() << ", " << this->sym.to_string_literal() << "]" << std::endl;
-                    #endif
-                    f.args.push_back(this->sym.to_string());
-                    next();
-                }
-                this->CheckFor(Result(2, 14)); // check for `)`; sanity...irl could just call [next()]
-            } 
-            // [09/02/2024]: ToDo - call the function with the arguments (if they exist)
-            // [11.20.2024]: look through [SymbolTable::symbol_table] for the ident corresponding to the [func]
-            // - call that function (figure out what that menas)
-
-            // [11.24.2024]: loop through the [f.args::[std::vector<std::string>]], assign each ident the form: x=[f.name_ident]; use this for [SymbolTable::symbol_table.at(x)]
-            // - for each [parameter], this->addSSA1(setpar, x, nullptr);
-            // - figure out how to assign this [setpar] to the func (must create a new function in Parser) and get proper return val (i.e. new SSA(?))
+            // [12.02.2024]: handled in [p2_funcCall()]...
         }
     }
 
     #ifdef DEBUG
         std::cout << "\t[Parser::p_funcCall()] returning res: " << res->toString() << std::endl;
     #endif
+    delete f;
+    f = nullptr;
     return res; // [08/31]2024]: stub (?)
 }
 
@@ -844,14 +835,14 @@ SSA* Parser::p2_funcCall() {
         next(); 
 
         // check UDF's that return void
-        Func f(this->sym.get_value());
+        Func *f = new Func(this->sym.get_value());
         next();
         #ifdef DEBUG
-            std::cout << "\tcreated func f: [" << f.getName() << "]" << std::endl;
+            std::cout << "\tcreated func f: [" << f->getName() << "]" << std::endl;
         #endif
         // [09/30/2024]: NOTE - do we need multiple SSA-instr's for read bc of the different input values that may come in from this function call?
         // - we shouldn't because it doesn't take any values it's just the instruction for when we execute
-        if (f.name == "InputNum") {
+        if (f->name == "InputNum") {
             this->CheckFor_udf_optional_paren();
 
             res = this->addSSA1(23, nullptr, nullptr, false); // don't check, just add new SSA's each time for [read]
@@ -859,7 +850,7 @@ SSA* Parser::p2_funcCall() {
             #ifdef DEBUG
                 std::cout << "\tend of [InputNum()] got res: " << res->toString() << std::endl;
             #endif
-        } else if (f.name == "OutputNum") {
+        } else if (f->name == "OutputNum") {
             int num;
             // [09/22/2024]: But what are we supposed to do with the args?
             // [08/31/2024]: ToDo: handle args for this to work
@@ -900,7 +891,7 @@ SSA* Parser::p2_funcCall() {
                     exit(EXIT_FAILURE);
                 }
             }
-        } else if (f.name == "OutputNewLine") {
+        } else if (f->name == "OutputNewLine") {
             this->CheckFor_udf_optional_paren();
             res = this->addSSA1(25, nullptr, nullptr, true);
         } else {
@@ -911,14 +902,21 @@ SSA* Parser::p2_funcCall() {
                     #ifdef DEBUG
                         std::cout << "iterating through args, token looks like: [" << this->sym.to_string() << ", " << this->sym.to_string_literal() << "]" << std::endl;
                     #endif
-                    f.args.push_back(this->sym.to_string());
+                    f->args.push_back(this->sym.to_string());
                     next();
                 }
                 this->CheckFor(Result(2, 14)); // check for `)`; sanity...irl could just call [next()]
             } 
             // [09/02/2024]: ToDo - call the function with the arguments (if they exist)
+            Parser *p = this->getFuncParser(f);
+            p->func = f; // update the [func]
+            this->p_funcCallUDF(p);
             // [11.20.2024]: look through [SymbolTable::symbol_table] for the ident corresponding to the [func]
             // - call that function (figure out what that menas)
+
+            // [11.24.2024]: loop through the [f->args::[std::vector<std::string>]], assign each ident the form: x=[f->name_ident]; use this for [SymbolTable::symbol_table.at(x)]
+            // - for each [parameter], this->addSSA1(setpar, x, nullptr);
+            // - figure out how to assign this [setpar] to the func (must create a new function in Parser) and get proper return val (i.e. new SSA(?))
         }
     }
 
