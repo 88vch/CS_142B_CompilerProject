@@ -718,6 +718,7 @@ SSA* Parser::p2_assignment() {
                         // we want to first update the parent (if-blk)'s idents to reflect the new vals instead of phi's
                         // then we can update it in [this->currBB] and then delete the old phi-ssa's
                         BasicBlock *parent_if = this->currBB->parent;
+                        SSA *oldOldVal = oldVal;
                         if (parent_if->parent->varVals.at(ident) == parent_if->varVals.at(ident)) {
                             #ifdef DEBUG
                                 std::cout << "if-stmt main parent's ident val == if-blk's ident val == [" << SymbolTable::symbol_table.at(ident) << "]" << std::endl;
@@ -726,7 +727,6 @@ SSA* Parser::p2_assignment() {
                             oldVal = BasicBlock::ssa_table.at(parent_if->varVals.at(ident))->get_operand2();
 
                             parent_if->varVals.insert_or_assign(ident, BasicBlock::ssa_table_reversed.at(oldVal));
-                            parent_if->parent->varVals.insert_or_assign(ident, BasicBlock::ssa_table_reversed.at(oldVal));
                         }
 
                         SSA *phi_instr = this->addSSA1(6, oldVal, value, true);
@@ -737,10 +737,15 @@ SSA* Parser::p2_assignment() {
                         // [10.28.2024]: Update BasicBlock's VV
                         int phi_table_int = this->add_SSA_table(phi_instr);
                         table_int = phi_table_int;
-                        // 11.12.2024: propagateDown will already insert, so we don't do this to avoid skipping over the update in [this->currBB]
+                        // [12.03.2024]: since we don't propagate down for if-else fix, we must insert to maintain updated val in join-blk
+                        // [11.12.2024: propagateDown will already insert, so we don't do this to avoid skipping over the update in [this->currBB]
+                        this->propagateDown(this->currBB, ident, oldOldVal, phi_table_int, true);
                         // this->currBB->varVals.insert_or_assign(ident, phi_table_int);
-                        
+                        // parent_if->parent->varVals.insert_or_assign(ident, phi_table_int);
+
                         #ifdef DEBUG
+                            std::cout << "updated parent_if-blk looks like: " << std::endl << parent_if->toString() << std::endl;
+                            std::cout << "updated parent_if->parent-blk looks like: " << std::endl << parent_if->parent->toString() << std::endl;
                             std::cout << "this->currBB looks like: " << this->currBB->toString() << std::endl;
                         #endif
                         
