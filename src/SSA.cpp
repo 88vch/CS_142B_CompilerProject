@@ -9,11 +9,12 @@ SSA::~SSA() {
     //     std::cout << "SSA to-delete: " << this->toString() << std::endl;
     // #endif
 
-    if (this->op == 0) {
-        curr_const_num++;
-    } else {
-        curr_instr_num--;
-    }
+    // [12.02.2024]: not decrementing number since that would imply we shift the debugNum of every SSA after this one to reflect the update properly for future SSA instructions
+    // if (this->op == 0) {
+    //     curr_const_num++;
+    // } else {
+    //     curr_instr_num--;
+    // }
     
     if (this->constVal) { delete this->constVal; }
     // [09/17/2024]: Maybe we don't need to do this and just delete individually

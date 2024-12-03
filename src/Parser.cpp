@@ -634,7 +634,7 @@ SSA* Parser::p2_assignment() {
         }       
 
         // child2 DOM currBB iff we're in a loop (while)
-        if ((this->SSAisDOM(oldVal, value) == false) || (this->BBisDOM(this->currBB->child2, this->currBB))) {
+        if ((this->SSAisDOM(oldVal, value) == false) || (this->BBisDOMLoop(this->currBB->child2, this->currBB))) {
             #ifdef DEBUG
                 // std::cout << "done p2_assignment value [p_expr()] returned: " << value->toString() << std::endl;
                 std::cout << "oldVal !DOM newVal OR child2-BB DOM currBB" << std::endl << "about to write new phi-instr into child2" << std::endl;
@@ -643,14 +643,14 @@ SSA* Parser::p2_assignment() {
             // - if we can somehow check that we're in the [else-blk] instead we don't need to create a phi since else will dom our path , we'll just join at the end?
             // - maybe the phi's shouldn't be in the assignment rather in the (ifStatement && whileStatement)??? ??? ???
 
-            if (this->BBisDOM(this->currBB->child2, this->currBB)) {
+            if (this->BBisDOMLoop(this->currBB->child2, this->currBB)) {
                 // [10.30.2024]: PHI-instr
                 // if (blk->varVals.find(ident) != blk->varVals.end()) {
                 BasicBlock *parent = this->currBB; // [11.01.2024]: changed from [this->currBB->parent] to [this->currBB] (circular loop)
                 // this->currBB = blk; // [10.24.2024]: So that [this->addSSA()] will add SSA-instr into proper BasicBlock
                 if (this->currBB->child2) {
                     this->currBB = this->currBB->child2; // [10.29.2024]: to follow the loop (IFF ONE EXISTS!)
-                    #ifdef DEBUG    
+                    #ifdef DEBUG
                         std::cout << "got child2! looks like: \n\t" << this->currBB->toString() << std::endl;
                     #endif
                 } else {
@@ -661,6 +661,7 @@ SSA* Parser::p2_assignment() {
                 }
 
                 // [11.09.2024]: ok modifications here will fuck up the phi's...but this is where the work needs to be done (FAWK)
+                // [12.02.2024]: if oldVal exists and was not created in [this->currBB],
                 if (oldVal && (this->currBB->findSSA(oldVal) == false)) {
                     // this will add to currBB's [newInstrs]
                     SSA *phi_instr = this->addSSA1(6, oldVal, value, true);
@@ -694,10 +695,103 @@ SSA* Parser::p2_assignment() {
                     //     blk->varVals.insert_or_assign(ident, table_int); 
                     // }
                 } else if (this->currBB->findSSA(oldVal)) {
+                    // [12.02.2024]: assumes we're in 
+                    //      a) a loop and we loop back multipel times, must update val w new phi [NOTE: THIS IS GOOD AND WORKS AS EXPECTED ATM...]
+                    // or   b) the join from an if-statement (else) where previously we assumed it was if-only (i.e. created phi's for [oldVal] && [newIfVal]; should remove/update the VV's in [if_blk], so phi updates properly)
                     #ifdef DEBUG
-                        std::cout << "this path was traversed!" << std::endl;
-                        exit(EXIT_FAILURE);
+                        std::cout << "this path was traversed! currBB looks like: " << std::endl;
+                        std::cout << this->currBB->toString() << std::endl;
+                        // exit(EXIT_FAILURE);
                     #endif
+
+                    // [12.02.2024]: if we're in a join [case b]
+                    if (this->currBB->join) {
+                        #ifdef DEBUG
+                            std::cout << "oldVal: " << oldVal->toString() << std::endl;
+                            std::cout << "newVal: " << value->toString() << std::endl;
+                            std::cout << "ident: [" << SymbolTable::symbol_table.at(ident) << "] with a val (in this->currBB) of: " << BasicBlock::ssa_table.at(this->currBB->varVals.at(ident))->toString() << std::endl;
+                            std::cout << "join parent1 looks like: " << std::endl << this->currBB->parent->toString() << std::endl;
+                            std::cout << "if-stmt main parent looks like: " << std::endl << this->currBB->parent->parent->toString() << std::endl;
+                        #endif
+                        // ? this->currBB->updatePhi();
+                        
+                        // we want to first update the parent (if-blk)'s idents to reflect the new vals instead of phi's
+                        // then we can update it in [this->currBB] and then delete the old phi-ssa's
+                        BasicBlock *parent_if = this->currBB->parent;
+                        if (parent_if->parent->varVals.at(ident) == parent_if->varVals.at(ident)) {
+                            #ifdef DEBUG
+                                std::cout << "if-stmt main parent's ident val == if-blk's ident val == [" << SymbolTable::symbol_table.at(ident) << "]" << std::endl;
+                            #endif
+                            this->removeSSA(oldVal);
+                            oldVal = BasicBlock::ssa_table.at(parent_if->varVals.at(ident))->get_operand2();
+
+                            parent_if->varVals.insert_or_assign(ident, BasicBlock::ssa_table_reversed.at(oldVal));
+                            parent_if->parent->varVals.insert_or_assign(ident, BasicBlock::ssa_table_reversed.at(oldVal));
+                        }
+
+                        SSA *phi_instr = this->addSSA1(6, oldVal, value, true);
+                        #ifdef DEBUG
+                            std::cout << "phi_instr: " << phi_instr->toString() << std::endl;
+                        #endif
+                        
+                        // [10.28.2024]: Update BasicBlock's VV
+                        int phi_table_int = this->add_SSA_table(phi_instr);
+                        table_int = phi_table_int;
+                        // 11.12.2024: propagateDown will already insert, so we don't do this to avoid skipping over the update in [this->currBB]
+                        // this->currBB->varVals.insert_or_assign(ident, phi_table_int);
+                        
+                        #ifdef DEBUG
+                            std::cout << "this->currBB looks like: " << this->currBB->toString() << std::endl;
+                        #endif
+                        
+                        this->currBB = parent;
+
+                        // [12.02.2024]: maybe we don't propagate thsi down...since itll be updated every time and then we update this as a result of the loop-back>?>?>>>>...
+                        // this->propagateDown(this->currBB, ident, oldVal, phi_table_int, true);
+                        
+                        // refer to DOT img SSA's: [21, 16], [19, 15], [7, 6](NOTE: this one is correct - while-loop update)
+                        // - while the other 2, (if_blk before else_blk -> phi's from prev(i.e. before if) with if-idents)
+                        // ex. UPDATE THE PHI INSTEAD OF REMOVING, SIMPLY UPDATE operand1() INSTRUCTION FROM THE OLD PHI (AND NO NEED TO CREATE NEW PHI)
+                        // x = 2;
+                        // if (true == 1) {
+                        //     // here we create a phi for [2, 1] since that's all we've seen so far
+                        //     x = 1;
+                        // } else {
+                        //     // here when we try to update our phi blk, we udpate the phi that we've created instead of [MAYBE UPDATING] it instead
+                        //     x = 3;
+                        // }
+                    } else { // [12.02.2024]: WHILE-LOOP BACK UPDATE
+                        // [12.02.2024]: i litterally copy pasted exactly what was in 
+                        // - the if-statement above this [if (oldVal && (this->currBB->findSSA(oldVal) == false)) {]
+                        // this will add to currBB's [newInstrs]
+                        SSA *phi_instr = this->addSSA1(6, oldVal, value, true);
+                        #ifdef DEBUG
+                            std::cout << "phi_instr: " << phi_instr->toString() << std::endl;
+                        #endif
+                        
+                        // [10.28.2024]: Update BasicBlock's VV
+                        int phi_table_int = this->add_SSA_table(phi_instr);
+                        table_int = phi_table_int;
+                        // 11.12.2024: propagateDown will already insert, so we don't do this to avoid skipping over the update in [this->currBB]
+                        // this->currBB->varVals.insert_or_assign(ident, phi_table_int);
+                        
+                        #ifdef DEBUG
+                            std::cout << "this->currBB looks like: " << this->currBB->toString() << std::endl;
+                        #endif
+                        
+                        this->currBB = parent;
+
+                        // [12.02.2024]: maybe we don't propagate thsi down...since itll be updated every time and then we update this as a result of the loop-back>?>?>>>>...
+                        // this->propagateDown(this->currBB, ident, oldVal, phi_table_int, true);
+                    }
+                    #ifdef DEBUG
+                        std::cout << "LOOP BACK!" << std::endl;
+                        // std::cout << "new phi-SSA: " << phi_instr->toString() << std::endl;
+                        std::cout << "current BB (og parent): " << this->currBB->toString() << std::endl;
+                    #endif
+                    // [12.02.2024]: previous old traversal exit(EXIT_FAILURE);
+                    this->currBB->varVals.insert_or_assign(ident, table_int);
+                    this->VVs.insert_or_assign(ident, table_int);
                 }
             } else {
                 #ifdef DEBUG
@@ -797,7 +891,7 @@ SSA* Parser::p_funcCall() {
                     exit(EXIT_FAILURE);
                 }
             }
-        } else if (f.name == "OutputNewLine") {
+        } else if (f->name == "OutputNewLine") {
             this->CheckFor_udf_optional_paren();
             // std::cout << std::endl; // new line (?)
             // SSA *tmp = new SSA(25);
@@ -811,13 +905,13 @@ SSA* Parser::p_funcCall() {
         } else {
             // [12.02.2024]: handled in [p2_funcCall()]...
         }
+        delete f;
+        f = nullptr;
     }
 
     #ifdef DEBUG
         std::cout << "\t[Parser::p_funcCall()] returning res: " << res->toString() << std::endl;
     #endif
-    delete f;
-    f = nullptr;
     return res; // [08/31]2024]: stub (?)
 }
 

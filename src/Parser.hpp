@@ -504,6 +504,23 @@ public:
         return BasicBlock::ssa_table.size() - 1; // [09/30/2024]: return the int that is associated with SSA-instr
     }
 
+    // [12.02.2024]: assumes the SSA was created in this->currBB
+    inline void removeSSA(SSA *s) {
+        for (auto &ssa : this->currBB->newInstrs) {
+            if (s->compare(ssa->instr)) {
+                if (ssa->next) {
+                    ssa->next->prev = ssa->prev;
+                }
+                if (ssa->prev) {
+                    ssa->prev->next = ssa->next;
+                }
+                this->currBB->newInstrs.erase(std::remove(this->currBB->newInstrs.begin(), this->currBB->newInstrs.end(), ssa), this->currBB->newInstrs.end());
+                break;
+            }
+        }
+        // we remove all SSA from [BasicBlock::ssa_table] && [reversed] at the end of parsing...
+    }
+
     // recursive; maintains [this->currBB]
     inline void propagateDown(BasicBlock *curr, int ident, SSA* oldVal, int phi_ident_val, bool first = false, std::vector<BasicBlock *> seen = {}) {    
         #ifdef DEBUG
@@ -612,8 +629,12 @@ public:
         return false; 
     }
 
-    // [11.11.2024]: return true if b dom d, false otherwise
-    inline bool BBisDOM(BasicBlock *b, BasicBlock *d) const {
+    // [11.11.2024]: return true if b dom d or b loops back to d, false otherwise
+    inline bool BBisDOMLoop(BasicBlock *b, BasicBlock *d) const {
+        #ifdef DEBUG
+            std::cout << "[Pa热色入：BBisDOM()::b] 看像： " << b->toString() << std::endl;
+            std::cout << "[Parser::BBisDOM()::d] 看像: " << d->toString() << std::endl;
+        #endif
         BasicBlock *curr = nullptr;
         std::stack<BasicBlock *> s;
         std::vector<BasicBlock *> seen = {};
