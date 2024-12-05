@@ -664,19 +664,23 @@ SSA* Parser::p2_assignment() {
                 // [12.02.2024]: if oldVal exists and was not created in [this->currBB],
                 if (oldVal && (this->currBB->findSSA(oldVal) == false)) {
                     // this will add to currBB's [newInstrs]
-                    SSA *phi_instr = this->addSSA1(6, oldVal, value, true);
                     #ifdef DEBUG
-                        std::cout << "phi_instr: " << phi_instr->toString() << std::endl;
+                        std::cout << "oldVal is [" << oldVal->toString() << "]" << std::endl;
+                        std::cout << "adding val: [" << value->toString() << "] to currBB's VVs" << std::endl;
                     #endif
+                    // SSA *phi_instr = this->addSSA1(6, oldVal, value, true);
+                    // #ifdef DEBUG
+                    //     std::cout << "phi_instr: " << phi_instr->toString() << std::endl;
+                    // #endif
                     
                     // [10.28.2024]: Update BasicBlock's VV
-                    int phi_table_int = this->add_SSA_table(phi_instr);
+                    // int phi_table_int = this->add_SSA_table(phi_instr);
                     // 11.12.2024: propagateDown will already insert, so we don't do this to avoid skipping over the update in [this->currBB]
-                    // this->currBB->varVals.insert_or_assign(ident, phi_table_int);
+                    this->currBB->varVals.insert_or_assign(ident, table_int);
                     
-                    #ifdef DEBUG
-                        std::cout << "this->currBB looks like: " << this->currBB->toString() << std::endl;
-                    #endif
+                    // #ifdef DEBUG
+                    //     std::cout << "this->currBB looks like: " << this->currBB->toString() << std::endl;
+                    // #endif
                     
                     this->currBB = parent;
 
@@ -685,10 +689,10 @@ SSA* Parser::p2_assignment() {
                     // [10.28.2024]: TODO - propagate update down to while-body BB
                     // this->propagateUpdate(old_ident_val, phi_table_int);
                     // [10.30.2024]: Propagate down from here?
-                    this->propagateDown(this->currBB, ident, oldVal, phi_table_int, true);
+                    this->propagateDown(this->currBB, ident, oldVal, table_int, true);
                 
                     #ifdef DEBUG
-                        std::cout << "new phi-SSA: " << phi_instr->toString() << std::endl;
+                        // std::cout << "new phi-SSA: " << phi_instr->toString() << std::endl;
                         std::cout << "current BB (og parent): " << this->currBB->toString() << std::endl;
                     #endif
                     // } else {
@@ -798,6 +802,10 @@ SSA* Parser::p2_assignment() {
                     this->currBB->varVals.insert_or_assign(ident, table_int);
                     this->VVs.insert_or_assign(ident, table_int);
                 }
+            } else if (this->SSAisDOM(oldVal, value) == false) {
+                #ifdef DEBUG
+                    std::cout << "path traversed: SSA is DOM == false (oldVal, value)" << std::endl;
+                #endif
             } else {
                 #ifdef DEBUG
                     std::cout << "oldVal: " << oldVal->toString() << std::endl << "!DOM newVal: " << value->toString() << std::endl;
