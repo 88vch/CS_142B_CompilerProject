@@ -513,18 +513,19 @@ SSA* Parser::p2_assignment() {
     // - emit warning but continue nevertheless
     if (this->varDeclarations.find(ident) == this->varDeclarations.end()) {
         // [Assumption]: we don't require variables, x, to be declared (i.e. `let x;`) before they are defined, we'll emit a warning encouraging that tho
-        std::cout << "Warning: var [" << this->sym.to_string() << "] hasn't been declared! Default: setting to 0..." << std::endl;
+        std::cout << "Warning: var [" << this->sym.to_string() << "] hasn't been declared!" << std::endl;
         // [11.11.2024]: don't need to call this func here bc it'll set [var == 0]
         //      - we don't care to set it to 0 when we're already in [p2_assiggnment()] about to set it to a variable;
         // this->handleUninitVar(ident);
-        #ifdef DEBUG
-            std::cout << "uninitialized variable has now been declared" << std::endl;
-        #endif
+        // #ifdef DEBUG
+        //     std::cout << "uninitialized variable has been handled" << std::endl;
+        // #endif
         // exit(EXIT_FAILURE);
     }
 
-    // [10/02/2024]: Check if it's already defined before (if so then we need a new BB!)
-    // if (this->VVs.find(ident) != this->VVs.end()) {
+    // [12.05.2024]: Check if previous assignment was in [THIS->currBB], if so then we need a new BB
+    // - overwrite = true; implies previous assignment was in [this->currBB];
+    //     - we move [this->currBB] to the newly created BB
     if ((this->currBB->varVals.find(ident) != this->currBB->varVals.end()) && 
         (this->currBB->findSSA(BasicBlock::ssa_table.at(this->currBB->varVals.at(ident))))) {
         // oldInt = this->currBB->varVals.at(ident);
@@ -709,7 +710,7 @@ SSA* Parser::p2_assignment() {
                     #endif
 
                     // [12.02.2024]: if we're in a join [case b]
-                    if (this->currBB->join) {
+                    if (this->currBB->blkType == 2) {
                         #ifdef DEBUG
                             std::cout << "oldVal: " << oldVal->toString() << std::endl;
                             std::cout << "newVal: " << value->toString() << std::endl;

@@ -12,7 +12,7 @@ std::unordered_map<SSA *, int> BasicBlock::ssa_table_reversed = {};
 std::unordered_map<int, LinkedList*, BasicBlock::SafeCustomHash, BasicBlock::SafeCustomEqual> BasicBlock::instrList = {};
 
 // [10.22.2024]: Revised?
-BasicBlock::BasicBlock(bool isConst, bool isJoin)
+BasicBlock::BasicBlock(bool isConst, bool isJoin, int blkType)
 {
     #ifdef DEBUG
         std::cout << "in BasicBlock(isConst=" << isConst << ")" << std::endl;
@@ -25,9 +25,12 @@ BasicBlock::BasicBlock(bool isConst, bool isJoin)
     this->child = nullptr;
     this->child2 = nullptr;
 
+    this->blkType = blkType;
+    
     if (isConst) {
         this->constList = new LinkedList();
         this->constPtr = new Node();
+        this->blkType = 0;
     } else {
         this->constList = nullptr;
         this->constPtr = nullptr;
@@ -35,6 +38,9 @@ BasicBlock::BasicBlock(bool isConst, bool isJoin)
     this->newInstrs = {};
     this->varVals = {};
     this->join = isJoin;
+    if (isJoin) {
+        this->blkType = 2;
+    }
 
     // #ifdef DEBUG
     //     std::cout << "new BasicBlock; got [instrList; size=" << this->instrList.size() << ", " << instrLst.size() << "] looks like:" << std::endl;
@@ -45,7 +51,7 @@ BasicBlock::BasicBlock(bool isConst, bool isJoin)
     #endif
 }
 
-BasicBlock::BasicBlock(std::unordered_map<int, int> DOM_vv_map, bool isConst, bool isJoin)
+BasicBlock::BasicBlock(std::unordered_map<int, int> DOM_vv_map, bool isConst, bool isJoin, int blkType)
 {
     this->blockNum = debugNum++;
 
@@ -55,15 +61,21 @@ BasicBlock::BasicBlock(std::unordered_map<int, int> DOM_vv_map, bool isConst, bo
     this->child2 = nullptr;
     this->varVals = DOM_vv_map;
 
+    this->blkType = blkType;
+
     if (isConst) {
         this->constList = new LinkedList();
         this->constPtr = new Node();
+        this->blkType = 0;
     } else {
         this->constList = nullptr;
         this->constPtr = nullptr;
     }
     this->newInstrs = {};
     this->join = isJoin;
+    if (isJoin) {
+        this->blkType = 2;
+    }
 
     #ifdef DEBUG
         std::cout << "new BasicBlock; got [varVals: size=" << this->varVals.size() << "] looks like:" << std::endl;
@@ -74,7 +86,7 @@ BasicBlock::BasicBlock(std::unordered_map<int, int> DOM_vv_map, bool isConst, bo
     //     this->printInstrList();
     // #endif
 }
-BasicBlock::BasicBlock(BasicBlock *p1, BasicBlock *p2, std::unordered_map<int, int> DOM_vv_map, bool isJoin)
+BasicBlock::BasicBlock(BasicBlock *p1, BasicBlock *p2, std::unordered_map<int, int> DOM_vv_map, bool isJoin, int blkType)
 {
     this->blockNum = debugNum++;
 
@@ -87,9 +99,14 @@ BasicBlock::BasicBlock(BasicBlock *p1, BasicBlock *p2, std::unordered_map<int, i
 
     this->constList = nullptr;
     this->constPtr = nullptr;
+    
+    this->blkType = blkType;
 
     this->newInstrs = {};
     this->join = isJoin;
+    if (isJoin) {
+        this->blkType = 2;
+    }
 
     #ifdef DEBUG
         std::cout << "new BasicBlock; got [varVals: size=" << this->varVals.size() << "] looks like:" << std::endl;
