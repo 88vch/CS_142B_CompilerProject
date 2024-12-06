@@ -672,6 +672,27 @@ public:
         return false;
     }
 
+    // [12.06.2024]: a function that returns true if [this->currBB] is in a loop, false otherwise
+    inline bool currBBinLoop() const {
+        std::vector<BasicBlock *> seen = {};
+        BasicBlock *curr = this->currBB;
+
+        while (curr) {
+            if (std::find(seen.begin(), seen.end(), curr) == seen.end()) {
+                seen.push_back(curr);
+            } else {
+                #ifdef DEBUG
+                    std::cout << "we've seen this BB before, loop confirmed!" << std::endl;
+                #endif
+                return true;
+            }
+            // [12.06.2024]: prioritize choosing child2 if we have a choice since child2 will always be the loop-back child
+            curr = (curr->child2) ? curr->child2 : ((curr->child) ? curr->child : nullptr);
+        }
+        return false;
+
+    }
+
     // [11/28/2024]: adds SSA_instrs from other [func]'s into main Parser's SSA_instrs
     // - this function is only called in [Parser::getSSA()]
     void updateSSA_instrs() {

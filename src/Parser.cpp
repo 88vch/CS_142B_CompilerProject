@@ -640,7 +640,7 @@ SSA* Parser::p2_assignment() {
             // if (if/else-blk): add or update join blk for ident
             BasicBlock *join_blk = this->currBB->child2;
         } else if (this->currBB->blkType == 1) { // std-blk type
-            // std insert
+            // std insert; note we skip bc of above (if we choose to implement like that)
         }
         // [12.06.2024]: not sure if this does what we expect it to do...
         this->propagateDown(this->currBB, ident, oldVal, table_int, true);
@@ -649,7 +649,7 @@ SSA* Parser::p2_assignment() {
             // if (if/else-blk): add or update join blk for ident
             BasicBlock *join_blk = this->currBB->child2;
         } else if (this->currBB->blkType == 1) { // std-blk type
-            // std insert
+            // std insert; note we skip bc of above (if we choose to implement like that)
         }
     }
     
