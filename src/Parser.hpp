@@ -522,7 +522,7 @@ public:
     }
 
     // recursive; maintains [this->currBB]
-    inline void propagateDown(BasicBlock *curr, int ident, SSA* oldVal, int phi_ident_val, bool first = false, std::vector<BasicBlock *> seen = {}) {    
+    inline void propagateDown(BasicBlock *curr, int ident, SSA* oldVal, int ident_val, bool first = false, std::vector<BasicBlock *> seen = {}) {    
         #ifdef DEBUG
             std::cout << "in propagateDown(ident=" << SymbolTable::symbol_table.at(ident) << ", phi_ident=" << BasicBlock::ssa_table.at(phi_ident_val)->toString() << ", oldVal (SSA) = " << oldVal->toString() << ", )" << std::endl;
         #endif
@@ -536,17 +536,30 @@ public:
         }
 
         if (curr->varVals.find(ident) != curr->varVals.end()) {
-            if (curr->varVals.at(ident) != phi_ident_val) {
+            if (curr->varVals.at(ident) != ident_val) {
                 #ifdef DEBUG
-                    std::cout << "currBB's varVals contains the following pair: {ident=" << ident << ", val=" << curr->varVals.at(ident) << "}; updating with [phi_ident_val]" << std::endl;
+                    std::cout << "currBB's varVals contains the following pair: {ident=" << ident << ", val=" << curr->varVals.at(ident) << "}; updating with [ident_val]" << std::endl;
                 #endif
-                // if varVal mapping ident != phi_ident_val, (waht does this mean)?
-                //      - means that [ident : old_ident_val] ?
-                curr->varVals.insert_or_assign(ident, phi_ident_val);
-                curr->updateInstructions(oldVal, BasicBlock::ssa_table.at(phi_ident_val));
+                // [12.06.2024]: new updated to include (mainWhile unique update)
+                if (curr->blkType == 1 && curr->mainWhile) {
+                    // [12.06.2024]: should update the phi-SSA not the SSA associated with the ident here
+                    #ifdef DEBUG
+                        std::cout << "in mainWhile-blk looks like: " << std::endl << curr->toString() << std::endl;
+                    #endif
+                    SSA *prevPhi = BasicBlock::ssa_table.at(curr->varVals.at(ident));
+                    prevPhi->set_operand2(BasicBlock::ssa_table.at(ident_val));
+                    #ifdef DEBUG
+                        std::cout << "mainWhile-blk after updating prevPhi looks like: " << std::endl << curr->toString() << std::endl;
+                    #endif
+                } else {
+                    // if varVal mapping ident != ident_val, (waht does this mean)?
+                    //      - means that [ident : old_ident_val] ?
+                    curr->varVals.insert_or_assign(ident, ident_val);
+                    curr->updateInstructions(oldVal, BasicBlock::ssa_table.at(ident_val));
+                }
             } else {
                 #ifdef DEBUG
-                    std::cout << "currBB's varVals contains [ident:phi_ident_val] pair!" << std::endl;
+                    std::cout << "currBB's varVals contains [ident:ident_val] pair!" << std::endl;
                 #endif
                 // 11.09.2024: no need to update instructions if proper mapping already exists
             }
@@ -554,8 +567,8 @@ public:
             #ifdef DEBUG
                 std::cout << "ident doesn't exist in currBB! inserting new" << std::endl;
             #endif
-            curr->varVals.insert_or_assign(ident, phi_ident_val);
-            curr->updateInstructions(oldVal, BasicBlock::ssa_table.at(phi_ident_val));
+            curr->varVals.insert_or_assign(ident, ident_val);
+            curr->updateInstructions(oldVal, BasicBlock::ssa_table.at(ident_val));
 
             // 11.06.2024: nah i think smtn with the logic is wrong abt this...
             // 11.05.2024: if we don't find the [ident] defined as a key in [this->currBB->varVals],
@@ -563,10 +576,10 @@ public:
         }
 
         if ((curr->child) && (std::find(seen.begin(), seen.end(), curr->child) == seen.end())) {
-            propagateDown(curr->child, ident, oldVal, phi_ident_val, false, seen);
+            propagateDown(curr->child, ident, oldVal, ident_val, false, seen);
         } 
         if ((curr->child2) && (std::find(seen.begin(), seen.end(), curr->child2) == seen.end())) {
-            propagateDown(curr->child2, ident, oldVal, phi_ident_val, false, seen);
+            propagateDown(curr->child2, ident, oldVal, ident_val, false, seen);
         }
         // stub
         #ifdef DEBUG

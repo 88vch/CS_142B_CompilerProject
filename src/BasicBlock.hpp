@@ -18,9 +18,9 @@ public:
 
 
     // [10.22.2024]: Revised slightly to try without [instrLis]?
-    BasicBlock(bool isConst = false, bool isJoin = false, int blkType = 1);
-    BasicBlock(std::unordered_map<int, int> DOM_vv_map, bool isConst = false, bool isJoin = false, int blkType = 1);
-    BasicBlock(BasicBlock *p1, BasicBlock *p2, std::unordered_map<int, int> DOM_vv_map, bool isJoin = false, int blkType = 1);
+    BasicBlock(bool isConst = false, bool isJoin = false, int blkType = 1, bool mainWhile = false);
+    BasicBlock(std::unordered_map<int, int> DOM_vv_map, bool isConst = false, bool isJoin = false, int blkType = 1, bool mainWhile = false);
+    BasicBlock(BasicBlock *p1, BasicBlock *p2, std::unordered_map<int, int> DOM_vv_map, bool isJoin = false, int blkType = 1, bool mainWhile = false);
 
     ~BasicBlock() {
         #ifdef DEBUG
@@ -186,6 +186,7 @@ public:
     //  - 1) std (note: could contain unique [while-loop]), 
     //  - 2) join, 
     //  - 3) if-else-branch
+    bool mainWhile;
     int blkType; 
     int blockNum;
     static int debugNum;
