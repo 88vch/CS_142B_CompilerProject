@@ -524,7 +524,7 @@ public:
     // recursive; maintains [this->currBB]
     inline void propagateDown(BasicBlock *curr, int ident, SSA* oldVal, int ident_val, bool first = false, std::vector<BasicBlock *> seen = {}) {    
         #ifdef DEBUG
-            std::cout << "in propagateDown(ident=" << SymbolTable::symbol_table.at(ident) << ", phi_ident=" << BasicBlock::ssa_table.at(phi_ident_val)->toString() << ", oldVal (SSA) = " << oldVal->toString() << ", )" << std::endl;
+            std::cout << "in propagateDown(ident=" << SymbolTable::symbol_table.at(ident) << ", phi_ident=" << BasicBlock::ssa_table.at(ident_val)->toString() << ", oldVal (SSA) = " << oldVal->toString() << ", )" << std::endl;
         #endif
         seen.push_back(curr);
 
@@ -690,7 +690,30 @@ public:
             curr = (curr->child2) ? curr->child2 : ((curr->child) ? curr->child : nullptr);
         }
         return false;
+    }
 
+    // [12.08.2024]: this func should only be run in [p2_assignment()]
+    // - assumes we know we are in a loop
+    inline BasicBlock* getLoopHead() const {
+        std::vector<BasicBlock *> seen = {};
+        BasicBlock *curr = this->currBB;
+
+        while (curr) {
+            if (std::find(seen.begin(), seen.end(), curr) == seen.end()) {
+                seen.push_back(curr);
+                if (curr->mainWhile) {
+                    return curr;
+                } 
+            } else {
+                #ifdef DEBUG
+                    std::cout << "we've seen this BB before, loop confirmed!" << std::endl;
+                #endif
+                return nullptr;
+            }
+            // [12.06.2024]: prioritize choosing child2 if we have a choice since child2 will always be the loop-back child
+            curr = (curr->child2) ? curr->child2 : ((curr->child) ? curr->child : nullptr);
+        }
+        return nullptr;
     }
 
     // [11/28/2024]: adds SSA_instrs from other [func]'s into main Parser's SSA_instrs
@@ -887,7 +910,7 @@ public:
             std::cout << curr->toString() << std::endl;
         #endif
 
-        if (curr->join) {
+        if (curr->blkType == 2) {
             res += "\tbb" + std::to_string(curr->blockNum) + " [shape=record, label=\"<b>join\\n" + curr->toDOT() + "\"];\n";
         } else {
             res += "\tbb" + std::to_string(curr->blockNum) + " [shape=record, label=\"<b>" + curr->toDOT() + "\"];\n";

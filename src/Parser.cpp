@@ -637,22 +637,41 @@ SSA* Parser::p2_assignment() {
     // [12.06.2024]: new beginnings (cont.); maybe overwrite is the last detail after we figureout/decide where specifically we are (i.e. blkType 0, 1, 2, 3)
     if (this->currBBinLoop()) { // if [this->currBB] is in a loop
         if (this->currBB->blkType == 3) { // if/else-blk
+            // [12.08.2024]: todo asap
             // if (if/else-blk): add or update join blk for ident
             BasicBlock *join_blk = this->currBB->child2;
         } else if (this->currBB->blkType == 1) { // std-blk type
             // std insert; note we skip bc of above (if we choose to implement like that)
         }
+        // [12.08.2024]: new func todo - [Parser::getLoopHead()]; returns BB start of while-loop (contains cmp instr?) (NOTE: figure out how to denote start of while loop (considering nesting!!!))
+        BasicBlock *loopHead = this->getLoopHead();
+        BasicBlock *tmp = this->currBB;
+        this->currBB = loopHead;
+        SSA *phi = this->addSSA1(6, oldVal, value);
+        int phi_table_int = this->add_SSA_table(phi);
+        
         // [12.06.2024]: not sure if this does what we expect it to do...
-        this->propagateDown(this->currBB, ident, oldVal, table_int, true);
+        this->propagateDown(this->currBB, ident, oldVal, phi_table_int, true);
+        this->propagateDown(this->currBB, ident, value, phi_table_int, true);
+        
+        this->currBB = tmp;
     } else { // if [this->currBB] is NOT in a loop
         if (this->currBB->blkType == 3) { // if/else-blk
+            // [12.08.2024]: todo asap
             // if (if/else-blk): add or update join blk for ident
             BasicBlock *join_blk = this->currBB->child2;
+            if ((join_blk->varVals.find(ident) != join_blk->varVals.end()) &&
+                (BasicBlock::ssa_table.at(join_blk->varVals.at(ident))->get_operator() == 6)) {
+                    // [12.08.2024]: if phi exists in join alr, implies that this is else-blk (since if-blk would be the one creating phi [i.e. no phi in join for ident yet...could have value if prev assigned (since join takes bb's vv's before if-stmt)])
+                    // - so we just set the operand2() val to the [value]
+                    BasicBlock::ssa_table.at(join_blk->varVals.at(ident))->set_operand2(value);
+            }
         } else if (this->currBB->blkType == 1) { // std-blk type
             // std insert; note we skip bc of above (if we choose to implement like that)
         }
     }
     
+    // [12.08.2024]: commenting all this out for now bc we thought of a clearer way to denote the different paths for an assignment
     // // [11.10.2024]: so overwrite implies that the previous [currBB] had the newInstr for this [ident]
     // // - therefore we create a new bb. this is what overwrite signals to us
     // // - does not tell us whether or not we need a phi (but this is what we want overwrite to imply)
