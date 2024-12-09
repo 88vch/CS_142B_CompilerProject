@@ -57,8 +57,7 @@ public:
         this->prevInstr = nullptr;
 
         this->block = blk;
-        this->generateBlkBlksSeen = {};
-        // this->blocksSeen = {};
+        this->blksSeen = {};
 
         this->func = nullptr;
         this->isFunc = false;
@@ -890,21 +889,21 @@ public:
         return size;
     }
 
-    inline void printBlocks(BasicBlock *curr, std::vector<BasicBlock *>blocksSeen) {
-        blocksSeen.push_back(curr);
+    inline void printBlocks(BasicBlock *curr) {
+        this->blksSeen.push_back(curr->blockNum);
 
         std::cout << curr->toString() << std::endl;
-        if ((curr->child) && (std::find(blocksSeen.begin(), blocksSeen.end(), curr->child) == blocksSeen.end())) {
-            this->printBlocks(curr->child, blocksSeen);
+        if ((curr->child) && (std::find(this->blksSeen.begin(), this->blksSeen.end(), curr->child->blockNum) == this->blksSeen.end())) {
+            this->printBlocks(curr->child);
         }
-        if ((curr->child2) && (std::find(blocksSeen.begin(), blocksSeen.end(), curr->child2) == blocksSeen.end())) {
-            this->printBlocks(curr->child2, blocksSeen);
+        if ((curr->child2) && (std::find(this->blksSeen.begin(), this->blksSeen.end(), curr->child2->blockNum) == this->blksSeen.end())) {
+            this->printBlocks(curr->child2);
         }
     }
 
     // 11.11.2024: dfs to recursively generate blocks for DOT
     inline std::string generateBlocks(BasicBlock *curr, std::string res) {
-        this->generateBlkBlksSeen.push_back(curr->blockNum);
+        this->blksSeen.push_back(curr->blockNum);
         #ifdef DEBUG
             std::cout << "generateBlocks pushed_back: [" << curr->blockNum << "]" << std::endl;
             std::cout << curr->toString() << std::endl;
@@ -919,10 +918,10 @@ public:
         //     std::cout << "updated res: " << res << std::endl << std::endl;
         // #endif
 
-        if ((curr->child) && (std::find(this->generateBlkBlksSeen.begin(), this->generateBlkBlksSeen.end(), curr->child->blockNum) == this->generateBlkBlksSeen.end())) {
+        if ((curr->child) && (std::find(this->blksSeen.begin(), this->blksSeen.end(), curr->child->blockNum) == this->blksSeen.end())) {
             res = this->generateBlocks(curr->child, res);
         }
-        if ((curr->child2) && (std::find(this->generateBlkBlksSeen.begin(), this->generateBlkBlksSeen.end(), curr->child2->blockNum) == this->generateBlkBlksSeen.end())) {
+        if ((curr->child2) && (std::find(this->blksSeen.begin(), this->blksSeen.end(), curr->child2->blockNum) == this->blksSeen.end())) {
             res = this->generateBlocks(curr->child2, res);
         }
 
@@ -934,6 +933,7 @@ public:
         std::string c_res = "";
 
         // block definitions
+        this->blksSeen.clear();
         res = this->generateBlocks(this->BB0, res);
 
         #ifdef DEBUG
@@ -1164,7 +1164,7 @@ public:
     void parse_generate_SSA(); // generate all SSA Instructions
 private:
     bool block;
-    std::vector<int> generateBlkBlksSeen;
+    std::vector<int> blksSeen;
 
     Result sym;
     std::vector<Result> source;

@@ -29,12 +29,13 @@ BasicBlock::BasicBlock(bool isConst, bool isJoin, int blkType, bool mainWhile)
     this->mainWhile = mainWhile;
 
     if (isConst) {
-        this->constList = new LinkedList();
-        this->constPtr = new Node();
+        // this->constList = new LinkedList();
+        this->constList = BasicBlock::instrList.at(0); // [12.08.2024]: why create new when we can js use pre-existing? isnt' this more efficent and accurate?
+        // this->constPtr = new Node();
         this->blkType = 0;
     } else {
         this->constList = nullptr;
-        this->constPtr = nullptr;
+        // this->constPtr = nullptr;
     }
     this->newInstrs = {};
     this->varVals = {};
@@ -66,12 +67,13 @@ BasicBlock::BasicBlock(std::unordered_map<int, int> DOM_vv_map, bool isConst, bo
     this->mainWhile = mainWhile;
 
     if (isConst) {
-        this->constList = new LinkedList();
-        this->constPtr = new Node();
+        // this->constList = new LinkedList();
+        this->constList = BasicBlock::instrList.at(0); // [12.08.2024]: why create new when we can js use pre-existing? isnt' this more efficent and accurate?
+        // this->constPtr = new Node();
         this->blkType = 0;
     } else {
         this->constList = nullptr;
-        this->constPtr = nullptr;
+        // this->constPtr = nullptr;
     }
     this->newInstrs = {};
     // this->join = isJoin;
@@ -100,7 +102,7 @@ BasicBlock::BasicBlock(BasicBlock *p1, BasicBlock *p2, std::unordered_map<int, i
     this->child2 = nullptr;
 
     this->constList = nullptr;
-    this->constPtr = nullptr;
+    // this->constPtr = nullptr;
     
     this->blkType = blkType;
     this->mainWhile = mainWhile;
@@ -115,37 +117,6 @@ BasicBlock::BasicBlock(BasicBlock *p1, BasicBlock *p2, std::unordered_map<int, i
         std::cout << "new BasicBlock; got [varVals: size=" << this->varVals.size() << "] looks like:" << std::endl;
         this->printVVs();
     #endif
-}
-
-std::string BasicBlock::toDOT() const {
-    std::string res = "";
-    // std::string res = "<b>";
-
-    res += "BB" + std::to_string(this->blockNum) + " | {";
-
-    if (this->constPtr) {
-        Node *curr = this->constList->tail;
-
-        while (curr) {
-            res += curr->instr->toDOT() + "|";
-            curr = curr->prev;
-        }
-        res.pop_back();
-    } else {
-        for (const auto &node : this->newInstrs) {
-            #ifdef DEBUG
-                std::cout << "node contains instr [" << node->instr->toString() << "]" << std::endl;
-            #endif
-            if (node->instr->get_constVal() == nullptr) {
-                res += node->instr->toDOT() + "|";
-            }
-        }
-        res.pop_back();
-    }
-    res += "}";
-
-
-    return res;
 }
 
 // update the [newInstrs] in this BB

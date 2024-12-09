@@ -112,10 +112,8 @@ SSA* Parser::p2_start() {
 
     #ifdef DEBUG
         std::cout << "done parsing p2! printing basicblocks: " << std::endl;
-        {
-            std::vector<BasicBlock *>tmp = {};
-            this->printBlocks(this->BB0, tmp);
-        }
+        this->blksSeen.clear();
+        this->printBlocks(this->BB0);
     #endif
 
     return statSeq;

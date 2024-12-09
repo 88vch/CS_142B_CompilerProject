@@ -32,10 +32,10 @@ public:
             this->constList = nullptr;
         }
 
-        if (this->constPtr) {
-            delete this->constPtr;
-            this->constPtr = nullptr;
-        }
+        // if (this->constPtr) {
+        //     delete this->constPtr;
+        //     this->constPtr = nullptr;
+        // }
     }
 
     std::string printNewInstrs() const {
@@ -161,7 +161,48 @@ public:
         std::cout << std::endl;
     }
 
-    std::string toDOT() const;
+    std::string toDOT() const {
+        #ifdef DEBUG
+            std::cout << "toDOT for block [" << this->blockNum << "]" << std::endl;
+            // std::cout << "this->constPtr == ";
+            // if (this->constPtr) {
+            //     std::cout << "[" << this->constPtr->instr->toString() << "]";
+            // } else {
+            //     std::cout << "nullptr";
+            // }
+            std::cout << this->printNewInstrs() << std::endl;
+            std::cout << std::endl;
+        #endif
+        std::string res = "";
+        // std::string res = "<b>";
+
+        res += "BB" + std::to_string(this->blockNum) + " | {";
+
+        if (this->constList) {
+            Node *curr = this->constList->tail;
+
+            while (curr) {
+                res += curr->instr->toDOT() + "|";
+                curr = curr->prev;
+            }
+            res.pop_back();
+        } else {
+            for (const auto &node : this->newInstrs) {
+                #ifdef DEBUG
+                    std::cout << "node contains instr [" << node->instr->toString() << "]" << std::endl;
+                #endif
+                if (node->instr->get_constVal() == nullptr) {
+                    res += node->instr->toDOT() + "|";
+                }
+            }
+            res.pop_back();
+        }
+        res += "}";
+
+
+        return res;
+    }
+
     void updateInstructions(SSA *oldVal, SSA *newVal);
     SSA *getConstSSA(int constVal);
     void removeSSA(SSA *toRemove, std::vector<SSA*> &debugSSA_instrs);
@@ -178,7 +219,7 @@ public:
     // [10.22.2024]: May not need this 
     // std::unordered_map<int, LinkedList*> instrList; 
 
-    Node *constPtr;
+    // Node *constPtr; // [12.08.2024]: wtf is this for
 
     // bool join;
     // blk_type;
