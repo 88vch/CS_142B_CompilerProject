@@ -665,8 +665,22 @@ SSA* Parser::p2_assignment() {
                     // [12.08.2024]: if phi exists in join alr, implies that this is else-blk (since if-blk would be the one creating phi [i.e. no phi in join for ident yet...could have value if prev assigned (since join takes bb's vv's before if-stmt)])
                     // - so we just set the operand2() val to the [value]
                     BasicBlock::ssa_table.at(join_blk->varVals.at(ident))->set_operand2(value);
+                    // [12.08.2024]: don't need to update [varVals] since should still map to same PHI-SSA
+                    // - previously set in the [else] right below this
+            } else {
+                // [12.08.2024]: if [ident] doesn't exist in join || [ident]'s val is-not PHI, we update VV and create new phi instr
+                BasicBlock *tmp = this->currBB;
+                this->currBB = join_blk;
+                SSA *phi = this->addSSA1(6, value, nullptr, true);
+                int phi_table_int = this->add_SSA_table(phi);
+        
+                this->currBB->varVals.insert_or_assign(ident, phi_table_int);
+                this->VVs.insert_or_assign(ident, phi_table_int);
+
+                this->currBB = tmp;
             }
         } else if (this->currBB->blkType == 1) { // std-blk type
+            // [12.08.2024]: [simple_instrs.ty] successfully tests this path (with overwrite)
             // std insert; note we skip bc of above (if we choose to implement like that)
         }
     }
