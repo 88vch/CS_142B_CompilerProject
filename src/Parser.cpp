@@ -61,7 +61,7 @@ SSA* Parser::p2_start() {
     #ifdef DEBUG
         std::cout << "[Parser::p2_start(" << this->sym.to_string() << ")]" << std::endl;
     #endif
-    this->currBB = new BasicBlock(this->BB0->varVals, 1);
+    this->currBB = new BasicBlock(this->BB0->varVals, false, false, 1, false);
     this->BB0->child = this->currBB;
     this->currBB->parent = this->BB0;
     #ifdef DEBUG
@@ -538,7 +538,7 @@ SSA* Parser::p2_assignment() {
             #ifdef DEBUG
                 std::cout << "child blk == nullptr!" << std::endl;
             #endif
-            this->currBB->child = new BasicBlock(this->currBB->varVals, this->currBB->blkType);
+            this->currBB->child = new BasicBlock(this->currBB->varVals, false, false, this->currBB->blkType, false);
             this->currBB->child->parent = this->currBB;
 
             if (this->currBB->child2) {
@@ -555,7 +555,7 @@ SSA* Parser::p2_assignment() {
             #endif
             BasicBlock *oldChild = this->currBB->child;
 
-            this->currBB->child = new BasicBlock(this->currBB->varVals, this->currBB->blkType);
+            this->currBB->child = new BasicBlock(this->currBB->varVals, false, false, this->currBB->blkType, false);
             this->currBB->child->parent = this->currBB;
             this->currBB->child->child = oldChild;
             this->currBB->child->child->parent = this->currBB->child;
@@ -601,7 +601,7 @@ SSA* Parser::p2_assignment() {
     SSA *value = p_expr();
     #ifdef DEBUG
         std::cout << "[Parser::p_expr()] returned: " << value->toString() << std::endl;
-        std::cout << "current BB: " << this->currBB->toString() << std::endl;
+        // std::cout << "current BB: " << this->currBB->toString() << std::endl;
     #endif
     // [10.29.2024]: Maybe we don't need to add into SSA here?
     // if (!value->get_constVal()) {

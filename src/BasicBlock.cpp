@@ -133,6 +133,9 @@ std::string BasicBlock::toDOT() const {
         res.pop_back();
     } else {
         for (const auto &node : this->newInstrs) {
+            #ifdef DEBUG
+                std::cout << "node contains instr [" << node->instr->toString() << "]" << std::endl;
+            #endif
             if (node->instr->get_constVal() == nullptr) {
                 res += node->instr->toDOT() + "|";
             }
