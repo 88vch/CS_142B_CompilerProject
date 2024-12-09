@@ -38,7 +38,13 @@ public:
         this->s_index = 0;
         this->source_len = tkns.size();
         this->SSA_instrs = {};
-        
+
+        // [12.08.2024]: changed from int i = [0] to [1]
+        // - since we modified [constBB] to use [BB::instrList]'s LL
+        for (unsigned int i = 0; i < SymbolTable::operator_table.size(); i++) {
+            BasicBlock::instrList.insert({i, new LinkedList()});
+        }
+
         this->currBB = nullptr;
         // this->BB0 = new BasicBlock(this->instrList, true);
         this->BB0 = new BasicBlock(true);
@@ -47,10 +53,6 @@ public:
         }
         // this->startBB = nullptr;
         // this->parentBB = this->BB0;
-
-        for (unsigned int i = 1; i < SymbolTable::operator_table.size(); i++) {
-            BasicBlock::instrList.insert({i, new LinkedList()});
-        }
 
         this->prevInstrs = std::stack<SSA *>();
         this->prevJump = false;
@@ -910,9 +912,9 @@ public:
         #endif
 
         if (curr->blkType == 2) {
-            res += "\tbb" + std::to_string(curr->blockNum) + " [shape=record, label=\"<b>join\\n" + curr->toDOT() + "\"];\n";
+            res += "\tbb" + std::to_string(curr->blockNum) + " [shape=record, label=\"<b>join[" + std::to_string(curr->blkType) + "]\\n" + curr->toDOT() + "\"];\n";
         } else {
-            res += "\tbb" + std::to_string(curr->blockNum) + " [shape=record, label=\"<b>" + curr->toDOT() + "\"];\n";
+            res += "\tbb" + std::to_string(curr->blockNum) + " [shape=record, label=\"<b>[" + std::to_string(curr->blkType) + "]" + curr->toDOT() + "\"];\n";
         }
         // #ifdef DEBUG
         //     std::cout << "updated res: " << res << std::endl << std::endl;

@@ -214,8 +214,9 @@ public:
         if (this->x == nullptr) {
             this->x = s;
         } else {
-            std::cout << "Error: SSA setting [operand1] expected [operand1] to be [nullptr]!, got: [" << this->x->toString() << "]! exiting prematurely..." << std::endl;
-            exit(EXIT_FAILURE);
+            std::cout << "Warning: SSA setting [operand1] expected [operand1] to be [nullptr]!, got: [" << this->x->toString() << "]! continuing update..." << std::endl;
+            // exit(EXIT_FAILURE);
+            this->x = s;
         }
     }
 
@@ -223,8 +224,9 @@ public:
         if (this->y == nullptr) {
             this->y = s;
         } else {
-            std::cout << "Error: SSA setting [operand2] expected [operand2] to be [nullptr]!, got: [" << this->y->toString() << "]! exiting prematurely..." << std::endl;
-            exit(EXIT_FAILURE);
+            std::cout << "Warning: SSA setting [operand2] expected [operand1] to be [nullptr]!, got: [" << this->x->toString() << "]! continuing update..." << std::endl;
+            // exit(EXIT_FAILURE);
+            this->y = s;
         }
     }
 

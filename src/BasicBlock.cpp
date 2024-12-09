@@ -12,7 +12,7 @@ std::unordered_map<SSA *, int> BasicBlock::ssa_table_reversed = {};
 std::unordered_map<int, LinkedList*, BasicBlock::SafeCustomHash, BasicBlock::SafeCustomEqual> BasicBlock::instrList = {};
 
 // [10.22.2024]: Revised?
-BasicBlock::BasicBlock(bool isConst, bool isJoin, int blkType, bool mainWhile)
+BasicBlock::BasicBlock(bool isConst, int blkType, bool mainWhile)
 {
     #ifdef DEBUG
         std::cout << "in BasicBlock(isConst=" << isConst << ")" << std::endl;
@@ -39,10 +39,6 @@ BasicBlock::BasicBlock(bool isConst, bool isJoin, int blkType, bool mainWhile)
     }
     this->newInstrs = {};
     this->varVals = {};
-    // this->join = isJoin;
-    if (isJoin) {
-        this->blkType = 2;
-    }
 
     // #ifdef DEBUG
     //     std::cout << "new BasicBlock; got [instrList; size=" << this->instrList.size() << ", " << instrLst.size() << "] looks like:" << std::endl;
@@ -53,7 +49,7 @@ BasicBlock::BasicBlock(bool isConst, bool isJoin, int blkType, bool mainWhile)
     #endif
 }
 
-BasicBlock::BasicBlock(std::unordered_map<int, int> DOM_vv_map, bool isConst, bool isJoin, int blkType, bool mainWhile)
+BasicBlock::BasicBlock(std::unordered_map<int, int> DOM_vv_map, bool isConst, int blkType, bool mainWhile)
 {
     this->blockNum = debugNum++;
 
@@ -76,10 +72,6 @@ BasicBlock::BasicBlock(std::unordered_map<int, int> DOM_vv_map, bool isConst, bo
         // this->constPtr = nullptr;
     }
     this->newInstrs = {};
-    // this->join = isJoin;
-    if (isJoin) {
-        this->blkType = 2;
-    }
 
     #ifdef DEBUG
         std::cout << "new BasicBlock; got [varVals: size=" << this->varVals.size() << "] looks like:" << std::endl;
@@ -90,7 +82,7 @@ BasicBlock::BasicBlock(std::unordered_map<int, int> DOM_vv_map, bool isConst, bo
     //     this->printInstrList();
     // #endif
 }
-BasicBlock::BasicBlock(BasicBlock *p1, BasicBlock *p2, std::unordered_map<int, int> DOM_vv_map, bool isJoin, int blkType, bool mainWhile)
+BasicBlock::BasicBlock(BasicBlock *p1, BasicBlock *p2, std::unordered_map<int, int> DOM_vv_map, int blkType, bool mainWhile)
 {
     this->blockNum = debugNum++;
 
@@ -108,10 +100,6 @@ BasicBlock::BasicBlock(BasicBlock *p1, BasicBlock *p2, std::unordered_map<int, i
     this->mainWhile = mainWhile;
 
     this->newInstrs = {};
-    // this->join = isJoin;
-    if (isJoin) {
-        this->blkType = 2;
-    }
 
     #ifdef DEBUG
         std::cout << "new BasicBlock; got [varVals: size=" << this->varVals.size() << "] looks like:" << std::endl;

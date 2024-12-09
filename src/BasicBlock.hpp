@@ -18,9 +18,9 @@ public:
 
 
     // [10.22.2024]: Revised slightly to try without [instrLis]?
-    BasicBlock(bool isConst = false, bool isJoin = false, int blkType = 1, bool mainWhile = false);
-    BasicBlock(std::unordered_map<int, int> DOM_vv_map, bool isConst = false, bool isJoin = false, int blkType = 1, bool mainWhile = false);
-    BasicBlock(BasicBlock *p1, BasicBlock *p2, std::unordered_map<int, int> DOM_vv_map, bool isJoin = false, int blkType = 1, bool mainWhile = false);
+    BasicBlock(bool isConst = false, int blkType = 1, bool mainWhile = false);
+    BasicBlock(std::unordered_map<int, int> DOM_vv_map, bool isConst = false, int blkType = 1, bool mainWhile = false);
+    BasicBlock(BasicBlock *p1, BasicBlock *p2, std::unordered_map<int, int> DOM_vv_map, int blkType = 1, bool mainWhile = false);
 
     ~BasicBlock() {
         #ifdef DEBUG
@@ -163,13 +163,7 @@ public:
 
     std::string toDOT() const {
         #ifdef DEBUG
-            std::cout << "toDOT for block [" << this->blockNum << "]" << std::endl;
-            // std::cout << "this->constPtr == ";
-            // if (this->constPtr) {
-            //     std::cout << "[" << this->constPtr->instr->toString() << "]";
-            // } else {
-            //     std::cout << "nullptr";
-            // }
+            std::cout << "toDOT for block [" << this->blockNum << "]";
             std::cout << this->printNewInstrs() << std::endl;
             std::cout << std::endl;
         #endif
@@ -188,9 +182,9 @@ public:
             res.pop_back();
         } else {
             for (const auto &node : this->newInstrs) {
-                #ifdef DEBUG
-                    std::cout << "node contains instr [" << node->instr->toString() << "]" << std::endl;
-                #endif
+                // #ifdef DEBUG
+                //     std::cout << "node contains instr [" << node->instr->toString() << "]" << std::endl;
+                // #endif
                 if (node->instr->get_constVal() == nullptr) {
                     res += node->instr->toDOT() + "|";
                 }

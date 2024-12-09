@@ -61,7 +61,7 @@ SSA* Parser::p2_start() {
     #ifdef DEBUG
         std::cout << "[Parser::p2_start(" << this->sym.to_string() << ")]" << std::endl;
     #endif
-    this->currBB = new BasicBlock(this->BB0->varVals, false, false, 1, false);
+    this->currBB = new BasicBlock(this->BB0->varVals, false, 1, false);
     this->BB0->child = this->currBB;
     this->currBB->parent = this->BB0;
     #ifdef DEBUG
@@ -156,7 +156,7 @@ SSA* Parser::p2_funcStart(Func *f) {
         std::cout << "[Parser::p2_funcStart(" << this->sym.to_string() << ")]" << std::endl;
     #endif
 
-    this->currBB = new BasicBlock(this->BB0->varVals, 1);
+    this->currBB = new BasicBlock(this->BB0->varVals, false, 1, false);
     this->BB0->child = this->currBB;
     this->currBB->parent = this->BB0;
 
@@ -536,7 +536,7 @@ SSA* Parser::p2_assignment() {
             #ifdef DEBUG
                 std::cout << "child blk == nullptr!" << std::endl;
             #endif
-            this->currBB->child = new BasicBlock(this->currBB->varVals, false, false, this->currBB->blkType, false);
+            this->currBB->child = new BasicBlock(this->currBB->varVals, false, this->currBB->blkType, false);
             this->currBB->child->parent = this->currBB;
 
             if (this->currBB->child2) {
@@ -553,7 +553,7 @@ SSA* Parser::p2_assignment() {
             #endif
             BasicBlock *oldChild = this->currBB->child;
 
-            this->currBB->child = new BasicBlock(this->currBB->varVals, false, false, this->currBB->blkType, false);
+            this->currBB->child = new BasicBlock(this->currBB->varVals, false, this->currBB->blkType, false);
             this->currBB->child->parent = this->currBB;
             this->currBB->child->child = oldChild;
             this->currBB->child->child->parent = this->currBB->child;
@@ -634,6 +634,9 @@ SSA* Parser::p2_assignment() {
 
     // [12.06.2024]: new beginnings (cont.); maybe overwrite is the last detail after we figureout/decide where specifically we are (i.e. blkType 0, 1, 2, 3)
     if (this->currBBinLoop()) { // if [this->currBB] is in a loop
+        #ifdef DEBUG
+            std::cout << "currBB is in a loop!" << std::endl;
+        #endif
         if (this->currBB->blkType == 3) { // if/else-blk
             // [12.08.2024]: todo asap
             // if (if/else-blk): add or update join blk for ident
@@ -654,22 +657,38 @@ SSA* Parser::p2_assignment() {
         
         this->currBB = tmp;
     } else { // if [this->currBB] is NOT in a loop
+        #ifdef DEBUG
+            std::cout << "currBB is NOT in a loop!" << std::endl;
+        #endif
         if (this->currBB->blkType == 3) { // if/else-blk
+            #ifdef DEBUG
+                std::cout << "currBB is [if/else-blk]" << std::endl;
+            #endif
             // [12.08.2024]: todo asap
             // if (if/else-blk): add or update join blk for ident
             BasicBlock *join_blk = this->currBB->child2;
             if ((join_blk->varVals.find(ident) != join_blk->varVals.end()) &&
                 (BasicBlock::ssa_table.at(join_blk->varVals.at(ident))->get_operator() == 6)) {
+                    #ifdef DEBUG
+                        std::cout << "\tphi alr exists, simply updating operand2" << std::endl;
+                    #endif
                     // [12.08.2024]: if phi exists in join alr, implies that this is else-blk (since if-blk would be the one creating phi [i.e. no phi in join for ident yet...could have value if prev assigned (since join takes bb's vv's before if-stmt)])
                     // - so we just set the operand2() val to the [value]
                     BasicBlock::ssa_table.at(join_blk->varVals.at(ident))->set_operand2(value);
                     // [12.08.2024]: don't need to update [varVals] since should still map to same PHI-SSA
                     // - previously set in the [else] right below this
             } else {
+                #ifdef DEBUG
+                    std::cout << "\tphi doesn't exist, creating it here" << std::endl;
+                #endif
                 // [12.08.2024]: if [ident] doesn't exist in join || [ident]'s val is-not PHI, we update VV and create new phi instr
                 BasicBlock *tmp = this->currBB;
                 this->currBB = join_blk;
-                SSA *phi = this->addSSA1(6, value, nullptr, true);
+                // [12.08.2024]: added [PHI: y-val] == [oldVal] for the following case:
+                // - [else-blk new assignemnt, but if-blk had no change]; phi will NOT exist, and we need to create one with [oldVal]
+                // - this doesn't change our original case [if-blk first seen, modifies/creates phi],
+                //      - since else-blk will still update/set_operand2() if it's assigned the same [ident] (see right above)
+                SSA *phi = this->addSSA1(6, value, BasicBlock::ssa_table.at(this->currBB->varVals.at(ident)), true);
                 int phi_table_int = this->add_SSA_table(phi);
         
                 this->currBB->varVals.insert_or_assign(ident, phi_table_int);
@@ -1181,7 +1200,7 @@ SSA* Parser::p2_ifStatement() {
     this->CheckFor(Result(2, 19)); // check `then`
 
     // [10/14/2024];
-    BasicBlock *then_blk = new BasicBlock(this->currBB->varVals, this->currBB->blkType);
+    BasicBlock *then_blk = new BasicBlock(this->currBB->varVals, false, 3, false);
     #ifdef DEBUG
         std::cout << "created new BB (then)" << std::endl;
     #endif
@@ -1208,7 +1227,7 @@ SSA* Parser::p2_ifStatement() {
     this->currBB = this->currBB->child;
 
     BasicBlock *join_blk = nullptr;
-    join_blk = new BasicBlock(this->currBB->varVals, false, true, 2);
+    join_blk = new BasicBlock(this->currBB->varVals, false, 2, false);
 
     #ifdef DEBUG
         std::cout << "created new BB (join)" << std::endl;
@@ -1276,23 +1295,24 @@ SSA* Parser::p2_ifStatement() {
             }
         #endif
 
-        for (const auto &p : if_parent->varVals) {
-            #ifdef DEBUG
-                std::cout << "key: " << p.first << ", value: " << p.second << std::endl;
-            #endif
-            // if a ident from [if_parent] exists in [then_blk] with a different value, we need a phi
-            if (then_blk->varVals.at(p.first) != p.second) {
-                    SSA *phi_instr = this->addSSA1(6, BasicBlock::ssa_table.at(p.second), BasicBlock::ssa_table.at(then_blk->varVals.at(p.first)), true);
-                    #ifdef DEBUG
-                        std::cout << "phi_instr: " << phi_instr->toString() << std::endl;
-                    #endif
+        // [12.08.2024]: similar to the section we commented out below this (by [then_blk_last])
+        // for (const auto &p : if_parent->varVals) {
+        //     #ifdef DEBUG
+        //         std::cout << "key: " << p.first << ", value: " << p.second << std::endl;
+        //     #endif
+        //     // if a ident from [if_parent] exists in [then_blk] with a different value, we need a phi
+        //     if (then_blk->varVals.at(p.first) != p.second) {
+        //             SSA *phi_instr = this->addSSA1(6, BasicBlock::ssa_table.at(p.second), BasicBlock::ssa_table.at(then_blk->varVals.at(p.first)), true);
+        //             #ifdef DEBUG
+        //                 std::cout << "phi_instr: " << phi_instr->toString() << std::endl;
+        //             #endif
                     
-                    // [10.28.2024]: Update BasicBlock's VV
-                    int phi_table_int = this->add_SSA_table(phi_instr);
-                    this->currBB->varVals.insert_or_assign(p.first, phi_table_int);
-                    this->VVs.insert_or_assign(p.first, phi_table_int);
-            }
-        }
+        //             // [10.28.2024]: Update BasicBlock's VV
+        //             int phi_table_int = this->add_SSA_table(phi_instr);
+        //             this->currBB->varVals.insert_or_assign(p.first, phi_table_int);
+        //             this->VVs.insert_or_assign(p.first, phi_table_int);
+        //     }
+        // }
         
         //[10.21.2024]: Isn't this actually the first instruction?
         return jmp_instr;
@@ -1309,7 +1329,7 @@ SSA* Parser::p2_ifStatement() {
     next();
 
     // [10/14/2024];
-    BasicBlock *else_blk = new BasicBlock(if_parent->varVals, 3);
+    BasicBlock *else_blk = new BasicBlock(if_parent->varVals, false, 3, false);
     #ifdef DEBUG
         std::cout << "created new BB (else)" << std::endl;
     #endif
@@ -1361,156 +1381,157 @@ SSA* Parser::p2_ifStatement() {
 
     this->currBB = join_blk;
 
+    // [12.08.2024]: pretty much everything below here was to ensure phi's successfully created and no dupes (FOR OUR OLD LORD KNOWS HOW METHOD)
     // [11.20.2024]: here we make the assumption that [join_blk] has both [parent] && [parent2] ptr if we have (then) && (else) condition
     BasicBlock *then_blk_last = join_blk->parent;
     BasicBlock *else_blk_last = join_blk->parent2;
 
-    std::unordered_set<int> vars = {};
+    // std::unordered_set<int> vars = {};
 
-    for (const auto &p : if_parent->varVals) {
-        vars.insert(p.first);
-    }
-    for (const auto &p : then_blk_last->varVals) {
-        vars.insert(p.first);
-    }
-    for (const auto &p : else_blk_last->varVals) {
-        vars.insert(p.first);
-    }
+    // for (const auto &p : if_parent->varVals) {
+    //     vars.insert(p.first);
+    // }
+    // for (const auto &p : then_blk_last->varVals) {
+    //     vars.insert(p.first);
+    // }
+    // for (const auto &p : else_blk_last->varVals) {
+    //     vars.insert(p.first);
+    // }
 
-    // [SECTION A]: check if we need to create phi-instrs
-    #ifdef DEBUG
-        std::cout << "then_blk: " << std::endl << then_blk->toString() << std::endl;
-        std::cout << "else_blk: " << std::endl << else_blk->toString() << std::endl;
+    // // [SECTION A]: check if we need to create phi-instrs
+    // #ifdef DEBUG
+    //     std::cout << "then_blk: " << std::endl << then_blk->toString() << std::endl;
+    //     std::cout << "else_blk: " << std::endl << else_blk->toString() << std::endl;
 
-        std::cout << "then_blk_last: " << std::endl << then_blk_last->toString() << std::endl;
-        std::cout << "else_blk_last: " << std::endl << else_blk_last->toString() << std::endl;
-    #endif
+    //     std::cout << "then_blk_last: " << std::endl << then_blk_last->toString() << std::endl;
+    //     std::cout << "else_blk_last: " << std::endl << else_blk_last->toString() << std::endl;
+    // #endif
     
-    for (const auto &p : vars) {
-        int curr = p;
+    // for (const auto &p : vars) {
+    //     int curr = p;
 
-        // [11.25.2024]: modified to handle [func]'s ident if exists
-        if (this->isFunc) {
-            curr = this->generateFuncIdent();
-        }
-        #ifdef DEBUG
-            std::cout << "current ident: [" << SymbolTable::symbol_table.at(curr) << "]" << std::endl;
-        #endif
-        if (then_blk_last->varVals.find(curr) == then_blk_last->varVals.end()) {
-            BasicBlock *prevCurr = this->currBB;
-            this->currBB = then_blk_last;
-            this->handleUninitVar(curr);
-            this->currBB = prevCurr;
-        }
+    //     // [11.25.2024]: modified to handle [func]'s ident if exists
+    //     if (this->isFunc) {
+    //         curr = this->generateFuncIdent();
+    //     }
+    //     #ifdef DEBUG
+    //         std::cout << "current ident: [" << SymbolTable::symbol_table.at(curr) << "]" << std::endl;
+    //     #endif
+    //     if (then_blk_last->varVals.find(curr) == then_blk_last->varVals.end()) {
+    //         BasicBlock *prevCurr = this->currBB;
+    //         this->currBB = then_blk_last;
+    //         this->handleUninitVar(curr);
+    //         this->currBB = prevCurr;
+    //     }
 
-        if (else_blk_last->varVals.find(curr) == else_blk_last->varVals.end()) {
-            BasicBlock *prevCurr = this->currBB;
-            this->currBB = else_blk_last;
-            this->handleUninitVar(curr);
-            this->currBB = prevCurr;
-        }
+    //     if (else_blk_last->varVals.find(curr) == else_blk_last->varVals.end()) {
+    //         BasicBlock *prevCurr = this->currBB;
+    //         this->currBB = else_blk_last;
+    //         this->handleUninitVar(curr);
+    //         this->currBB = prevCurr;
+    //     }
         
-        // if a ident from [if_parent] exists in [then_blk] with a different value, we need a phi
-        if (then_blk_last->varVals.at(curr) != else_blk_last->varVals.at(curr)) {
-            SSA *then_phi = BasicBlock::ssa_table.at(then_blk_last->varVals.at(curr));
-            SSA *else_phi = BasicBlock::ssa_table.at(else_blk_last->varVals.at(curr));
+    //     // if a ident from [if_parent] exists in [then_blk] with a different value, we need a phi
+    //     if (then_blk_last->varVals.at(curr) != else_blk_last->varVals.at(curr)) {
+    //         SSA *then_phi = BasicBlock::ssa_table.at(then_blk_last->varVals.at(curr));
+    //         SSA *else_phi = BasicBlock::ssa_table.at(else_blk_last->varVals.at(curr));
             
-            #ifdef DEBUG
-                std::cout << "then_blk_last's ident val != else_blk_last's ident val; consolidating to one..." << std::endl;
-                std::cout << "then_phi: " << then_phi->toString() << std::endl;
-                std::cout << "else_phi: " << else_phi->toString() << std::endl;
-            #endif
+    //         #ifdef DEBUG
+    //             std::cout << "then_blk_last's ident val != else_blk_last's ident val; consolidating to one..." << std::endl;
+    //             std::cout << "then_phi: " << then_phi->toString() << std::endl;
+    //             std::cout << "else_phi: " << else_phi->toString() << std::endl;
+    //         #endif
             
-            SSA *phi_instr = nullptr;
-            int phi_table_int;
+    //         SSA *phi_instr = nullptr;
+    //         int phi_table_int;
 
-            if (((then_phi->get_operator() == 6) && (else_phi->get_operator() == 6))) { 
-                // && then_phi->compare(else_phi) == false) { // we should already know this is false; same as the enclosing if-statement
-                #ifdef DEBUG
-                    std::cout << "both values are phi's!" << std::endl;
-                #endif
-                // if the previous values are both phi's, we should delete the phi's after we grab the old values
+    //         if (((then_phi->get_operator() == 6) && (else_phi->get_operator() == 6))) { 
+    //             // && then_phi->compare(else_phi) == false) { // we should already know this is false; same as the enclosing if-statement
+    //             #ifdef DEBUG
+    //                 std::cout << "both values are phi's!" << std::endl;
+    //             #endif
+    //             // if the previous values are both phi's, we should delete the phi's after we grab the old values
 
 
-                SSA *old_then = nullptr, *old_else = nullptr; // the updated assignment SSA before the phi
+    //             SSA *old_then = nullptr, *old_else = nullptr; // the updated assignment SSA before the phi
                 
-                SSA *then_x = then_phi->get_operand1(), *then_y = then_phi->get_operand2();
-                SSA *else_x = else_phi->get_operand1(), *else_y = else_phi->get_operand2();
+    //             SSA *then_x = then_phi->get_operand1(), *then_y = then_phi->get_operand2();
+    //             SSA *else_x = else_phi->get_operand1(), *else_y = else_phi->get_operand2();
 
-                #ifdef DEBUG
-                    std::cout << "then operands look like: " << std::endl << "\t" << then_x ->toString() << std::endl << "\t" << then_y->toString() << std::endl;
-                    std::cout << "else operands look like: " << std::endl << "\t" << else_x ->toString() << std::endl << "\t" << else_y->toString() << std::endl;
-                #endif
+    //             #ifdef DEBUG
+    //                 std::cout << "then operands look like: " << std::endl << "\t" << then_x ->toString() << std::endl << "\t" << then_y->toString() << std::endl;
+    //                 std::cout << "else operands look like: " << std::endl << "\t" << else_x ->toString() << std::endl << "\t" << else_y->toString() << std::endl;
+    //             #endif
 
-                // assume all phi's have both operand's set
-                if (then_x->get_debugNum() == else_x->get_debugNum()) {
-                    old_then = then_y;
-                    old_else = else_y;
-                } else if (then_x->get_debugNum() == else_y->get_debugNum()) {
-                    old_then = then_y;
-                    old_else = else_x;
-                } else if (then_y->get_debugNum() == else_x->get_debugNum()) {
-                    old_then = then_x;
-                    old_else = else_y;
-                } else if (then_y->get_debugNum() == else_y->get_debugNum()) {
-                    old_then = then_x;
-                    old_else = else_x;
-                }
+    //             // assume all phi's have both operand's set
+    //             if (then_x->get_debugNum() == else_x->get_debugNum()) {
+    //                 old_then = then_y;
+    //                 old_else = else_y;
+    //             } else if (then_x->get_debugNum() == else_y->get_debugNum()) {
+    //                 old_then = then_y;
+    //                 old_else = else_x;
+    //             } else if (then_y->get_debugNum() == else_x->get_debugNum()) {
+    //                 old_then = then_x;
+    //                 old_else = else_y;
+    //             } else if (then_y->get_debugNum() == else_y->get_debugNum()) {
+    //                 old_then = then_x;
+    //                 old_else = else_x;
+    //             }
 
-                #ifdef DEBUG
-                    std::cout << "old_then: ";
-                    if (old_then) {
-                        std::cout << old_then->toString() << std::endl;
-                    } else {
-                        std::cout << "nullptr! " << std::endl;
-                    }
+    //             #ifdef DEBUG
+    //                 std::cout << "old_then: ";
+    //                 if (old_then) {
+    //                     std::cout << old_then->toString() << std::endl;
+    //                 } else {
+    //                     std::cout << "nullptr! " << std::endl;
+    //                 }
                     
-                    std::cout << "old_else: ";
-                    if (old_else) {
-                        std::cout << old_else->toString() << std::endl;
-                    } else {
-                        std::cout << "nullptr! " << std::endl;
-                    }
-                #endif
+    //                 std::cout << "old_else: ";
+    //                 if (old_else) {
+    //                     std::cout << old_else->toString() << std::endl;
+    //                 } else {
+    //                     std::cout << "nullptr! " << std::endl;
+    //                 }
+    //             #endif
 
-                // [11.13.2024]: should join the phi's if we can
-                // [11.14.2024]: we could 1) assign each BB's varVal to the modification (before phi), then 2) delete these SSA's 
-                // - since below we create the SSA using the value found in the bb's varVals
-                then_blk->varVals.insert_or_assign(curr, BasicBlock::ssa_table_reversed.at(old_then));
-                else_blk->varVals.insert_or_assign(curr, BasicBlock::ssa_table_reversed.at(old_else));
+    //             // [11.13.2024]: should join the phi's if we can
+    //             // [11.14.2024]: we could 1) assign each BB's varVal to the modification (before phi), then 2) delete these SSA's 
+    //             // - since below we create the SSA using the value found in the bb's varVals
+    //             then_blk->varVals.insert_or_assign(curr, BasicBlock::ssa_table_reversed.at(old_then));
+    //             else_blk->varVals.insert_or_assign(curr, BasicBlock::ssa_table_reversed.at(old_else));
                 
-                #ifdef DEBUG
-                    std::cout << "assumption: updated [then_blk] && [else_blk]'s varVal table at ident...printing both blocks (then, else)" << std::endl;
-                    std::cout << then_blk->toString() << std::endl << else_blk->toString() << std::endl;
-                    std::cout << "this->currBB: " << std::endl << this->currBB->toString() << std::endl;
-                #endif
+    //             #ifdef DEBUG
+    //                 std::cout << "assumption: updated [then_blk] && [else_blk]'s varVal table at ident...printing both blocks (then, else)" << std::endl;
+    //                 std::cout << then_blk->toString() << std::endl << else_blk->toString() << std::endl;
+    //                 std::cout << "this->currBB: " << std::endl << this->currBB->toString() << std::endl;
+    //             #endif
 
-                phi_instr = this->addSSA1(6, BasicBlock::ssa_table.at(then_blk->varVals.at(p)), BasicBlock::ssa_table.at(else_blk->varVals.at(p)), true);
-                phi_table_int = this->add_SSA_table(phi_instr);
-                this->propagateDown(this->currBB, p, else_phi, phi_table_int, true);
+    //             phi_instr = this->addSSA1(6, BasicBlock::ssa_table.at(then_blk->varVals.at(p)), BasicBlock::ssa_table.at(else_blk->varVals.at(p)), true);
+    //             phi_table_int = this->add_SSA_table(phi_instr);
+    //             this->propagateDown(this->currBB, p, else_phi, phi_table_int, true);
 
-                // delete the previous phi's now
-                this->currBB->removeSSA(then_phi, this->SSA_instrs);
-                this->currBB->removeSSA(else_phi, this->SSA_instrs);
+    //             // delete the previous phi's now
+    //             this->currBB->removeSSA(then_phi, this->SSA_instrs);
+    //             this->currBB->removeSSA(else_phi, this->SSA_instrs);
 
-                phi_instr->updateDebugNum(); // [11.18.2024]: added to ensure debugNum stays up to date (since removal allows for those previous values to be used for debug num)
-            } else {
-                phi_instr = this->addSSA1(6, BasicBlock::ssa_table.at(then_blk_last->varVals.at(p)), BasicBlock::ssa_table.at(else_blk_last->varVals.at(p)), true);
-                phi_table_int = this->add_SSA_table(phi_instr);
-                this->propagateDown(this->currBB, p, else_phi, phi_table_int, true);
-            }
-            #ifdef DEBUG
-                std::cout << "phi_instr: " << phi_instr->toString() << std::endl;
-            #endif
+    //             phi_instr->updateDebugNum(); // [11.18.2024]: added to ensure debugNum stays up to date (since removal allows for those previous values to be used for debug num)
+    //         } else {
+    //             phi_instr = this->addSSA1(6, BasicBlock::ssa_table.at(then_blk_last->varVals.at(p)), BasicBlock::ssa_table.at(else_blk_last->varVals.at(p)), true);
+    //             phi_table_int = this->add_SSA_table(phi_instr);
+    //             this->propagateDown(this->currBB, p, else_phi, phi_table_int, true);
+    //         }
+    //         #ifdef DEBUG
+    //             std::cout << "phi_instr: " << phi_instr->toString() << std::endl;
+    //         #endif
             
-            // [10.28.2024]: Update BasicBlock's VV
-            this->currBB->varVals.insert_or_assign(p, phi_table_int);
-            this->VVs.insert_or_assign(p, phi_table_int);
-            #ifdef DEBUG
-                std::cout << "currBB after update: " << this->currBB->toString() << std::endl;
-            #endif
-        }
-    }
+    //         // [10.28.2024]: Update BasicBlock's VV
+    //         this->currBB->varVals.insert_or_assign(p, phi_table_int);
+    //         this->VVs.insert_or_assign(p, phi_table_int);
+    //         #ifdef DEBUG
+    //             std::cout << "currBB after update: " << this->currBB->toString() << std::endl;
+    //         #endif
+    //     }
+    // }
 
     if (this->currBB->newInstrs.empty()) {
         this->prevJump = true;
@@ -1575,7 +1596,7 @@ SSA* Parser::p2_whileStatement() {
 
     // [10/17/2024]: BasicBlock Excerpt BEIGNN
     BasicBlock *parent_blk = this->currBB;
-    BasicBlock *while_blk = new BasicBlock(this->currBB->varVals, 1, true);
+    BasicBlock *while_blk = new BasicBlock(this->currBB->varVals, false, 1, true);
     #ifdef DEBUG
         std::cout << "created new BB (while)" << std::endl << while_blk->toString() << std::endl;
     #endif
@@ -1588,7 +1609,7 @@ SSA* Parser::p2_whileStatement() {
     // END
 
     // [10.24.2024]: Moved; 10.30.2024: this is essentially the join-blk
-    BasicBlock *afterWhile_blk = new BasicBlock(this->currBB->varVals, 1);
+    BasicBlock *afterWhile_blk = new BasicBlock(this->currBB->varVals, false, 1, false);
     afterWhile_blk->parent = parent_blk;
     parent_blk->child2 = afterWhile_blk;
     #ifdef DEBUG
