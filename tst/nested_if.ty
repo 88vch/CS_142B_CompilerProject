@@ -5,12 +5,14 @@ var x, y, z; {
     let z <- x + y;
 
     if x == 1 then
+        let z <- 3 * 3;
         if z > 1 then
             let y <- 4
         else
             let y <- 8
         fi;
-    fi;    
+        let x <- 6 * 6;
+    fi;
 
     call OutputNum(x);
     call OutputNum(y);

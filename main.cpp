@@ -24,7 +24,7 @@
 // std::string f_name = file_name;
 // std::string f_full = f_name + f_ext;
 // std::string in_f = "tst/" + f_name + f_ext;
-#define in_f "tst/simple_if2.ty"
+#define in_f "tst/nested_if.ty"
 
 // [10.23.2024]: Silly rabbit
 
