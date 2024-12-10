@@ -199,7 +199,8 @@ public:
 
     void updateInstructions(SSA *oldVal, SSA *newVal);
     SSA *getConstSSA(int constVal);
-    void removeSSA(SSA *toRemove, std::vector<SSA*> &debugSSA_instrs);
+    void removeSSA(SSA *toRemove);
+    // void removeSSA(SSA *toRemove, std::vector<SSA*> &debugSSA_instrs);
 
     BasicBlock *parent, *parent2;
     BasicBlock *child, *child2;
