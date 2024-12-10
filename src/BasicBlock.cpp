@@ -182,8 +182,6 @@ void BasicBlock::removeSSA(SSA *toRemove) { /* ,  std::vector<SSA*> &debugSSA_in
                 }
             }
 
-            this->newInstrs.erase(std::remove(this->newInstrs.begin(), this->newInstrs.end(), curr), this->newInstrs.end());
-
             // [12.09.2024]: don't free the [SSA::instr]'s mem tho for debugging purposes
             // - we also free all at the end
             // Free memory and erase the pointer from the vector
@@ -191,6 +189,7 @@ void BasicBlock::removeSSA(SSA *toRemove) { /* ,  std::vector<SSA*> &debugSSA_in
             curr->instr = nullptr;
             delete curr;
             this->newInstrs.erase(it);
+            // this->newInstrs.erase(std::remove(this->newInstrs.begin(), this->newInstrs.end(), curr), this->newInstrs.end());
 
             #ifdef DEBUG
                 std::cout << "curr was deleted! newInstrs look like: " << this->printNewInstrs() << std::endl;
