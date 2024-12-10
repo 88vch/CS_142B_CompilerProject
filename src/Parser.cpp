@@ -1319,6 +1319,45 @@ SSA* Parser::p2_ifStatement() {
         // [12.09.2024]: new func, moved code into here
         // this->conditionalStmtPhiUpdate(vars, false, if_parent, then_blk, nullptr);
 
+        this->currBB = join_blk;
+
+        // [12.08.2024]: pretty much everything below here was to ensure phi's successfully created and no dupes (FOR OUR OLD LORD KNOWS HOW METHOD)
+        // - handles case: [if && else] exist, 
+        // [11.20.2024]: here we make the assumption that [join_blk] has both [parent] && [parent2] ptr if we have (then) && (else) condition
+        // BasicBlock *then_blk_last = this->currBB->parent;
+        // BasicBlock *else_blk_last = this->currBB->parent2;
+
+        std::unordered_set<int> vars = {};
+
+        // [12.09.2024]: redundant
+        // for (const auto &p : if_parent->varVals) {
+        //     vars.insert(p.first);
+        // }
+        // for (const auto &p : then_blk_last->varVals) {
+        // [12.09.2024]: keep this cause 
+        // - case where this statSeq creates new var that hasn't been declared before (since we only emit warnings and init to 0), 
+        for (const auto &p : this->currBB->parent->varVals) {
+            vars.insert(p.first);
+        }
+        // for (const auto &p : else_blk_last->varVals) {
+        // for (const auto &p : this->currBB->parent2->varVals) {
+        //     vars.insert(p.first);
+        // }
+
+        // [SECTION A]: check if we need to create phi-instrs
+        #ifdef DEBUG
+            std::cout << "then_blk: " << std::endl << then_blk->toString() << std::endl;
+            // std::cout << "else_blk: " << std::endl << else_blk->toString() << std::endl;
+
+            std::cout << "then_blk_last: " << std::endl << this->currBB->parent->toString() << std::endl;
+            // std::cout << "else_blk_last: " << std::endl << this->currBB->parent2->toString() << std::endl;
+        #endif
+        
+        // [12.09.2024]: new func, moved code into here
+        this->conditionalStmtPhiUpdate(vars, if_parent, then_blk, if_parent);
+        // [12.09.2024]: this is why we have propagateDown(), not for loop, but to update all the subsequent blk's(???); NO, this is separate from [propagateDown()] since propagateDown()'s should be for loop while THIS is simply a check after [if/else-blk] to see if we need to create additional phi's(?)
+
+
         //[10.21.2024]: Isn't this actually the first instruction?
         return jmp_instr->get_operand1();
     }
@@ -1408,7 +1447,7 @@ SSA* Parser::p2_ifStatement() {
     #endif
     
     // [12.09.2024]: new func, moved code into here
-    this->conditionalStmtPhiUpdate(vars, true, if_parent, then_blk, else_blk);
+    this->conditionalStmtPhiUpdate(vars, if_parent, then_blk, else_blk);
     // [12.09.2024]: this is why we have propagateDown(), not for loop, but to update all the subsequent blk's(???); NO, this is separate from [propagateDown()] since propagateDown()'s should be for loop while THIS is simply a check after [if/else-blk] to see if we need to create additional phi's(?)
 
     if (this->currBB->newInstrs.empty()) {
