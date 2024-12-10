@@ -64,6 +64,7 @@ int main() {
     std::string varVal2_f = "res/VarVal3_BB_ssa_table_results.txt";
     std::string linkedList1_f = "res/LinkedList1_results.txt";
     std::string linkedList2_f = "res/LinkedList2_results.txt";
+    std::string basicBlock_f = "res/BasicBlock_results.txt";
 
 
     const std::string out_f = "res/Lexer_results.txt";
@@ -169,6 +170,10 @@ int main() {
     
     bool ll2 = fr.write_file_contents(linkedList2_f, parser2.instrListToString(), "LinkedList");
     if (ll2) { std::cout << "Results have successfully been written to: " << linkedList2_f << "(size=[" << parser2.getInstrListSize() << "])" << std::endl; }
+    else { std::cout << "Error occured when trying to write results!" << std::endl; }
+
+    bool bb = fr.write_file_contents(basicBlock_f, parser2.BBListToString(), "BasicBlocks");
+    if (bb) { std::cout << "Results have successfully been written to: " << linkedList2_f << "(size=[" << parser2.getInstrListSize() << "])" << std::endl; }
     else { std::cout << "Error occured when trying to write results!" << std::endl; }
 
     // generate main DOT grpah

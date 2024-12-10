@@ -1029,6 +1029,32 @@ public:
         #endif
     }
 
+    // [12.09.2024]: assume only called at the end
+    std::string BBListToString(std::string res = "") {
+        BasicBlock *oldCurr = this->currBB;
+        if (res == "") {
+            this->blksSeen.clear();
+            this->currBB = this->BB0;
+        }
+
+        if (std::find(this->blksSeen.begin(), this->blksSeen.end(), this->currBB->blockNum) == this->blksSeen.end()) {
+            res += this->currBB->toString() + "\n\n";
+            this->blksSeen.push_back(this->currBB->blockNum);
+        }
+
+        if (this->currBB->child) {
+            this->currBB = this->currBB->child;
+            res = this->BBListToString(res);
+        }
+        if (this->currBB->child2) {
+            this->currBB = this->currBB->child2;
+            res = this->BBListToString(res);
+        }
+
+        this->currBB = oldCurr;
+        return res;
+    }
+
     std::string instrListToString() const {
         std::string lst = "[instrA]:\n\tinstrA1, instrA2, instrA3, ...\n";
         

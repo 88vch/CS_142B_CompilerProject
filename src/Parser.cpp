@@ -696,6 +696,45 @@ SSA* Parser::p2_assignment() {
 
                 this->currBB = tmp;
             }
+        } else if (this->currBB->blkType == 2) { // join-blk
+            if ((this->currBB->child2) && (this->currBB->child2->blkType == 2)) {
+                // if [currBB]'s child2 is a join-blk,
+                #ifdef DEBUG
+                    std::cout << "currBB is [join-blk] with a [child join-blk]!" << std::endl;
+                #endif
+                // [12.09.2024]: copied from if/else-blk above
+                // if (if/else-blk): add or update join blk for ident
+                BasicBlock *join_blk = this->currBB->child2;
+                if ((join_blk->varVals.find(ident) != join_blk->varVals.end()) &&
+                    (BasicBlock::ssa_table.at(join_blk->varVals.at(ident))->get_operator() == 6)) {
+                        #ifdef DEBUG
+                            std::cout << "\tphi alr exists, simply updating operand2" << std::endl;
+                        #endif
+                        // [12.08.2024]: if phi exists in join alr, implies that this is else-blk (since if-blk would be the one creating phi [i.e. no phi in join for ident yet...could have value if prev assigned (since join takes bb's vv's before if-stmt)])
+                        // - so we just set the operand2() val to the [value]
+                        BasicBlock::ssa_table.at(join_blk->varVals.at(ident))->set_operand2(value);
+                        // [12.08.2024]: don't need to update [varVals] since should still map to same PHI-SSA
+                        // - previously set in the [else] right below this
+                } else {
+                    #ifdef DEBUG
+                        std::cout << "\tphi doesn't exist, creating it here" << std::endl;
+                    #endif
+                    // [12.08.2024]: if [ident] doesn't exist in join || [ident]'s val is-not PHI, we update VV and create new phi instr
+                    BasicBlock *tmp = this->currBB;
+                    this->currBB = join_blk;
+                    // [12.08.2024]: added [PHI: y-val] == [oldVal] for the following case:
+                    // - [else-blk new assignemnt, but if-blk had no change]; phi will NOT exist, and we need to create one with [oldVal]
+                    // - this doesn't change our original case [if-blk first seen, modifies/creates phi],
+                    //      - since else-blk will still update/set_operand2() if it's assigned the same [ident] (see right above)
+                    SSA *phi = this->addSSA1(6, value, BasicBlock::ssa_table.at(this->currBB->varVals.at(ident)), true);
+                    int phi_table_int = this->add_SSA_table(phi);
+            
+                    this->currBB->varVals.insert_or_assign(ident, phi_table_int);
+                    this->VVs.insert_or_assign(ident, phi_table_int);
+
+                    this->currBB = tmp;
+                }
+            }
         } else if (this->currBB->blkType == 1) { // std-blk type
             // [12.08.2024]: [simple_instrs.ty] successfully tests this path (with overwrite)
             // std insert; note we skip bc of above (if we choose to implement like that)
@@ -1268,21 +1307,30 @@ SSA* Parser::p2_ifStatement() {
     // if (if2 == nullptr) {   
         // FI
         this->CheckFor(Result(2, 21)); // check `fi`
-    
-        // [09/20/2024]: if `else` condition DNE, then we want to set the jump to be the next SSA instr after the `if-condition instr's`
-        this->prevJump = true;
-        this->prevInstrs.push(jmp_instr); // [10/10/2024]: push at the end so next added SSA-instr will be set as the jump-location
 
+        // [12.09.2024]: MOVED TO before [jmp_isntr] check
         // [11.08.2024]: shouldn't need condition here cause we handle above, right?
         // if (!hasChild) {
-            if_parent->child2 = join_blk;
-            join_blk->parent2 = if_parent;
+        if_parent->child2 = join_blk;
+        join_blk->parent2 = if_parent;
         // } else {
         //     if_parent->child2 = join_blk;
         //     join_blk->parent2 = if_parent;
         //     join_blk->child2 = og_child;
         // }
         this->currBB = join_blk;
+    
+        // [12.09.2024]: if we have ssa-instr in child2 (join), use (could be phi from statSeq() from if1), else push to [prevInstrs] for when new ssa is encountered
+        if ((if_parent->child2) && (if_parent->child2->newInstrs.empty() == false)) {
+            jmp_instr->set_operand2(if_parent->child2->newInstrs.front()->instr);    
+            #ifdef DEBUG
+                std::cout << "updated jmp_instr with child2 first instr: [" << jmp_instr->toString() << "]" << std::endl;
+            #endif
+        } else {
+            // [09/20/2024]: if `else` condition DNE, then we want to set the jump to be the next SSA instr after the `if-condition instr's`
+            this->prevJump = true;
+            this->prevInstrs.push(jmp_instr); // [10/10/2024]: push at the end so next added SSA-instr will be set as the jump-location
+        }
 
         #ifdef DEBUG
             std::cout << "after if1 statSeq(), [if_parent] looks like: " << if_parent->toString() << std::endl;
@@ -1295,34 +1343,15 @@ SSA* Parser::p2_ifStatement() {
             }
         #endif
 
-        std::unordered_set<int> vars = {};
+        // std::unordered_set<int> vars = {};
 
-        for (const auto &p : if_parent->varVals) {
-            vars.insert(p.first);
-        }
+        // for (const auto &p : if_parent->varVals) {
+        //     vars.insert(p.first);
+        // }
 
         // [12.09.2024]: new func, moved code into here
-        this->conditionalStmtPhiUpdate(vars, false, if_parent, then_blk, nullptr);
+        // this->conditionalStmtPhiUpdate(vars, false, if_parent, then_blk, nullptr);
 
-        // [12.08.2024]: similar to the section we commented out below this (by [then_blk_last])
-        // for (const auto &p : if_parent->varVals) {
-        //     #ifdef DEBUG
-        //         std::cout << "key: " << p.first << ", value: " << p.second << std::endl;
-        //     #endif
-        //     // if a ident from [if_parent] exists in [then_blk] with a different value, we need a phi
-        //     if (then_blk->varVals.at(p.first) != p.second) {
-        //             SSA *phi_instr = this->addSSA1(6, BasicBlock::ssa_table.at(p.second), BasicBlock::ssa_table.at(then_blk->varVals.at(p.first)), true);
-        //             #ifdef DEBUG
-        //                 std::cout << "phi_instr: " << phi_instr->toString() << std::endl;
-        //             #endif
-                    
-        //             // [10.28.2024]: Update BasicBlock's VV
-        //             int phi_table_int = this->add_SSA_table(phi_instr);
-        //             this->currBB->varVals.insert_or_assign(p.first, phi_table_int);
-        //             this->VVs.insert_or_assign(p.first, phi_table_int);
-        //     }
-        // }
-        
         //[10.21.2024]: Isn't this actually the first instruction?
         return jmp_instr;
     }
@@ -1359,11 +1388,6 @@ SSA* Parser::p2_ifStatement() {
         std::cout << "if_parent looks like: " << if_parent->toString() << std::endl;
     #endif
 
-    
-    // [11.08.2024]: shouldn't need condition here cause we handle above, right?
-    // if (!hasChild) {
-    // }
-
     this->currBB = else_blk; // [10/14/2024]: again, similar to above we assume [p2_statSeq()] manipulates [this->currBB]
 
     // [10/10/2024]: These instructions should start the else-BasicBlock right?
@@ -1377,10 +1401,6 @@ SSA* Parser::p2_ifStatement() {
     // FI
     this->CheckFor(Result(2, 21)); // check `fi`
 
-    // 11.04.2024::6:57;
-    // if (!hasChild) {
-        // join_blk->parent = then_blk; // [10.24.2024]: already did this earlier
-    // join_blk->parent2 = else_blk; // [11.20.2024]: removed this since it'll reset a move if we havae subsequent nested during [p2_statSeq()] in this branch
     if (then_blk->child == nullptr) { // [11.20.2024]: added condition to prevent accidental replacment of a nested blk
         then_blk->child = join_blk;
     }
@@ -1391,38 +1411,37 @@ SSA* Parser::p2_ifStatement() {
     this->currBB = join_blk;
 
     // [12.08.2024]: pretty much everything below here was to ensure phi's successfully created and no dupes (FOR OUR OLD LORD KNOWS HOW METHOD)
-    // - handles case: [if && else] exist, 
-    // [11.20.2024]: here we make the assumption that [join_blk] has both [parent] && [parent2] ptr if we have (then) && (else) condition
-    // BasicBlock *then_blk_last = this->currBB->parent;
-    // BasicBlock *else_blk_last = this->currBB->parent2;
+    // // - handles case: [if && else] exist, 
+    // // [11.20.2024]: here we make the assumption that [join_blk] has both [parent] && [parent2] ptr if we have (then) && (else) condition
+    // // BasicBlock *then_blk_last = this->currBB->parent;
+    // // BasicBlock *else_blk_last = this->currBB->parent2;
 
-    std::unordered_set<int> vars = {};
+    // std::unordered_set<int> vars = {};
 
-    for (const auto &p : if_parent->varVals) {
-        vars.insert(p.first);
-    }
-    // for (const auto &p : then_blk_last->varVals) {
-    for (const auto &p : this->currBB->parent->varVals) {
-        vars.insert(p.first);
-    }
-    // for (const auto &p : else_blk_last->varVals) {
-    for (const auto &p : this->currBB->parent2->varVals) {
-        vars.insert(p.first);
-    }
+    // for (const auto &p : if_parent->varVals) {
+    //     vars.insert(p.first);
+    // }
+    // // for (const auto &p : then_blk_last->varVals) {
+    // for (const auto &p : this->currBB->parent->varVals) {
+    //     vars.insert(p.first);
+    // }
+    // // for (const auto &p : else_blk_last->varVals) {
+    // for (const auto &p : this->currBB->parent2->varVals) {
+    //     vars.insert(p.first);
+    // }
 
-    // [SECTION A]: check if we need to create phi-instrs
-    #ifdef DEBUG
-        std::cout << "then_blk: " << std::endl << then_blk->toString() << std::endl;
-        std::cout << "else_blk: " << std::endl << else_blk->toString() << std::endl;
+    // // [SECTION A]: check if we need to create phi-instrs
+    // #ifdef DEBUG
+    //     std::cout << "then_blk: " << std::endl << then_blk->toString() << std::endl;
+    //     std::cout << "else_blk: " << std::endl << else_blk->toString() << std::endl;
 
-        std::cout << "then_blk_last: " << std::endl << this->currBB->parent->toString() << std::endl;
-        std::cout << "else_blk_last: " << std::endl << this->currBB->parent2->toString() << std::endl;
-    #endif
+    //     std::cout << "then_blk_last: " << std::endl << this->currBB->parent->toString() << std::endl;
+    //     std::cout << "else_blk_last: " << std::endl << this->currBB->parent2->toString() << std::endl;
+    // #endif
     
-    // [12.09.2024]: new func, moved code into here
-    this->conditionalStmtPhiUpdate(vars, true, if_parent, then_blk, else_blk);
-
-    // [12.09.2024]: this is why we have propagateDown(), not for loop, but to update all the subsequent blk's(???); NO, this is separate from [propagateDown()] since propagateDown()'s should be for loop while THIS is simply a check after [if/else-blk] to see if we need to create additional phi's(?)
+    // // [12.09.2024]: new func, moved code into here
+    // this->conditionalStmtPhiUpdate(vars, true, if_parent, then_blk, else_blk);
+    // // [12.09.2024]: this is why we have propagateDown(), not for loop, but to update all the subsequent blk's(???); NO, this is separate from [propagateDown()] since propagateDown()'s should be for loop while THIS is simply a check after [if/else-blk] to see if we need to create additional phi's(?)
 
     if (this->currBB->newInstrs.empty()) {
         this->prevJump = true;
