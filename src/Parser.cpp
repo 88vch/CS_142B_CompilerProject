@@ -1320,7 +1320,7 @@ SSA* Parser::p2_ifStatement() {
         // this->conditionalStmtPhiUpdate(vars, false, if_parent, then_blk, nullptr);
 
         //[10.21.2024]: Isn't this actually the first instruction?
-        return jmp_instr;
+        return jmp_instr->get_operand1();
     }
     // BasicBlock *ifStat_else = nullptr; // should use some similar logic to check for existence of [else block]
     SSA *if2 = nullptr;
@@ -1418,7 +1418,7 @@ SSA* Parser::p2_ifStatement() {
         if1_bra->set_operand1(this->currBB->newInstrs.at(0)->instr);
     }
 
-    return jmp_instr; // [11.07.2024]: ?
+    return jmp_instr->get_operand1(); // [11.07.2024]: ?
 }
 
 SSA* Parser::p_whileStatement() {
