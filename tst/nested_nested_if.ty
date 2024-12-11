@@ -2,6 +2,7 @@ main
 var a, b; {
     let a <- call InputNum();
     let b <- call InputNum();
+    
     if a > 0 then
         if b > 0 then
             call OutputNum(0)
@@ -14,5 +15,8 @@ var a, b; {
         else
             call OutputNum(0)
         fi
-    fi
+    fi;
+
+    call OutputNum(a);
+    call OutputNum(b)
 }.

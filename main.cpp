@@ -18,13 +18,15 @@
 
 // class SymbolTable; // forward declaration (?)
 
+// git commit -m "todo - finsih the fixation of [p2_assignment()::loop] && todo - finish function calls && todo - valgrind; resolved - oldPHI still being shown in [newInstrs] (we remove the instr)(delete at the end...)"
+
 // #define file_name "simple_instrs"
 
 // std::string f_ext = ".ty";
 // std::string f_name = file_name;
 // std::string f_full = f_name + f_ext;
 // std::string in_f = "tst/" + f_name + f_ext;
-#define in_f "tst/nested_if.ty"
+#define in_f "tst/nested_nested_if1.ty"
 
 // [10.23.2024]: Silly rabbit
 

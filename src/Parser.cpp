@@ -617,7 +617,7 @@ SSA* Parser::p2_assignment() {
     // [std insert]
     if (overwrite) {
         #ifdef DEBUG
-            std::cout << "[blkType: 1] overwrite == true" << std::endl;
+            std::cout << "[blkType: " << this->currBB->blkType << "] overwrite == true" << std::endl;
         #endif
         this->currBB->varVals.insert_or_assign(ident, table_int);
         this->VVs.insert_or_assign(ident, table_int);
@@ -626,7 +626,7 @@ SSA* Parser::p2_assignment() {
         // [12.06.2024]: updating a blk (in while)   requires updating the previous phi-SSA (in while-blk)
     } else {
         #ifdef DEBUG
-            std::cout << "[blkType: 1] overwrite == false" << std::endl;
+            std::cout << "[blkType: " << this->currBB->blkType << "] overwrite == false" << std::endl;
         #endif
         this->currBB->varVals.insert_or_assign(ident, table_int);
         this->VVs.insert_or_assign(ident, table_int);
@@ -666,40 +666,48 @@ SSA* Parser::p2_assignment() {
             #endif
             // [12.08.2024]: todo asap
             // if (if/else-blk): add or update join blk for ident
-            BasicBlock *join_blk = this->currBB->child2;
-            if ((join_blk->varVals.find(ident) != join_blk->varVals.end()) &&
-                (BasicBlock::ssa_table.at(join_blk->varVals.at(ident))->get_operator() == 6)) {
-                    #ifdef DEBUG
-                        std::cout << "\tphi alr exists, simply updating operand2" << std::endl;
-                    #endif
-                    // [12.08.2024]: if phi exists in join alr, implies that this is else-blk (since if-blk would be the one creating phi [i.e. no phi in join for ident yet...could have value if prev assigned (since join takes bb's vv's before if-stmt)])
-                    // - so we just set the operand2() val to the [value]
-                    BasicBlock::ssa_table.at(join_blk->varVals.at(ident))->set_operand2(value);
-                    // [12.08.2024]: don't need to update [varVals] since should still map to same PHI-SSA
-                    // - previously set in the [else] right below this
-            } else {
-                #ifdef DEBUG
-                    std::cout << "\tphi doesn't exist, creating it here" << std::endl;
-                #endif
-                // [12.08.2024]: if [ident] doesn't exist in join || [ident]'s val is-not PHI, we update VV and create new phi instr
-                BasicBlock *tmp = this->currBB;
-                this->currBB = join_blk;
-                // [12.08.2024]: added [PHI: y-val] == [oldVal] for the following case:
-                // - [else-blk new assignemnt, but if-blk had no change]; phi will NOT exist, and we need to create one with [oldVal]
-                // - this doesn't change our original case [if-blk first seen, modifies/creates phi],
-                //      - since else-blk will still update/set_operand2() if it's assigned the same [ident] (see right above)
-                SSA *phi = this->addSSA1(6, value, BasicBlock::ssa_table.at(this->currBB->varVals.at(ident)), true);
-                int phi_table_int = this->add_SSA_table(phi);
+            BasicBlock *join_blk = this->currBB->child2, *tmp = this->currBB;
+            this->currBB = join_blk;
+            
+            // [12.11.2024]: unique case of [conditionalStmtPhiUpdate()]
+            std::unordered_set<int> vars = {ident};
+            this->conditionalStmtPhiUpdate(vars, this->currBB->parent->parent, this->currBB->parent, this->currBB->parent->parent);
+
+            this->currBB = tmp;
+
+            // if ((join_blk->varVals.find(ident) != join_blk->varVals.end()) &&
+            //     (BasicBlock::ssa_table.at(join_blk->varVals.at(ident))->get_operator() == 6)) {
+            //         #ifdef DEBUG
+            //             std::cout << "\tphi alr exists, simply updating operand2" << std::endl;
+            //         #endif
+            //         // [12.08.2024]: if phi exists in join alr, implies that this is else-blk (since if-blk would be the one creating phi [i.e. no phi in join for ident yet...could have value if prev assigned (since join takes bb's vv's before if-stmt)])
+            //         // - so we just set the operand2() val to the [value]
+            //         BasicBlock::ssa_table.at(join_blk->varVals.at(ident))->set_operand2(value);
+            //         // [12.08.2024]: don't need to update [varVals] since should still map to same PHI-SSA
+            //         // - previously set in the [else] right below this
+            // } else {
+            //     #ifdef DEBUG
+            //         std::cout << "\tphi doesn't exist, creating it here" << std::endl;
+            //     #endif
+            //     // [12.08.2024]: if [ident] doesn't exist in join || [ident]'s val is-not PHI, we update VV and create new phi instr
+            //     BasicBlock *tmp = this->currBB;
+            //     this->currBB = join_blk;
+            //     // [12.08.2024]: added [PHI: y-val] == [oldVal] for the following case:
+            //     // - [else-blk new assignemnt, but if-blk had no change]; phi will NOT exist, and we need to create one with [oldVal]
+            //     // - this doesn't change our original case [if-blk first seen, modifies/creates phi],
+            //     //      - since else-blk will still update/set_operand2() if it's assigned the same [ident] (see right above)
+            //     SSA *phi = this->addSSA1(6, value, BasicBlock::ssa_table.at(this->currBB->varVals.at(ident)), true);
+            //     int phi_table_int = this->add_SSA_table(phi);
         
-                this->currBB->varVals.insert_or_assign(ident, phi_table_int);
-                this->VVs.insert_or_assign(ident, phi_table_int);
+            //     this->currBB->varVals.insert_or_assign(ident, phi_table_int);
+            //     this->VVs.insert_or_assign(ident, phi_table_int);
 
-                // do we need to propagate down every time we add phi? I think so...
-                // phi-propagation here
-                // this->propagateDown();
+            //     // do we need to propagate down every time we add phi? I think so...
+            //     // phi-propagation here
+            //     // this->propagateDown();
 
-                this->currBB = tmp;
-            }
+            //     this->currBB = tmp;
+            // }
         } else if (this->currBB->blkType == 2) { // join-blk
             // [12.09.2024]: do nothing forn ow...
         } else if (this->currBB->blkType == 1) { // std-blk type

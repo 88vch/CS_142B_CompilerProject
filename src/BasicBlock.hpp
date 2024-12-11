@@ -38,6 +38,21 @@ public:
         // }
     }
 
+    // [12.11.2024]: note that updating the debugNum won't affect the pointers pointing to the SSA-obj since we're only updating an attr in ths SSA not the actually SSA-itself
+    void updateConstInstrs() {
+        if (this->constList) {
+            int count = -1;
+            for (Node *curr : this->newInstrs) {
+                if (curr->instr->get_debugNum() != count) {
+                    curr->instr->updateDebugNum(count);
+                }
+
+                count--;
+                curr = curr->prev;
+            }
+        }
+    }
+
     std::string printNewInstrs() const {
         std::string res = "\nnewInstrs: ";
         if (!this->newInstrs.empty()) {
@@ -199,7 +214,7 @@ public:
 
     void updateInstructions(SSA *oldVal, SSA *newVal);
     SSA *getConstSSA(int constVal);
-    void removeSSA(SSA *toRemove);
+    void removeSSA(SSA *toRemove, bool isConst = false);
     // void removeSSA(SSA *toRemove, std::vector<SSA*> &debugSSA_instrs);
 
     BasicBlock *parent, *parent2;

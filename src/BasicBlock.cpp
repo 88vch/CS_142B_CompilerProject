@@ -144,7 +144,7 @@ SSA *BasicBlock::getConstSSA(int val) {
 }
 
 // returns the updated vector after remove
-void BasicBlock::removeSSA(SSA *toRemove) { /* ,  std::vector<SSA*> &debugSSA_instrs) { */
+void BasicBlock::removeSSA(SSA *toRemove, bool isConst) { /* ,  std::vector<SSA*> &debugSSA_instrs) { */
     Node *curr = nullptr;
 
     for (auto it = this->newInstrs.begin(); it != this->newInstrs.end(); ++it) {
@@ -186,6 +186,9 @@ void BasicBlock::removeSSA(SSA *toRemove) { /* ,  std::vector<SSA*> &debugSSA_in
             // - we also free all at the end
             // Free memory and erase the pointer from the vector
             // delete curr->instr;
+            if (isConst) {
+                delete curr->instr;
+            }
             curr->instr = nullptr;
             delete curr;
             this->newInstrs.erase(it);

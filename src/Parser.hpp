@@ -389,6 +389,7 @@ public:
                         // #endif
                         // [10.23.2024]: CAN WE DO THIS???
                         delete instr;
+                        this->BB0->updateConstInstrs();
                         instr = tmp;
                     }
                 }
@@ -555,8 +556,23 @@ public:
                 } else {
                     // if varVal mapping ident != ident_val, (waht does this mean)?
                     //      - means that [ident : old_ident_val] ?
+                    // [12.11.2024]: if we update a val whose prev val was a phi && the phi is in [currBB] newInstr's, delete the phi...
+                    SSA *oldSSA = BasicBlock::ssa_table.at(curr->varVals.at(ident));
+                    
                     curr->varVals.insert_or_assign(ident, ident_val);
                     curr->updateInstructions(oldVal, BasicBlock::ssa_table.at(ident_val));
+
+                    if (curr->findSSA(oldSSA)) {
+                        curr->removeSSA(oldSSA);
+                        if (oldSSA->get_operator() == 0) {
+                            delete oldSSA;
+                            oldSSA = nullptr;
+                            this->BB0->updateConstInstrs();
+                        }
+                        #ifdef DEBUG
+                            std::cout << "removed oldSSA from currBB~" << std::endl;
+                        #endif
+                    }
                 }
             } else {
                 #ifdef DEBUG
@@ -873,8 +889,21 @@ public:
                 int phi_table_int;
 
                 if (this->currBB->varVals.find(p) != this->currBB->varVals.end()) {
+                    #ifdef DEBUG
+                        std::cout << "conditionalStmtPhiUpdate's [currBB==join-blk], ident's prev Value is: [" << BasicBlock::ssa_table.at(this->currBB->varVals.at(p))->toString() << "]" << std::endl;
+                    #endif
                     if (this->currBB->findSSA(BasicBlock::ssa_table.at(this->currBB->varVals.at(p)))) {
-                        this->currBB->removeSSA(BasicBlock::ssa_table.at(this->currBB->varVals.at(p)));
+                        #ifdef DEBUG
+                            std::cout << "[this->currBB]'s [newInstrs] contains the previous value!" << std::endl;
+                        #endif
+                        if (BasicBlock::ssa_table.at(this->currBB->varVals.at(p))->compare(6, BasicBlock::ssa_table.at(then_blk_last->varVals.at(p)), BasicBlock::ssa_table.at(else_blk_last->varVals.at(p)))) {
+                            #ifdef DEBUG
+                                std::cout << "\tthe previous value is the same as the value we were planning to add; no need to add or create new SSA!" << std::endl;
+                            #endif
+                            continue;
+                        } else {
+                            this->currBB->removeSSA(BasicBlock::ssa_table.at(this->currBB->varVals.at(p)));
+                        }
                     }
                 }
 
@@ -889,9 +918,9 @@ public:
                 // [10.28.2024]: Update BasicBlock's VV
                 this->currBB->varVals.insert_or_assign(p, phi_table_int);
                 this->VVs.insert_or_assign(p, phi_table_int);
-                #ifdef DEBUG
-                    std::cout << "currBB after update: " << this->currBB->toString() << std::endl;
-                #endif
+                // #ifdef DEBUG
+                //     std::cout << "currBB after update: " << this->currBB->toString() << std::endl;
+                // #endif
             }
         }
     }
