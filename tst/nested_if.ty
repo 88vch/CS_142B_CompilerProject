@@ -12,8 +12,10 @@ var x, y, z; {
             let y <- 8
         fi;
         let x <- 6 * 6;
+        let a <- 9 * 1;
     fi;
 
+    call OutputNum(a);
     call OutputNum(x);
     call OutputNum(y);
     call OutputNum(z)
