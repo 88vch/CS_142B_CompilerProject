@@ -632,28 +632,44 @@ SSA* Parser::p2_assignment() {
         this->VVs.insert_or_assign(ident, table_int);
     }
 
+    this->blksSeen.clear(); // [12.11.2024]: FOR [this->currBBinLoop()] (recursive) 所以我们要先空着
     // [12.06.2024]: new beginnings (cont.); maybe overwrite is the last detail after we figureout/decide where specifically we are (i.e. blkType 0, 1, 2, 3)
     if (this->currBBinLoop()) { // if [this->currBB] is in a loop
         #ifdef DEBUG
             std::cout << "currBB is in a loop!" << std::endl;
         #endif
         if (this->currBB->blkType == 3) { // if/else-blk
+            #ifdef DEBUG
+                std::cout << "currBB is [if/else-blk]" << std::endl;
+            #endif
             // [12.08.2024]: todo asap
             // if (if/else-blk): add or update join blk for ident
-            BasicBlock *join_blk = this->currBB->child2;
+            BasicBlock *join_blk = this->currBB->child2, *tmp = this->currBB;
+            this->currBB = join_blk;
+            
+            // [12.11.2024]: unique case of [conditionalStmtPhiUpdate()]
+            std::unordered_set<int> vars = {ident};
+            this->conditionalStmtPhiUpdate(vars, this->currBB->parent->parent, this->currBB->parent, this->currBB->parent->parent);
+
+            this->currBB = tmp;
         } else if (this->currBB->blkType == 1) { // std-blk type
             // std insert; note we skip bc of above (if we choose to implement like that)
         }
+        this->blksSeen.clear();
         // [12.08.2024]: new func todo - [Parser::getLoopHead()]; returns BB start of while-loop (contains cmp instr?) (NOTE: figure out how to denote start of while loop (considering nesting!!!))
         BasicBlock *loopHead = this->getLoopHead();
+        #ifdef DEBUG
+            std::cout << "loopHead looks like: " << loopHead->toString() << std::endl;
+        #endif
         BasicBlock *tmp = this->currBB;
         this->currBB = loopHead;
+        oldVal = BasicBlock::ssa_table.at(this->currBB->varVals.at(ident));
         SSA *phi = this->addSSA1(6, oldVal, value);
         int phi_table_int = this->add_SSA_table(phi);
         
         // [12.06.2024]: not sure if this does what we expect it to do...
         this->propagateDown(this->currBB, ident, oldVal, phi_table_int, true);
-        this->propagateDown(this->currBB, ident, value, phi_table_int, true);
+        // this->propagateDown(this->currBB, ident, value, phi_table_int, true);
         
         this->currBB = tmp;
     } else { // if [this->currBB] is NOT in a loop
@@ -674,40 +690,6 @@ SSA* Parser::p2_assignment() {
             this->conditionalStmtPhiUpdate(vars, this->currBB->parent->parent, this->currBB->parent, this->currBB->parent->parent);
 
             this->currBB = tmp;
-
-            // if ((join_blk->varVals.find(ident) != join_blk->varVals.end()) &&
-            //     (BasicBlock::ssa_table.at(join_blk->varVals.at(ident))->get_operator() == 6)) {
-            //         #ifdef DEBUG
-            //             std::cout << "\tphi alr exists, simply updating operand2" << std::endl;
-            //         #endif
-            //         // [12.08.2024]: if phi exists in join alr, implies that this is else-blk (since if-blk would be the one creating phi [i.e. no phi in join for ident yet...could have value if prev assigned (since join takes bb's vv's before if-stmt)])
-            //         // - so we just set the operand2() val to the [value]
-            //         BasicBlock::ssa_table.at(join_blk->varVals.at(ident))->set_operand2(value);
-            //         // [12.08.2024]: don't need to update [varVals] since should still map to same PHI-SSA
-            //         // - previously set in the [else] right below this
-            // } else {
-            //     #ifdef DEBUG
-            //         std::cout << "\tphi doesn't exist, creating it here" << std::endl;
-            //     #endif
-            //     // [12.08.2024]: if [ident] doesn't exist in join || [ident]'s val is-not PHI, we update VV and create new phi instr
-            //     BasicBlock *tmp = this->currBB;
-            //     this->currBB = join_blk;
-            //     // [12.08.2024]: added [PHI: y-val] == [oldVal] for the following case:
-            //     // - [else-blk new assignemnt, but if-blk had no change]; phi will NOT exist, and we need to create one with [oldVal]
-            //     // - this doesn't change our original case [if-blk first seen, modifies/creates phi],
-            //     //      - since else-blk will still update/set_operand2() if it's assigned the same [ident] (see right above)
-            //     SSA *phi = this->addSSA1(6, value, BasicBlock::ssa_table.at(this->currBB->varVals.at(ident)), true);
-            //     int phi_table_int = this->add_SSA_table(phi);
-        
-            //     this->currBB->varVals.insert_or_assign(ident, phi_table_int);
-            //     this->VVs.insert_or_assign(ident, phi_table_int);
-
-            //     // do we need to propagate down every time we add phi? I think so...
-            //     // phi-propagation here
-            //     // this->propagateDown();
-
-            //     this->currBB = tmp;
-            // }
         } else if (this->currBB->blkType == 2) { // join-blk
             // [12.09.2024]: do nothing forn ow...
         } else if (this->currBB->blkType == 1) { // std-blk type
@@ -1521,7 +1503,8 @@ SSA* Parser::p2_whileStatement() {
 
     // [10/17/2024]: BasicBlock Excerpt BEIGNN
     BasicBlock *parent_blk = this->currBB;
-    BasicBlock *while_blk = new BasicBlock(this->currBB->varVals, false, 1, true);
+    parent_blk->setMainWhile(); // [12.11.2024]: this should be the proper mainWhile
+    BasicBlock *while_blk = new BasicBlock(this->currBB->varVals, false, 1, false);
     #ifdef DEBUG
         std::cout << "created new BB (while)" << std::endl << while_blk->toString() << std::endl;
     #endif

@@ -542,14 +542,26 @@ public:
                 #ifdef DEBUG
                     std::cout << "currBB's varVals contains the following pair: {ident=" << ident << ", val=" << curr->varVals.at(ident) << "}; updating with [ident_val]" << std::endl;
                 #endif
+                SSA *prevVal = BasicBlock::ssa_table.at(curr->varVals.at(ident));
                 // [12.06.2024]: new updated to include (mainWhile unique update)
                 if (curr->blkType == 1 && curr->mainWhile) {
                     // [12.06.2024]: should update the phi-SSA not the SSA associated with the ident here
                     #ifdef DEBUG
                         std::cout << "in mainWhile-blk looks like: " << std::endl << curr->toString() << std::endl;
                     #endif
-                    SSA *prevPhi = BasicBlock::ssa_table.at(curr->varVals.at(ident));
-                    prevPhi->set_operand2(BasicBlock::ssa_table.at(ident_val));
+                    if (BasicBlock::ssa_table.at(curr->varVals.at(ident))->get_operator() == 6) {
+                        prevVal->set_operand2(BasicBlock::ssa_table.at(ident_val));
+                        curr->updateInstructions(prevVal, BasicBlock::ssa_table.at(ident_val));
+                        curr->varVals.insert_or_assign(ident, ident_val);
+                    } else {
+                        if (prevVal->compare(oldVal)) {            
+                            curr->updateInstructions(prevVal, BasicBlock::ssa_table.at(ident_val));
+                            curr->varVals.insert_or_assign(ident, ident_val);
+                            #ifdef DEBUG
+                                std::cout << "updated ident [" << std::to_string(ident) << "] with val ident_val; bb Looks like: " << std::endl << curr->toString() << std::endl;
+                            #endif
+                        }
+                    }
                     #ifdef DEBUG
                         std::cout << "mainWhile-blk after updating prevPhi looks like: " << std::endl << curr->toString() << std::endl;
                     #endif
@@ -557,21 +569,22 @@ public:
                     // if varVal mapping ident != ident_val, (waht does this mean)?
                     //      - means that [ident : old_ident_val] ?
                     // [12.11.2024]: if we update a val whose prev val was a phi && the phi is in [currBB] newInstr's, delete the phi...
-                    SSA *oldSSA = BasicBlock::ssa_table.at(curr->varVals.at(ident));
                     
-                    curr->varVals.insert_or_assign(ident, ident_val);
                     curr->updateInstructions(oldVal, BasicBlock::ssa_table.at(ident_val));
-
-                    if (curr->findSSA(oldSSA)) {
-                        curr->removeSSA(oldSSA);
-                        if (oldSSA->get_operator() == 0) {
-                            delete oldSSA;
-                            oldSSA = nullptr;
-                            this->BB0->updateConstInstrs();
+                    if (prevVal->compare(oldVal)) {
+                        curr->varVals.insert_or_assign(ident, ident_val);
+                        
+                        if (curr->findSSA(prevVal)) {
+                            curr->removeSSA(prevVal);
+                            // if (prevVal->get_operator() == 0) {
+                            //     delete prevVal;
+                            //     prevVal = nullptr;
+                            //     this->BB0->updateConstInstrs();
+                            // }
+                            #ifdef DEBUG
+                                std::cout << "removed prevVal from currBB~" << std::endl;
+                            #endif
                         }
-                        #ifdef DEBUG
-                            std::cout << "removed oldSSA from currBB~" << std::endl;
-                        #endif
                     }
                 }
             } else {
@@ -690,47 +703,75 @@ public:
     }
 
     // [12.06.2024]: a function that returns true if [this->currBB] is in a loop, false otherwise
-    inline bool currBBinLoop() const {
-        std::vector<BasicBlock *> seen = {};
-        BasicBlock *curr = this->currBB;
+    inline bool currBBinLoop() {
+        #ifdef DEBUG
+            std::cout << "currBBinLoop(this->currBB=[" << std::to_string(this->currBB->blockNum) << "])" << std::endl;
+        #endif
+        BasicBlock *old = this->currBB;
 
-        while (curr) {
-            if (std::find(seen.begin(), seen.end(), curr) == seen.end()) {
-                seen.push_back(curr);
-            } else {
-                #ifdef DEBUG
-                    std::cout << "we've seen this BB before, loop confirmed!" << std::endl;
-                #endif
-                return true;
-            }
-            // [12.06.2024]: prioritize choosing child2 if we have a choice since child2 will always be the loop-back child
-            curr = (curr->child2) ? curr->child2 : ((curr->child) ? curr->child : nullptr);
+        // while (curr) {
+        if (std::find(this->blksSeen.begin(), this->blksSeen.end(), this->currBB->blockNum) == this->blksSeen.end()) {
+            this->blksSeen.push_back(this->currBB->blockNum);
+        } else {
+            #ifdef DEBUG
+                std::cout << "we've seen this BB before, loop confirmed!" << std::endl;
+            #endif
+            return true;
         }
-        return false;
+            // // [12.06.2024]: prioritize choosing child2 if we have a choice since child2 will always be the loop-back child
+            // curr = (curr->child2) ? curr->child2 : ((curr->child) ? curr->child : nullptr);
+        
+        BasicBlock *tmp = this->currBB;
+        bool r1, r2;
+        if (this->currBB->child2) {
+            #ifdef DEBUG
+                std::cout << "child2 [" << std::to_string(this->currBB->child2->blockNum) << "] exists" << std::endl;
+            #endif
+            this->currBB = this->currBB->child2;
+            r2 = this->currBBinLoop();
+        }
+        this->currBB = tmp;
+        if (this->currBB->child) {
+            #ifdef DEBUG
+                std::cout << "child [" << std::to_string(this->currBB->child->blockNum) << "] exists" << std::endl;
+            #endif
+            this->currBB = this->currBB->child;
+            r1 = this->currBBinLoop();
+        }
+        this->currBB = old;
+        // }
+        return (r1 || r2);
     }
 
     // [12.08.2024]: this func should only be run in [p2_assignment()]
     // - assumes we know we are in a loop
-    inline BasicBlock* getLoopHead() const {
-        std::vector<BasicBlock *> seen = {};
-        BasicBlock *curr = this->currBB;
+    inline BasicBlock* getLoopHead() {
+        BasicBlock *old = this->currBB;
 
-        while (curr) {
-            if (std::find(seen.begin(), seen.end(), curr) == seen.end()) {
-                seen.push_back(curr);
-                if (curr->mainWhile) {
-                    return curr;
-                } 
-            } else {
-                #ifdef DEBUG
-                    std::cout << "we've seen this BB before, loop confirmed!" << std::endl;
-                #endif
-                return nullptr;
-            }
-            // [12.06.2024]: prioritize choosing child2 if we have a choice since child2 will always be the loop-back child
-            curr = (curr->child2) ? curr->child2 : ((curr->child) ? curr->child : nullptr);
+        if (std::find(this->blksSeen.begin(), this->blksSeen.end(), this->currBB->blockNum) == this->blksSeen.end()) {
+            this->blksSeen.push_back(this->currBB->blockNum);
+            if (this->currBB->mainWhile) {
+                BasicBlock *retVal = this->currBB;
+                this->currBB = old;
+                return retVal;
+            } 
         }
-        return nullptr;
+
+        BasicBlock *tmp = this->currBB;
+        BasicBlock *r1, *r2;
+        if (this->currBB->child2) {
+            this->currBB = this->currBB->child2;
+            r2 = this->getLoopHead();
+        }
+        this->currBB = tmp;
+        if (this->currBB->child) {
+            this->currBB = this->currBB->child;
+            r1 = this->getLoopHead();
+        }
+        this->currBB = old;
+        // [12.06.2024]: prioritize choosing child2 if we have a choice since child2 will always be the loop-back child
+        // curr = (curr->child2) ? curr->child2 : ((curr->child) ? curr->child : nullptr);
+        return (r2) ? r2 : (r1 ? r1 : nullptr);
     }
 
     // [11/28/2024]: adds SSA_instrs from other [func]'s into main Parser's SSA_instrs
@@ -977,26 +1018,54 @@ public:
     // [12.09.2024]: assume only called at the end
     std::string BBListToString(std::string res = "") {
         BasicBlock *oldCurr = this->currBB;
+        std::string init = res;
         if (res == "") {
             this->blksSeen.clear();
             this->currBB = this->BB0;
+            #ifdef DEBUG
+                std::cout << "starting BB List toString();";
+            #endif
         }
+        #ifdef DEBUG
+            std::cout << "[this->currBB[" << std::to_string(this->currBB->blockNum) << "]] looks like: " << std::endl << this->currBB->toString() << std::endl;
+        #endif
 
         if (std::find(this->blksSeen.begin(), this->blksSeen.end(), this->currBB->blockNum) == this->blksSeen.end()) {
+            #ifdef DEBUG
+                std::cout << "blk has not been seen before; adding to [this->blksSeen]" << std::endl;
+            #endif
             res += this->currBB->toString() + "\n\n";
             this->blksSeen.push_back(this->currBB->blockNum);
+        } else {
+            #ifdef DEBUG
+                std::cout << "blk has already been added to [res]; returning pre-emptively" << std::endl;
+            #endif
+            return res;
         }
 
+        BasicBlock *tmp = this->currBB;
         if (this->currBB->child) {
+            #ifdef DEBUG
+                std::cout << "currBB [" << std::to_string(this->currBB->blockNum) << "] has a child [" << std::to_string(this->currBB->child->blockNum) << "]" << std::endl;
+            #endif
             this->currBB = this->currBB->child;
             res = this->BBListToString(res);
         }
+        this->currBB = tmp;
         if (this->currBB->child2) {
+            #ifdef DEBUG
+                std::cout << "currBB [" << std::to_string(this->currBB->blockNum) << "] has a child2 [" << std::to_string(this->currBB->child2->blockNum) << "]" << std::endl;
+            #endif
             this->currBB = this->currBB->child2;
             res = this->BBListToString(res);
         }
 
         this->currBB = oldCurr;
+        #ifdef DEBUG
+            if (init == "") {
+                std::cout << "done BB List to String; res looks like: " << res << std::endl; 
+            }
+        #endif
         return res;
     }
 

@@ -18,15 +18,13 @@
 
 // class SymbolTable; // forward declaration (?)
 
-// git commit -m "todo - finsih the fixation of [p2_assignment()::loop] && todo - finish function calls && todo - valgrind; resolved - oldPHI still being shown in [newInstrs] (we remove the instr)(delete at the end...)"
-
 // #define file_name "simple_instrs"
 
 // std::string f_ext = ".ty";
 // std::string f_name = file_name;
 // std::string f_full = f_name + f_ext;
 // std::string in_f = "tst/" + f_name + f_ext;
-#define in_f "tst/nested_nested_if1.ty"
+#define in_f "tst/while.ty"
 
 // [10.23.2024]: Silly rabbit
 
@@ -175,7 +173,7 @@ int main() {
     else { std::cout << "Error occured when trying to write results!" << std::endl; }
 
     bool bb = fr.write_file_contents(basicBlock_f, parser2.BBListToString(), "BasicBlocks");
-    if (bb) { std::cout << "Results have successfully been written to: " << linkedList2_f << "(size=[" << parser2.getInstrListSize() << "])" << std::endl; }
+    if (bb) { std::cout << "Results have successfully been written to: " << basicBlock_f << "(size=[" << parser2.getInstrListSize() << "])" << std::endl; }
     else { std::cout << "Error occured when trying to write results!" << std::endl; }
 
     // generate main DOT grpah
