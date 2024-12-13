@@ -664,12 +664,19 @@ SSA* Parser::p2_assignment() {
         BasicBlock *tmp = this->currBB;
         this->currBB = loopHead;
         oldVal = BasicBlock::ssa_table.at(this->currBB->varVals.at(ident));
-        SSA *phi = this->addSSA1(6, oldVal, value);
-        int phi_table_int = this->add_SSA_table(phi);
         
-        // [12.06.2024]: not sure if this does what we expect it to do...
-        this->propagateDown(this->currBB, ident, oldVal, phi_table_int, true);
-        // this->propagateDown(this->currBB, ident, value, phi_table_int, true);
+        if ((BasicBlock::ssa_table.at(this->currBB->varVals.at(ident))->get_operator() == 6) && (this->currBB->findSSA(BasicBlock::ssa_table.at(this->currBB->varVals.at(ident))))) {
+            #ifdef DEBUG
+                std::cout << "currBB's ident is PHI! updating op2..." << std::endl;
+            #endif
+            BasicBlock::ssa_table.at(this->currBB->varVals.at(ident))->set_operand2(value);
+        } else {
+            SSA *phi = this->addSSA1(6, oldVal, value);
+            int phi_table_int = this->add_SSA_table(phi);
+            // [12.06.2024]: not sure if this does what we expect it to do...
+            this->propagateDown(this->currBB, ident, oldVal, phi_table_int, true);
+            // this->propagateDown(this->currBB, ident, value, phi_table_int, true);
+        }
         
         this->currBB = tmp;
     } else { // if [this->currBB] is NOT in a loop

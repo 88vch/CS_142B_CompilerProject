@@ -2,8 +2,24 @@ main
 var i;
 {
     let i <- 0;
+    let a <- call InputNum();
+    let c <- call InputNum();
+    let d <- call InputNum();
+    let e <- call InputNum();
+
     while i < 10 do
-        let i <- i + 1
+        let i <- i + 1;
+        let a <- 9; 
+
+        let a <- i;
+
+        let c <- a + i;
+        let d <- c * 2;
+        let e <- c - d
     od;
-    call OutputNum(i)
+    call OutputNum(i);
+    call OutputNum(a);
+    call OutputNum(c);
+    call OutputNum(d);
+    call OutputNum(e)
 }.

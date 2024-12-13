@@ -758,7 +758,7 @@ public:
         }
 
         BasicBlock *tmp = this->currBB;
-        BasicBlock *r1, *r2;
+        BasicBlock *r1 = nullptr, *r2 = nullptr;
         if (this->currBB->child2) {
             this->currBB = this->currBB->child2;
             r2 = this->getLoopHead();
