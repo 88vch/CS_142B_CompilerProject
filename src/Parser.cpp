@@ -666,10 +666,10 @@ SSA* Parser::p2_assignment() {
         oldVal = BasicBlock::ssa_table.at(this->currBB->varVals.at(ident));
         
         if ((BasicBlock::ssa_table.at(this->currBB->varVals.at(ident))->get_operator() == 6) && (this->currBB->findSSA(BasicBlock::ssa_table.at(this->currBB->varVals.at(ident))))) {
-            #ifdef DEBUG
-                std::cout << "currBB's ident is PHI! updating op2..." << std::endl;
-            #endif
-            BasicBlock::ssa_table.at(this->currBB->varVals.at(ident))->set_operand2(value);
+            // #ifdef DEBUG
+            //     std::cout << "currBB's ident is PHI! updating op2..." << std::endl;
+            // #endif
+            // BasicBlock::ssa_table.at(this->currBB->varVals.at(ident))->set_operand2(value);
         } else {
             SSA *phi = this->addSSA1(6, oldVal, value);
             int phi_table_int = this->add_SSA_table(phi);

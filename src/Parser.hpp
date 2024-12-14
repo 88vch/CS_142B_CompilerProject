@@ -526,7 +526,7 @@ public:
     // recursive; maintains [this->currBB]
     inline void propagateDown(BasicBlock *curr, int ident, SSA* oldVal, int ident_val, bool first = false, std::vector<BasicBlock *> seen = {}) {    
         #ifdef DEBUG
-            std::cout << "in propagateDown(ident=" << SymbolTable::symbol_table.at(ident) << ", phi_ident=" << BasicBlock::ssa_table.at(ident_val)->toString() << ", oldVal (SSA) = " << oldVal->toString() << ", )" << std::endl;
+            std::cout << "in propagateDown(currBB[" << std::to_string(curr->blockNum) << "]; ident=" << SymbolTable::symbol_table.at(ident) << ", phi_ident=" << BasicBlock::ssa_table.at(ident_val)->toString() << ", oldVal (SSA) = " << oldVal->toString() << ", ); curr(BB) looks like: " << std::endl << curr->toString() << std::endl;
         #endif
         seen.push_back(curr);
 
@@ -550,13 +550,16 @@ public:
                         std::cout << "in mainWhile-blk looks like: " << std::endl << curr->toString() << std::endl;
                     #endif
                     if (BasicBlock::ssa_table.at(curr->varVals.at(ident))->get_operator() == 6) {
+                        #ifdef DEBUG
+                            std::cout << "prevINSTR is PHI! updating operand2()" << std::endl;
+                        #endif
                         prevVal->set_operand2(BasicBlock::ssa_table.at(ident_val));
-                        curr->updateInstructions(prevVal, BasicBlock::ssa_table.at(ident_val));
-                        curr->varVals.insert_or_assign(ident, ident_val);
+                        // curr->updateInstructions(prevVal, BasicBlock::ssa_table.at(ident_val)); // [12.14.2024]: if we're in main while we shoujldn't overwrite since we assume it's the phi joining from before while-loop
+                        // curr->varVals.insert_or_assign(ident, ident_val); // [12.14.2024]: if we're in main while we shoujldn't overwrite since we assume it's the phi joining from before while-loop
                     } else {
                         if (prevVal->compare(oldVal)) {            
-                            curr->updateInstructions(prevVal, BasicBlock::ssa_table.at(ident_val));
                             curr->varVals.insert_or_assign(ident, ident_val);
+                            curr->updateInstructions(prevVal, BasicBlock::ssa_table.at(ident_val));
                             #ifdef DEBUG
                                 std::cout << "updated ident [" << std::to_string(ident) << "] with val ident_val; bb Looks like: " << std::endl << curr->toString() << std::endl;
                             #endif
@@ -565,6 +568,7 @@ public:
                     #ifdef DEBUG
                         std::cout << "mainWhile-blk after updating prevPhi looks like: " << std::endl << curr->toString() << std::endl;
                     #endif
+                    ident_val = curr->varVals.at(ident);
                 } else {
                     // if varVal mapping ident != ident_val, (waht does this mean)?
                     //      - means that [ident : old_ident_val] ?
@@ -572,18 +576,15 @@ public:
                     
                     curr->updateInstructions(oldVal, BasicBlock::ssa_table.at(ident_val));
                     if (prevVal->compare(oldVal)) {
-                        curr->varVals.insert_or_assign(ident, ident_val);
-                        
-                        if (curr->findSSA(prevVal)) {
-                            curr->removeSSA(prevVal);
-                            // if (prevVal->get_operator() == 0) {
-                            //     delete prevVal;
-                            //     prevVal = nullptr;
-                            //     this->BB0->updateConstInstrs();
-                            // }
+                        // [12.14.2024]: we only update if prevVal (ssa) was not creatd here
+                        if (curr->findSSA(prevVal) == false) {
+                            curr->varVals.insert_or_assign(ident, ident_val);
+                            // curr->removeSSA(prevVal); // [12.14.2024]: what if we don't remove it?
                             #ifdef DEBUG
-                                std::cout << "removed prevVal from currBB~" << std::endl;
+                                std::cout << "updated ident: [prevVal] from currBB~ looks like: " << std::endl << curr->toString() << std::endl;
                             #endif
+                        } else {
+                            ident_val = BasicBlock::ssa_table_reversed.at(prevVal);
                         }
                     }
                 }
@@ -722,7 +723,7 @@ public:
             // curr = (curr->child2) ? curr->child2 : ((curr->child) ? curr->child : nullptr);
         
         BasicBlock *tmp = this->currBB;
-        bool r1, r2;
+        bool r1 = false, r2 = false;
         if (this->currBB->child2) {
             #ifdef DEBUG
                 std::cout << "child2 [" << std::to_string(this->currBB->child2->blockNum) << "] exists" << std::endl;
@@ -888,8 +889,7 @@ public:
             else_blk_last = this->currBB->parent2;
         } else {
             else_blk_last = else_blk;
-        }
-        
+        }        
 
         for (const auto &p : vars) {
             int curr = p;
@@ -943,22 +943,31 @@ public:
                             #endif
                             continue;
                         } else {
-                            this->currBB->removeSSA(BasicBlock::ssa_table.at(this->currBB->varVals.at(p)));
+                            #ifdef DEBUG
+                                std::cout << "about to remove ssa [" << BasicBlock::ssa_table.at(this->currBB->varVals.at(p))->toString() << "]" << std::endl;
+                            #endif
+                            this->currBB->removeSSA(BasicBlock::ssa_table.at(this->currBB->varVals.at(p))); // [12.14.2024]: lets just leavei t there
                         }
                     }
                 }
 
                 phi_instr = this->addSSA1(6, BasicBlock::ssa_table.at(then_blk_last->varVals.at(p)), BasicBlock::ssa_table.at(else_blk_last->varVals.at(p)), true);
                 phi_table_int = this->add_SSA_table(phi_instr);
+                
+                // [10.28.2024]: Update BasicBlock's VV
+                this->currBB->varVals.insert_or_assign(p, phi_table_int);
+                this->VVs.insert_or_assign(p, phi_table_int);
+                
+                #ifdef DEBUG
+                    std::cout << "currBB after updtae: " << std::endl << this->currBB->toString() << std::endl;
+                #endif
+                
                 this->propagateDown(this->currBB, p, else_phi, phi_table_int, true);
                 
                 #ifdef DEBUG
                     std::cout << "phi_instr: " << phi_instr->toString() << std::endl;
                 #endif
                 
-                // [10.28.2024]: Update BasicBlock's VV
-                this->currBB->varVals.insert_or_assign(p, phi_table_int);
-                this->VVs.insert_or_assign(p, phi_table_int);
                 // #ifdef DEBUG
                 //     std::cout << "currBB after update: " << this->currBB->toString() << std::endl;
                 // #endif
