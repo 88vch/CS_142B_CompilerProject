@@ -24,7 +24,7 @@ SSA::~SSA() {
     // if (this->y && (this->y->get_constVal() == nullptr)) { delete this->y; }
 }
 
-SSA::SSA(int op) {
+SSA::SSA(int op, int blkNum) {
     #ifdef DEBUG
         std::cout << "in SSA(int op) constructor" << std::endl;
     #endif
@@ -41,12 +41,14 @@ SSA::SSA(int op) {
         exit(EXIT_FAILURE);
     }
 
+    this->blockNum = blkNum;
+
     #ifdef DEBUG
         std::cout << "created SSA instruction: " << this->toString() << std::endl;
     #endif
 }
 
-SSA::SSA(int op, int opnd) {
+SSA::SSA(int op, int opnd, int blkNum) {
     #ifdef DEBUG
         std::cout << "in SSA(int op=" << op << ", int opnd=" << opnd << ") constructor" << std::endl;
     #endif
@@ -64,12 +66,14 @@ SSA::SSA(int op, int opnd) {
         exit(EXIT_FAILURE);
     }
 
+    this->blockNum = blkNum;
+
     #ifdef DEBUG
         std::cout << "created SSA instruction: " << this->toString() << std::endl;
     #endif
 }
 
-SSA::SSA(int op, SSA *retVal) {
+SSA::SSA(int op, SSA *retVal, int blkNum) {
     if (op == 0) {
         // if [op == 0 == const], and [this->constVal == nullptr], we should check if [this->x == nullptr]
         // - a constant can either be an integer literal (given by the [SymbolTable::symbol_table] value representing the constVal being stored)
@@ -92,9 +96,11 @@ SSA::SSA(int op, SSA *retVal) {
         std::cout << "Error: expected SSA() operation to be [16] got: [" << op << "]! exiting prematurely..." << std::endl;
         exit(EXIT_FAILURE);
     }
+
+    this->blockNum = blkNum;
 }
 
-SSA::SSA(int op, SSA *opnd1, SSA *opnd2) {
+SSA::SSA(int op, SSA *opnd1, SSA *opnd2, int blkNum) {
     if (op > 0 && op <= 25) {
         this->debug_num = curr_instr_num++;
         this->op = op;
@@ -106,4 +112,6 @@ SSA::SSA(int op, SSA *opnd1, SSA *opnd2) {
         std::cout << "Error: expected SSA() operation to be [1, 25] got: [" << op << "]! exiting prematurely..." << std::endl;
         exit(EXIT_FAILURE);
     }
+
+    this->blockNum = blkNum;
 };

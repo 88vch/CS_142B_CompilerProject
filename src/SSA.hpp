@@ -10,10 +10,10 @@
 class SSA {
 public:
     
-    SSA(int op); // [09/27/2024]: [read]
-    SSA(int op, int opnd); // [07/26/2024]: [const]
-    SSA(int op, SSA *retVal); // [07/28/2024]: (New) Pointer to result returned from [return: 16] statement
-    SSA(int op, SSA *opnd1, SSA *opnd2); // [07/25/2024]: (New) Pointers to other SSA instructions
+    SSA(int op, int blkNum = -1); // [09/27/2024]: [read]
+    SSA(int op, int opnd, int blkNum = -1); // [07/26/2024]: [const]
+    SSA(int op, SSA *retVal, int blkNum = -1); // [07/28/2024]: (New) Pointer to result returned from [return: 16] statement
+    SSA(int op, SSA *opnd1, SSA *opnd2, int blkNum = -1); // [07/25/2024]: (New) Pointers to other SSA instructions
 
     ~SSA();
     // Copy constructor
@@ -243,6 +243,14 @@ public:
         }
     }
 
+    void setBlkNum(int blkNum) {
+        this->blockNum = blkNum;
+    }
+
+    int getBlkNum() const {
+        return this->blockNum;
+    }
+
     static void resetDebug() {
         curr_instr_num = 1;
         curr_const_num = -1;
@@ -254,6 +262,7 @@ private:
     // [07/25/2024]: (New) Pointers to other SSA instructions
     int op, debug_num, *constVal;
     SSA *x, *y;
+    int blockNum; // [12.16.2024]; the bb blockNum that this SSA belongs to (only used for p2)
 
 
     static int curr_instr_num; // for debugging

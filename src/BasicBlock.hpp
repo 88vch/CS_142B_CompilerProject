@@ -220,6 +220,7 @@ public:
     SSA *getConstSSA(int constVal);
     void removeSSA(SSA *toRemove);
     // void removeSSA(SSA *toRemove, std::vector<SSA*> &debugSSA_instrs);
+    bool identDefinedHere(SSA *prevVal);
 
     BasicBlock *parent, *parent2;
     BasicBlock *child, *child2;

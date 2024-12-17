@@ -512,6 +512,7 @@ SSA* Parser::p2_assignment() {
     if (this->varDeclarations.find(ident) == this->varDeclarations.end()) {
         // [Assumption]: we don't require variables, x, to be declared (i.e. `let x;`) before they are defined, we'll emit a warning encouraging that tho
         std::cout << "Warning: var [" << this->sym.to_string() << "] hasn't been declared!" << std::endl;
+        this->handleUninitVar(ident);
         // [11.11.2024]: don't need to call this func here bc it'll set [var == 0]
         //      - we don't care to set it to 0 when we're already in [p2_assiggnment()] about to set it to a variable;
         // this->handleUninitVar(ident);
@@ -640,8 +641,13 @@ SSA* Parser::p2_assignment() {
         #endif
         if (this->currBB->blkType == 3) { // if/else-blk
             #ifdef DEBUG
-                std::cout << "currBB is [if/else-blk]" << std::endl;
+                std::cout << "currBB is [if/else-blk];  looks like: " << std::endl << this->currBB->toString() << std::endl;
             #endif
+            // [12.17.2024]: the real question is how to denote if-path vs else-path
+            // - see Parser.hpp::
+            // [12.17.2024]: "new" [updateIf] bool where we propagate till the first join-blk (assuming we know we're in a if/else [has join] && the phi in the join's already mapped valid-ly)
+            // this->propagateDown(this->currBB, ident, BasicBlock::ssa_table.at(this->currBB->child2->varVals.at(ident))->get_operand1(), table_int, true, {}, true);
+
             // [12.08.2024]: todo asap
             // if (if/else-blk): add or update join blk for ident
             BasicBlock *join_blk = this->currBB->child2, *tmp = this->currBB;
@@ -660,19 +666,25 @@ SSA* Parser::p2_assignment() {
         BasicBlock *loopHead = this->getLoopHead();
         #ifdef DEBUG
             std::cout << "loopHead looks like: " << loopHead->toString() << std::endl;
+            std::cout << "this->currBB looks like: " << this->currBB->toString() << std::endl;
         #endif
         BasicBlock *tmp = this->currBB;
         this->currBB = loopHead;
         oldVal = BasicBlock::ssa_table.at(this->currBB->varVals.at(ident));
         
-        if ((BasicBlock::ssa_table.at(this->currBB->varVals.at(ident))->get_operator() == 6) && (this->currBB->findSSA(BasicBlock::ssa_table.at(this->currBB->varVals.at(ident))))) {
-            // #ifdef DEBUG
-            //     std::cout << "currBB's ident is PHI! updating op2..." << std::endl;
-            // #endif
+        if ((oldVal->get_operator() == 6)) { /* && (
+                (this->currBB->findSSA(oldVal)) || (tmp->findSSA(oldVal)))) { */
+            #ifdef DEBUG
+                std::cout << "currBB's ident is PHI! doing NOTHING..." << std::endl;
+            #endif
             // BasicBlock::ssa_table.at(this->currBB->varVals.at(ident))->set_operand2(value);
         } else {
             SSA *phi = this->addSSA1(6, oldVal, value);
-            int phi_table_int = this->add_SSA_table(phi);
+            int phi_table_int = this->add_SSA_table(phi);            
+            this->currBB->varVals.insert_or_assign(ident, phi_table_int);
+            this->VVs.insert_or_assign(ident, phi_table_int);
+            this->currBB->updateInstructions(oldVal, phi);
+
             // [12.06.2024]: not sure if this does what we expect it to do...
             this->propagateDown(this->currBB, ident, oldVal, phi_table_int, true);
             // this->propagateDown(this->currBB, ident, value, phi_table_int, true);
@@ -1513,7 +1525,7 @@ SSA* Parser::p2_whileStatement() {
     parent_blk->setMainWhile(); // [12.11.2024]: this should be the proper mainWhile
     BasicBlock *while_blk = new BasicBlock(this->currBB->varVals, false, 1, false);
     #ifdef DEBUG
-        std::cout << "created new BB (while)" << std::endl << while_blk->toString() << std::endl;
+        std::cout << "created new BB (while-body)" << std::endl << while_blk->toString() << std::endl;
     #endif
     // 11.04.2024: dummy modification to write commit
     parent_blk->child = while_blk;

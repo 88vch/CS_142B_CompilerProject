@@ -111,9 +111,9 @@ BasicBlock::BasicBlock(BasicBlock *p1, BasicBlock *p2, std::unordered_map<int, i
 // this function is called after we update this BB's varVal mapping with a new update
 // - todo: search through each newInstr ( each {x, y} in the SSA )
 void BasicBlock::updateInstructions(SSA *oldVal, SSA *newVal) {
-    #ifdef DEBUG
-        std::cout << "BB before updateInstructions: " << std::endl << this->toString() << std::endl;
-    #endif
+    // #ifdef DEBUG
+    //     std::cout << "BB before updateInstructions: " << std::endl << this->toString() << std::endl;
+    // #endif
     
     if ((this->findSSA(oldVal) == false) || ((this->findSSA(oldVal)) && (oldVal->get_operator() == 0))) {
         for (size_t i = 0; i < this->newInstrs.size(); i++) {
@@ -123,9 +123,9 @@ void BasicBlock::updateInstructions(SSA *oldVal, SSA *newVal) {
             }
         }
     }
-    #ifdef DEBUG
-        std::cout << "BB after updateInstructions: " << std::endl << this->toString() << std::endl;
-    #endif
+    // #ifdef DEBUG
+    //     std::cout << "BB after updateInstructions: " << std::endl << this->toString() << std::endl;
+    // #endif
 }
 
 SSA *BasicBlock::getConstSSA(int val) {
@@ -213,3 +213,11 @@ void BasicBlock::removeSSA(SSA *toRemove) { /* ,  std::vector<SSA*> &debugSSA_in
     //     } 
     // }
 }
+
+// bool BasicBlock::identDefinedHere(SSA *prevVal) const {
+//     for (const auto &n : this->newInstrs) {
+//         if ((s->compare(n->instr)) && ()) {}
+//     }
+
+//     return false;
+// }
