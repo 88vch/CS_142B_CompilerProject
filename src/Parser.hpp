@@ -502,13 +502,8 @@ public:
         #ifdef DEBUG
             std::cout << "in propagateDown(currBB[" << std::to_string(curr->blockNum) << "]; ident=" << SymbolTable::symbol_table.at(ident) << ", phi_ident=" << BasicBlock::ssa_table.at(ident_val)->toString() << ", oldVal (SSA) = " << oldVal->toString() << ", ); curr(BB) looks like: " << std::endl << curr->toString() << std::endl;
         #endif
-        seen.push_back(curr);
-
-        if (!first && this->currBB->compare(curr)) {
-            #ifdef DEBUG
-                std::cout << "returning: in a loop! found startBB looks like: " << std::endl << this->currBB->toString() << std::endl;
-            #endif
-            return;
+        if (!first) {
+            seen.push_back(curr);
         }
 
         if (curr->varVals.find(ident) != curr->varVals.end()) {
@@ -555,12 +550,17 @@ public:
                         #ifdef DEBUG
                             std::cout << "mainWhile and no phi? create it. " << std::endl;
                         #endif
+                        BasicBlock *tmp = this->currBB;
+                        this->currBB = curr;
+
                         SSA *retVal = this->addSSA1(6, prevVal, BasicBlock::ssa_table.at(ident_val));
                         ident_val = this->add_SSA_table(retVal);
                         
                         curr->varVals.insert_or_assign(ident, ident_val);
                         this->VVs.insert_or_assign(ident, ident_val);
                         curr->updateInstructions(prevVal, BasicBlock::ssa_table.at(ident_val));
+                        
+                        this->currBB = tmp;
                         #ifdef DEBUG
                             std::cout << "mainWhiel-blk looks like: " << std::endl << curr->toString() << std::endl;
                         #endif
@@ -617,6 +617,13 @@ public:
         #ifdef DEBUG
             std::cout << "after update curr looks like: " << std::endl << curr->toString() << std::endl;
         #endif
+
+        if (!first && this->currBB->compare(curr)) {
+            #ifdef DEBUG
+                std::cout << "returning: in a loop! found startBB looks like: " << std::endl << this->currBB->toString() << std::endl;
+            #endif
+            return;
+        }
 
         if ((curr->child) && (std::find(seen.begin(), seen.end(), curr->child) == seen.end())) {
             propagateDown(curr->child, ident, oldVal, ident_val, false, seen, updateIf);
@@ -889,19 +896,36 @@ public:
         #endif
     }
 
-    inline void conditionalStmtPhiUpdate(std::unordered_set<int> vars, BasicBlock *if_parent, BasicBlock *then_blk, BasicBlock *else_blk) {
+    inline void conditionalStmtPhiUpdate(std::unordered_set<int> vars, SSA *oldVal = nullptr) {
         // [12.09.2024]: if we have [if && else] blk, assumes [this->currBB == join_blk]
+        BasicBlock *then_blk_last = this->currBB->parent;
+        BasicBlock *else_blk_last = this->currBB->parent2;
         #ifdef DEBUG
-            std::cout << "else-blk exists!" << std::endl;
+            std::cout << "in conditionalStmtPhiUpdate()" << std::endl;
+            std::cout << "\toldVal=[";
+            if (oldVal) {
+                std::cout << oldVal->toString();
+            } else {
+                std::cout << "nullptr!";
+            }
+            std::cout << "]" << std::endl;
+
+            std::cout << "\tthen_blk=[";
+            if (then_blk_last) {
+                std::cout << then_blk_last->toString();
+            } else {
+                std::cout << "nullptr!";
+            }
+            std::cout << "]" << std::endl;
+            std::cout << "\telse_blk=[";
+            if (else_blk_last) {
+                std::cout << else_blk_last->toString();
+            } else {
+                std::cout << "nullptr!";
+            }
+            std::cout << "]" << std::endl;
             std::cout << "[this->currBB] looks like: " << std::endl << this->currBB->toString() << std::endl;
         #endif
-        BasicBlock *then_blk_last = this->currBB->parent;
-        BasicBlock *else_blk_last = nullptr;
-        if (this->currBB->parent2) {
-            else_blk_last = this->currBB->parent2;
-        } else {
-            else_blk_last = else_blk;
-        }        
 
         for (const auto &p : vars) {
             int curr = p;
@@ -958,6 +982,15 @@ public:
                             // [12.17.2024]: the real question is how to denote if-path vs else-path...
                             // - since one requires us to [set_operand1()] while the other requries [set_operand2()]
                             BasicBlock::ssa_table.at(this->currBB->varVals.at(p))->set_operand2(BasicBlock::ssa_table.at(else_blk_last->varVals.at(p)));
+                            #ifdef DEBUG
+                                std::cout << "updating operand2()" << std::endl;
+                            #endif
+                        } else if (oldVal && (BasicBlock::ssa_table.at(this->currBB->varVals.at(p))->get_operand1()->compare(oldVal))) {
+                            // [12.17.2024]: if [operand1()] is same as [oldVal], implies we should update [operand1()]
+                            BasicBlock::ssa_table.at(this->currBB->varVals.at(p))->set_operand1(BasicBlock::ssa_table.at(else_blk_last->varVals.at(p)));
+                            #ifdef DEBUG
+                                std::cout << "updating operand1()" << std::endl;
+                            #endif
                         } else {
                             #ifdef DEBUG
                                 std::cout << "about to remove ssa [" << BasicBlock::ssa_table.at(this->currBB->varVals.at(p))->toString() << "]" << std::endl;

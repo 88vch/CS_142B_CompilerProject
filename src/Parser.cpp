@@ -545,7 +545,11 @@ SSA* Parser::p2_assignment() {
                     std::cout << "child2 blk == " << this->currBB->child2->toString() << std::endl;
                 #endif
                 this->currBB->child->child2 = this->currBB->child2;
-                this->currBB->child->child2->parent2 = this->currBB->child;
+                if (this->currBB->child->child2->parent->blockNum == this->currBB->blockNum) {
+                    this->currBB->child->child2->parent = this->currBB->child;
+                } else {
+                    this->currBB->child->child2->parent2 = this->currBB->child;
+                }
                 this->currBB->child2 = nullptr;
             }
         } else if (this->currBB->child) {
@@ -557,14 +561,27 @@ SSA* Parser::p2_assignment() {
             this->currBB->child = new BasicBlock(this->currBB->varVals, false, this->currBB->blkType, false);
             this->currBB->child->parent = this->currBB;
             this->currBB->child->child = oldChild;
-            this->currBB->child->child->parent = this->currBB->child;
+            
+            // this->currBB->child->child->parent = this->currBB->child;
+            if (this->currBB->child->child2->parent->blockNum == this->currBB->blockNum) {
+                this->currBB->child->child2->parent = this->currBB->child;
+            } else {
+                this->currBB->child->child2->parent2 = this->currBB->child;
+            }
 
             if (this->currBB->child2) {
                 #ifdef DEBUG
                     std::cout << "child2 blk == " << this->currBB->child2->toString() << std::endl;
                 #endif
                 this->currBB->child->child2 = this->currBB->child2;
-                this->currBB->child->child2->parent2 = this->currBB->child;
+                
+                // this->currBB->child->child2->parent2 = this->currBB->child;
+                if (this->currBB->child->child2->parent->blockNum == this->currBB->blockNum) {
+                    this->currBB->child->child2->parent = this->currBB->child;
+                } else {
+                    this->currBB->child->child2->parent2 = this->currBB->child;
+                }
+                
                 this->currBB->child2 = nullptr;
             }
         }
@@ -644,7 +661,7 @@ SSA* Parser::p2_assignment() {
                 std::cout << "currBB is [if/else-blk];  looks like: " << std::endl << this->currBB->toString() << std::endl;
             #endif
             // [12.17.2024]: the real question is how to denote if-path vs else-path
-            // - see Parser.hpp::
+            // - see Parser.hpp::propagateDown()
             // [12.17.2024]: "new" [updateIf] bool where we propagate till the first join-blk (assuming we know we're in a if/else [has join] && the phi in the join's already mapped valid-ly)
             // this->propagateDown(this->currBB, ident, BasicBlock::ssa_table.at(this->currBB->child2->varVals.at(ident))->get_operand1(), table_int, true, {}, true);
 
@@ -655,7 +672,11 @@ SSA* Parser::p2_assignment() {
             
             // [12.11.2024]: unique case of [conditionalStmtPhiUpdate()]
             std::unordered_set<int> vars = {ident};
-            this->conditionalStmtPhiUpdate(vars, this->currBB->parent->parent, this->currBB->parent, this->currBB->parent->parent);
+            // [this->currBB->parent->parent] migiht not be [if_parent]
+            if (tmp->findSSA(value)) {
+                oldVal = BasicBlock::ssa_table.at(tmp->parent->varVals.at(ident));
+            }
+            this->conditionalStmtPhiUpdate(vars, oldVal);
 
             this->currBB = tmp;
         } else if (this->currBB->blkType == 1) { // std-blk type
@@ -706,7 +727,7 @@ SSA* Parser::p2_assignment() {
             
             // [12.11.2024]: unique case of [conditionalStmtPhiUpdate()]
             std::unordered_set<int> vars = {ident};
-            this->conditionalStmtPhiUpdate(vars, this->currBB->parent->parent, this->currBB->parent, this->currBB->parent->parent);
+            this->conditionalStmtPhiUpdate(vars, oldVal);
 
             this->currBB = tmp;
         } else if (this->currBB->blkType == 2) { // join-blk
@@ -1250,6 +1271,7 @@ SSA* Parser::p2_ifStatement() {
 
     then_blk->child2 = join_blk; // [11.11.2024]: set then_blk->child2 to join_blk
     join_blk->parent = then_blk;
+    join_blk->parent2 = if_parent;
     // [11.04.2024]: new; note - [then_blk->child = (old) if_parent->child]
     if (hasChild) {
         #ifdef DEBUG
@@ -1363,7 +1385,8 @@ SSA* Parser::p2_ifStatement() {
         #endif
         
         // [12.09.2024]: new func, moved code into here
-        this->conditionalStmtPhiUpdate(vars, if_parent, then_blk, if_parent);
+        // this->conditionalStmtPhiUpdate(vars, if_parent, then_blk, if_parent);
+        this->conditionalStmtPhiUpdate(vars);
         // [12.09.2024]: this is why we have propagateDown(), not for loop, but to update all the subsequent blk's(???); NO, this is separate from [propagateDown()] since propagateDown()'s should be for loop while THIS is simply a check after [if/else-blk] to see if we need to create additional phi's(?)
 
 
@@ -1456,7 +1479,8 @@ SSA* Parser::p2_ifStatement() {
     #endif
     
     // [12.09.2024]: new func, moved code into here
-    this->conditionalStmtPhiUpdate(vars, if_parent, then_blk, else_blk);
+    // this->conditionalStmtPhiUpdate(vars, if_parent, then_blk, else_blk);
+    this->conditionalStmtPhiUpdate(vars);
     // [12.09.2024]: this is why we have propagateDown(), not for loop, but to update all the subsequent blk's(???); NO, this is separate from [propagateDown()] since propagateDown()'s should be for loop while THIS is simply a check after [if/else-blk] to see if we need to create additional phi's(?)
 
     if (this->currBB->newInstrs.empty()) {
