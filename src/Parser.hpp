@@ -148,6 +148,17 @@ public:
             return nullptr;
         }
 
+        if (x->get_operator() == op) {
+            if ((x->get_operand1()->compare(y)) || (x->get_operand2()->compare(y))) {
+                ret = x;
+            }
+        }
+        if (y->get_operator() == op) {
+            if ((y->get_operand1()->compare(x)) || (y->get_operand2()->compare(x))) {
+                ret = y;
+            }
+        }
+
         // [09/19/2024]: Replaced Below (previous=this->SSA_instrs; current=this->instrList)
         Node *curr = BasicBlock::instrList.at(op)->tail;
         #ifdef DEBUG
@@ -298,6 +309,42 @@ public:
     //     return res;
     // }
 
+    inline void set_operand(int opNo, SSA *s, SSA *y, int ident = -1) {
+        // if were updating an SSA that's being pointed to by multiple idents, how do we ensure we're udpating the right one???!?!??!?!?!?!?!??!!? 什么鬼！！！！救命啊 ¥@#@¥#¥¥¥¥¥¥(~_~;)
+        // - look through [this->VVs], with map of count for ident-val's being pointed to && if any have count > 1, implies should create dupe SSA of prev && maintain connection to thiat one!
+
+        // bool hasMultiple = false;
+        // std::unordered_map<int, int> counts = {};
+        std::unordered_set<int> seen = {};
+
+        // [12.18.2024]: how should we resolve this
+        SSA *res = this->addSSA1(new SSA(*s), false);
+        int tableInt = this->add_SSA_table(res);
+
+        for (const auto &i : this->VVs) {
+            // if (counts.find(i.second) == counts.end()) {
+            if (seen.find(i.second) == seen.end()) {
+                // counts.insert(i.second, 1);
+                seen.insert(i.second);
+            } else {
+                // hasMultiple = true; // ig others will get resolved later with [propagateDown()]?
+                // counts.insert_or_assign(i.second, counts.at(i.second)++);
+                if ((ident != -1) && (ident == i.first)) {
+                    this->VVs.insert_or_assign(ident, tableInt);
+                }
+            }
+        }
+
+        if (opNo == 1) {
+            res->set_operand1(y);
+        } else if (opNo == 2) {
+            res->set_operand2(y);
+        } else {
+            std::cout << "[Parser::set_operand()] expected [opNo={1 || 2}], got [" << std::to_string(opNo) << "]" << std::endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+
     inline void checkPrevJmp(SSA *instr) {
         if (this->prevJump) {
             // [09/22/2024]: Assumption - [this->prevInstr] is alr in the instrList
@@ -308,9 +355,11 @@ public:
             #endif
             
             if (this->prevInstr->get_operator() == 8) {
-                this->prevInstr->set_operand1(instr);
+                this->set_operand(1, this->prevInstr, instr);
+                // this->prevInstr->set_operand1(instr);
             } else {
-                this->prevInstr->set_operand2(instr);
+                this->set_operand(2, this->prevInstr, instr);
+                // this->prevInstr->set_operand2(instr);
             }
 
             // this->prevJump = false;
@@ -529,7 +578,8 @@ public:
                                 std::cout << "currVVsIdent: [" << prevVal->toString() << "]" << std::endl;
                                 std::cout << "ident_valSSA: [" << BasicBlock::ssa_table.at(ident_val)->toString() << "]" << std::endl;
                             #endif
-                            prevVal->set_operand2(BasicBlock::ssa_table.at(ident_val));
+                            this->set_operand(2, prevVal, BasicBlock::ssa_table.at(ident_val), ident);
+                            // prevVal->set_operand2(BasicBlock::ssa_table.at(ident_val));
                         } else {
                             #ifdef DEBUG
                                 std::cout << " already assigned to this value! doing nothing..." << std::endl;
@@ -571,7 +621,8 @@ public:
                     ident_val = curr->varVals.at(ident);
                 } else {
                     if (updateIf && (prevVal->get_operator() == 6)) {
-                        prevVal->set_operand1(BasicBlock::ssa_table.at(ident_val));
+                        this->set_operand(1, prevVal, BasicBlock::ssa_table.at(ident_val), ident);
+                        // prevVal->set_operand1(BasicBlock::ssa_table.at(ident_val));
                         return; // [12.16.2024]: we can return here since we assume phi is already propagated, and we'rre only updating the [x] tied to [this->ssa obj]
                     }
 
@@ -981,13 +1032,15 @@ public:
                         } else if (BasicBlock::ssa_table.at(this->currBB->varVals.at(p))->get_operand1()->compare(BasicBlock::ssa_table.at(then_blk_last->varVals.at(p)))) {
                             // [12.17.2024]: the real question is how to denote if-path vs else-path...
                             // - since one requires us to [set_operand1()] while the other requries [set_operand2()]
-                            BasicBlock::ssa_table.at(this->currBB->varVals.at(p))->set_operand2(BasicBlock::ssa_table.at(else_blk_last->varVals.at(p)));
+                            this->set_operand(2, BasicBlock::ssa_table.at(this->currBB->varVals.at(p)), BasicBlock::ssa_table.at(else_blk_last->varVals.at(p)), p);
+                            // BasicBlock::ssa_table.at(this->currBB->varVals.at(p))->set_operand2(BasicBlock::ssa_table.at(else_blk_last->varVals.at(p)));
                             #ifdef DEBUG
                                 std::cout << "updating operand2()" << std::endl;
                             #endif
                         } else if (oldVal && (BasicBlock::ssa_table.at(this->currBB->varVals.at(p))->get_operand1()->compare(oldVal))) {
                             // [12.17.2024]: if [operand1()] is same as [oldVal], implies we should update [operand1()]
-                            BasicBlock::ssa_table.at(this->currBB->varVals.at(p))->set_operand1(BasicBlock::ssa_table.at(else_blk_last->varVals.at(p)));
+                            this->set_operand(1, BasicBlock::ssa_table.at(this->currBB->varVals.at(p)), BasicBlock::ssa_table.at(else_blk_last->varVals.at(p)), p);
+                            // BasicBlock::ssa_table.at(this->currBB->varVals.at(p))->set_operand1(BasicBlock::ssa_table.at(else_blk_last->varVals.at(p)));
                             #ifdef DEBUG
                                 std::cout << "updating operand1()" << std::endl;
                             #endif

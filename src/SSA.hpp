@@ -17,10 +17,10 @@ public:
 
     ~SSA();
     // Copy constructor
-    SSA(const SSA& other) : op(other.op), debug_num(other.debug_num) {
-        if (other.constVal) { this->constVal = new int(*(other.get_constVal())); }
-        if (other.get_operand1()) { this->x = new SSA(*(other.get_operand1())); }
-        if (other.get_operand2()) { this->y = new SSA(*(other.get_operand2())); }
+    SSA(const SSA& other) : op(other.op), debug_num((op > 0) ? curr_instr_num++ : curr_const_num--), blockNum(other.blockNum) {
+        if (other.constVal) { this->constVal = new int(*(other.get_constVal())); } else { this->constVal = nullptr; }
+        if (other.get_operand1()) { this->x = new SSA(*(other.get_operand1())); } else { this->x = nullptr; }
+        if (other.get_operand2()) { this->y = new SSA(*(other.get_operand2())); } else { this->y = nullptr; }
     }
 
     // Assignment operator
