@@ -149,12 +149,12 @@ public:
         }
 
         if (x->get_operator() == op) {
-            if ((x->get_operand1()->compare(y)) || (x->get_operand2()->compare(y))) {
+            if (((x->get_operand1()) && (x->get_operand1()->compare(y))) || ((x->get_operand2()) && (x->get_operand2()->compare(y)))) {
                 ret = x;
             }
         }
         if (y->get_operator() == op) {
-            if ((y->get_operand1()->compare(x)) || (y->get_operand2()->compare(x))) {
+            if (((y->get_operand1()) && (y->get_operand1()->compare(x))) || ((y->get_operand2()) && (y->get_operand2()->compare(x)))) {
                 ret = y;
             }
         }
@@ -309,7 +309,10 @@ public:
     //     return res;
     // }
 
-    inline void set_operand(int opNo, SSA *s, SSA *y, int ident = -1) {
+    inline SSA* set_operand(int opNo, SSA *s, SSA *y, int ident = -1) {
+        #ifdef DEBUG
+            std::cout << "in set_operand(s={" << s->toString() << "}) " << std::endl;
+        #endif
         // if were updating an SSA that's being pointed to by multiple idents, how do we ensure we're udpating the right one???!?!??!?!?!?!?!??!!? 什么鬼！！！！救命啊 ¥@#@¥#¥¥¥¥¥¥(~_~;)
         // - look through [this->VVs], with map of count for ident-val's being pointed to && if any have count > 1, implies should create dupe SSA of prev && maintain connection to thiat one!
 
@@ -318,8 +321,33 @@ public:
         std::unordered_set<int> seen = {};
 
         // [12.18.2024]: how should we resolve this
-        SSA *res = this->addSSA1(new SSA(*s), false);
+        bool dupe = false;
+        if (opNo == 1) {
+            if (s->get_operand1()->compare(y)) {
+                dupe = true;
+            }
+        } else if (opNo == 2) {
+            if (s->get_operand2()->compare(y)) {
+                dupe = true;
+            }
+        }
+        
+        if (dupe) { // if setting operand does nothing we should just do nothing
+            return s;
+        }
+        SSA *res = new SSA(*s);
+        
+        #ifdef DEBUG
+            std::cout << "just created SSA: [" << res->toString() << "]" << std::endl;
+        #endif
+
+        res = this->addSSA1(res, false);
         int tableInt = this->add_SSA_table(res);
+        bool identExists = false;
+
+        #ifdef DEBUG
+            std::cout << "about to enter loop: " << std::endl;
+        #endif
 
         for (const auto &i : this->VVs) {
             // if (counts.find(i.second) == counts.end()) {
@@ -330,9 +358,18 @@ public:
                 // hasMultiple = true; // ig others will get resolved later with [propagateDown()]?
                 // counts.insert_or_assign(i.second, counts.at(i.second)++);
                 if ((ident != -1) && (ident == i.first)) {
-                    this->VVs.insert_or_assign(ident, tableInt);
+                    identExists = true;
+                    // this->VVs.insert_or_assign(ident, tableInt);
                 }
             }
+        }
+
+        #ifdef DEBUG
+            std::cout << "done iterating through [this->VVs]" << std::endl;
+        #endif
+
+        if (identExists) {
+            this->VVs.insert_or_assign(ident, tableInt);
         }
 
         if (opNo == 1) {
@@ -343,6 +380,10 @@ public:
             std::cout << "[Parser::set_operand()] expected [opNo={1 || 2}], got [" << std::to_string(opNo) << "]" << std::endl;
             exit(EXIT_FAILURE);
         }
+        #ifdef DEBUG
+            std::cout << "ident after update: " << res->toString() << std::endl;
+        #endif
+        return res;
     }
 
     inline void checkPrevJmp(SSA *instr) {
@@ -355,10 +396,10 @@ public:
             #endif
             
             if (this->prevInstr->get_operator() == 8) {
-                this->set_operand(1, this->prevInstr, instr);
+                this->prevInstr = this->set_operand(1, this->prevInstr, instr);
                 // this->prevInstr->set_operand1(instr);
             } else {
-                this->set_operand(2, this->prevInstr, instr);
+                this->prevInstr = this->set_operand(2, this->prevInstr, instr);
                 // this->prevInstr->set_operand2(instr);
             }
 
@@ -571,14 +612,15 @@ public:
                         #ifdef DEBUG
                             std::cout << "prevINSTR is PHI!";
                         #endif
-                        if (!(prevVal->compare(BasicBlock::ssa_table.at(ident_val)))) {
+                        if ((!(prevVal->compare(BasicBlock::ssa_table.at(ident_val)))) &&
+                            (prevVal->get_operand2()->compare(BasicBlock::ssa_table.at(ident_val)) == false)) {
                             #ifdef DEBUG
                                 std::cout << " updating operand2()" << std::endl;
                                 // std::cout << "curr->varVals.at(ident): [" << std::to_string(curr->varVals.at(ident)) << "], ident_val: [" << std::to_string(ident_val) << "]" << std::endl;
                                 std::cout << "currVVsIdent: [" << prevVal->toString() << "]" << std::endl;
                                 std::cout << "ident_valSSA: [" << BasicBlock::ssa_table.at(ident_val)->toString() << "]" << std::endl;
                             #endif
-                            this->set_operand(2, prevVal, BasicBlock::ssa_table.at(ident_val), ident);
+                            prevVal = this->set_operand(2, prevVal, BasicBlock::ssa_table.at(ident_val), ident);
                             // prevVal->set_operand2(BasicBlock::ssa_table.at(ident_val));
                         } else {
                             #ifdef DEBUG
@@ -621,7 +663,7 @@ public:
                     ident_val = curr->varVals.at(ident);
                 } else {
                     if (updateIf && (prevVal->get_operator() == 6)) {
-                        this->set_operand(1, prevVal, BasicBlock::ssa_table.at(ident_val), ident);
+                        prevVal = this->set_operand(1, prevVal, BasicBlock::ssa_table.at(ident_val), ident);
                         // prevVal->set_operand1(BasicBlock::ssa_table.at(ident_val));
                         return; // [12.16.2024]: we can return here since we assume phi is already propagated, and we'rre only updating the [x] tied to [this->ssa obj]
                     }
@@ -641,9 +683,22 @@ public:
                             std::cout << "updated ident: [prevVal] from currBB~ looks like: " << std::endl << curr->toString() << std::endl;
                         #endif
                     } else {
+                        if (prevVal->get_operator() == 6) {
+                            if (curr->parent && BasicBlock::ssa_table.at(curr->parent->varVals.at(ident))->compare(prevVal->get_operand1())) {
+                                prevVal = this->set_operand(2, prevVal, BasicBlock::ssa_table.at(ident_val), ident);
+                                // prevVal->set_operand1(BasicBlock::ssa_table.at(ident_val));
+                                // return; // [12.16.2024]: we can return here since we assume phi is already propagated, and we'rre only updating the [x] tied to [this->ssa obj]
+                            }
+                            if (curr->parent2 && BasicBlock::ssa_table.at(curr->parent2->varVals.at(ident))->compare(prevVal->get_operand2())) {
+                                prevVal = this->set_operand(1, prevVal, BasicBlock::ssa_table.at(ident_val), ident);
+                                // prevVal->set_operand1(BasicBlock::ssa_table.at(ident_val));
+                                // return; // [12.16.2024]: we can return here since we assume phi is already propagated, and we'rre only updating the [x] tied to [this->ssa obj]
+                            }
+                        }
                         ident_val = BasicBlock::ssa_table_reversed.at(prevVal);
                         #ifdef DEBUG
                             std::cout << "ident exists (created in this BB) with val: [" << BasicBlock::ssa_table.at(ident_val)->toString() << "]" << std::endl;
+                            std::cout << "prevVal looks like: " << prevVal->toString() << std::endl;
                         #endif
                     }
                 }
@@ -1003,14 +1058,14 @@ public:
             }
             
             // if a ident from [if_parent] exists in [then_blk] with a different value in [else_blk], we need a phi
-            if (then_blk_last->varVals.at(curr) != else_blk_last->varVals.at(curr)) {
+            if (BasicBlock::ssa_table.at(then_blk_last->varVals.at(curr))->compare(BasicBlock::ssa_table.at(else_blk_last->varVals.at(curr))) == false) {
                 SSA *then_phi = BasicBlock::ssa_table.at(then_blk_last->varVals.at(curr));
                 SSA *else_phi = BasicBlock::ssa_table.at(else_blk_last->varVals.at(curr));
                 
                 #ifdef DEBUG
                     std::cout << "then_blk_last's ident val != else_blk_last's ident val; consolidating to one..." << std::endl;
-                    std::cout << "then_phi: " << then_phi->toString() << std::endl;
-                    std::cout << "else_phi: " << else_phi->toString() << std::endl;
+                    std::cout << "then_phi[" << std::to_string(then_blk_last->varVals.at(curr)) << "]: " << then_phi->toString() << std::endl;
+                    std::cout << "else_phi[" << std::to_string(else_blk_last->varVals.at(curr)) << "]: " << else_phi->toString() << std::endl;
                 #endif
                 
                 SSA *phi_instr = nullptr;
@@ -1032,14 +1087,16 @@ public:
                         } else if (BasicBlock::ssa_table.at(this->currBB->varVals.at(p))->get_operand1()->compare(BasicBlock::ssa_table.at(then_blk_last->varVals.at(p)))) {
                             // [12.17.2024]: the real question is how to denote if-path vs else-path...
                             // - since one requires us to [set_operand1()] while the other requries [set_operand2()]
-                            this->set_operand(2, BasicBlock::ssa_table.at(this->currBB->varVals.at(p)), BasicBlock::ssa_table.at(else_blk_last->varVals.at(p)), p);
+                            // this->set_operand(2, BasicBlock::ssa_table.at(this->currBB->varVals.at(p)), BasicBlock::ssa_table.at(else_blk_last->varVals.at(p)), p);
+                            this->currBB->varVals.insert_or_assign(p, BasicBlock::ssa_table_reversed.at(this->set_operand(2, BasicBlock::ssa_table.at(this->currBB->varVals.at(p)), BasicBlock::ssa_table.at(else_blk_last->varVals.at(p)), p)));
                             // BasicBlock::ssa_table.at(this->currBB->varVals.at(p))->set_operand2(BasicBlock::ssa_table.at(else_blk_last->varVals.at(p)));
                             #ifdef DEBUG
                                 std::cout << "updating operand2()" << std::endl;
                             #endif
                         } else if (oldVal && (BasicBlock::ssa_table.at(this->currBB->varVals.at(p))->get_operand1()->compare(oldVal))) {
                             // [12.17.2024]: if [operand1()] is same as [oldVal], implies we should update [operand1()]
-                            this->set_operand(1, BasicBlock::ssa_table.at(this->currBB->varVals.at(p)), BasicBlock::ssa_table.at(else_blk_last->varVals.at(p)), p);
+                            // this->set_operand(1, BasicBlock::ssa_table.at(this->currBB->varVals.at(p)), BasicBlock::ssa_table.at(else_blk_last->varVals.at(p)), p);
+                            this->currBB->varVals.insert_or_assign(p, BasicBlock::ssa_table_reversed.at(this->set_operand(1, BasicBlock::ssa_table.at(this->currBB->varVals.at(p)), BasicBlock::ssa_table.at(else_blk_last->varVals.at(p)), p)));
                             // BasicBlock::ssa_table.at(this->currBB->varVals.at(p))->set_operand1(BasicBlock::ssa_table.at(else_blk_last->varVals.at(p)));
                             #ifdef DEBUG
                                 std::cout << "updating operand1()" << std::endl;
