@@ -1,0 +1,9 @@
+Identifiers;
+[KEYWORD/TERMINAL Literal]: 	[SymbolTable INT_VAL]
+[OutputNum]: 					[42]
+[d]: 							[37]
+[b]: 							[35]
+[InputNum]: 					[34]
+[c]: 							[36]
+[a]: 							[33]
+[i]: 							[31]

@@ -1,0 +1,7 @@
+Numbers;
+[KEYWORD/TERMINAL Literal]: 	[SymbolTable INT_VAL]
+[9]: 							[41]
+[1]: 							[39]
+[2]: 							[40]
+[10]: 							[38]
+[0]: 							[32]

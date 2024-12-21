@@ -337,13 +337,13 @@ public:
         }
         SSA *res = new SSA(*s);
         
-        #ifdef DEBUG
-            std::cout << "just created SSA: [" << res->toString() << "]" << std::endl;
-        #endif
+        // #ifdef DEBUG
+        //     std::cout << "just created SSA: [" << res->toString() << "]" << std::endl;
+        // #endif
 
-        res = this->addSSA1(res, false);
-        int tableInt = this->add_SSA_table(res);
-        bool identExists = false;
+        // res = this->addSSA1(res, false);
+        // int tableInt = this->add_SSA_table(res);
+        // bool identExists = false;
 
         #ifdef DEBUG
             std::cout << "about to enter loop: " << std::endl;
@@ -358,7 +358,7 @@ public:
                 // hasMultiple = true; // ig others will get resolved later with [propagateDown()]?
                 // counts.insert_or_assign(i.second, counts.at(i.second)++);
                 if ((ident != -1) && (ident == i.first)) {
-                    identExists = true;
+                    // identExists = true;
                     // this->VVs.insert_or_assign(ident, tableInt);
                 }
             }
@@ -368,9 +368,9 @@ public:
             std::cout << "done iterating through [this->VVs]" << std::endl;
         #endif
 
-        if (identExists) {
-            this->VVs.insert_or_assign(ident, tableInt);
-        }
+        // if (identExists) {
+        //     this->VVs.insert_or_assign(ident, tableInt);
+        // }
 
         if (opNo == 1) {
             res->set_operand1(y);
@@ -379,6 +379,12 @@ public:
         } else {
             std::cout << "[Parser::set_operand()] expected [opNo={1 || 2}], got [" << std::to_string(opNo) << "]" << std::endl;
             exit(EXIT_FAILURE);
+        }
+
+        if (ident != -1) {
+            int tableInt = this->add_SSA_table(res);
+            this->currBB->varVals.insert_or_assign(ident, tableInt);
+            this->VVs.insert_or_assign(ident, tableInt);
         }
         #ifdef DEBUG
             std::cout << "ident after update: " << res->toString() << std::endl;
@@ -684,21 +690,30 @@ public:
                         #endif
                     } else {
                         if (prevVal->get_operator() == 6) {
+                            #ifdef DEBUG
+                                std::cout << "phi UPDATE" << std::endl;
+                            #endif
                             if (curr->parent && BasicBlock::ssa_table.at(curr->parent->varVals.at(ident))->compare(prevVal->get_operand1())) {
-                                prevVal = this->set_operand(2, prevVal, BasicBlock::ssa_table.at(ident_val), ident);
+                                if (prevVal->get_operand1()->compare(BasicBlock::ssa_table.at(ident_val)) == false) {
+                                    prevVal = this->set_operand(2, prevVal, BasicBlock::ssa_table.at(ident_val), ident);
+                                }
                                 // prevVal->set_operand1(BasicBlock::ssa_table.at(ident_val));
                                 // return; // [12.16.2024]: we can return here since we assume phi is already propagated, and we'rre only updating the [x] tied to [this->ssa obj]
                             }
                             if (curr->parent2 && BasicBlock::ssa_table.at(curr->parent2->varVals.at(ident))->compare(prevVal->get_operand2())) {
-                                prevVal = this->set_operand(1, prevVal, BasicBlock::ssa_table.at(ident_val), ident);
+                                if (prevVal->get_operand2()->compare(BasicBlock::ssa_table.at(ident_val)) == false) {
+                                    prevVal = this->set_operand(1, prevVal, BasicBlock::ssa_table.at(ident_val), ident);
+                                }
                                 // prevVal->set_operand1(BasicBlock::ssa_table.at(ident_val));
                                 // return; // [12.16.2024]: we can return here since we assume phi is already propagated, and we'rre only updating the [x] tied to [this->ssa obj]
                             }
                         }
-                        ident_val = BasicBlock::ssa_table_reversed.at(prevVal);
+                        // ident_val = BasicBlock::ssa_table_reversed.at(prevVal);
                         #ifdef DEBUG
-                            std::cout << "ident exists (created in this BB) with val: [" << BasicBlock::ssa_table.at(ident_val)->toString() << "]" << std::endl;
-                            std::cout << "prevVal looks like: " << prevVal->toString() << std::endl;
+                            std::cout << "ident exists with val: [" << BasicBlock::ssa_table.at(ident_val)->toString() << "]" << std::endl;
+                            std::cout << "prevVal looks like;" << std::endl;
+                            std::cout << prevVal->toString() << std::endl;
+                            std::cout << BasicBlock::ssa_table.at(ident_val)->toString() << std::endl;
                         #endif
                     }
                 }
