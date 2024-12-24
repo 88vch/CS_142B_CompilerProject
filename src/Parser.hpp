@@ -148,12 +148,12 @@ public:
             return nullptr;
         }
 
-        if (x->get_operator() == op) {
+        if (x && x->get_operator() == op) {
             if (((x->get_operand1()) && (x->get_operand1()->compare(y))) || ((x->get_operand2()) && (x->get_operand2()->compare(y)))) {
                 ret = x;
             }
         }
-        if (y->get_operator() == op) {
+        if (y && y->get_operator() == op) {
             if (((y->get_operand1()) && (y->get_operand1()->compare(x))) || ((y->get_operand2()) && (y->get_operand2()->compare(x)))) {
                 ret = y;
             }
@@ -322,12 +322,13 @@ public:
 
         // [12.18.2024]: how should we resolve this
         bool dupe = false;
+        SSA *r1 = s->get_operand1(), *r2 = s->get_operand2();
         if (opNo == 1) {
-            if (s->get_operand1()->compare(y)) {
+            if (r1 && r1->compare(y)) {
                 dupe = true;
             }
         } else if (opNo == 2) {
-            if (s->get_operand2()->compare(y)) {
+            if (r2 && r2->compare(y)) {
                 dupe = true;
             }
         }
