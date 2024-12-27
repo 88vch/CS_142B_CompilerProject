@@ -604,6 +604,10 @@ SSA* Parser::p2_assignment() {
             #ifdef DEBUG
                 std::cout << "Warning: uninitialized variable default initialized to 0! Overwriting default value here (same-BB)" << std::endl;
             #endif
+        } else {
+            #ifdef DEBUG
+                std::cout << "Proceeding with std insert" << std::endl;
+            #endif
         }
     }
     

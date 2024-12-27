@@ -148,16 +148,17 @@ public:
             return nullptr;
         }
 
-        if (x && x->get_operator() == op) {
-            if (((x->get_operand1()) && (x->get_operand1()->compare(y))) || ((x->get_operand2()) && (x->get_operand2()->compare(y)))) {
-                ret = x;
-            }
-        }
-        if (y && y->get_operator() == op) {
-            if (((y->get_operand1()) && (y->get_operand1()->compare(x))) || ((y->get_operand2()) && (y->get_operand2()->compare(x)))) {
-                ret = y;
-            }
-        }
+        // [12.26.2024]: why tf did we put this here again?...
+        // if (x && x->get_operator() == op) {
+        //     if ((((x->get_operand1()) && (x->get_operand1()->compare(y))) && (!x->get_operand2() || x->get_operand2()->compare(x))) || (((x->get_operand2()) && (x->get_operand2()->compare(y))) && (!x->get_operand1() || x->get_operand1()->compare(x)))) {
+        //         ret = x;
+        //     }
+        // }
+        // if (y && y->get_operator() == op) {
+        //     if (((y->get_operand1()) && (y->get_operand1()->compare(x))) || ((y->get_operand2()) && (y->get_operand2()->compare(x)))) {
+        //         ret = y;
+        //     }
+        // }
 
         // [09/19/2024]: Replaced Below (previous=this->SSA_instrs; current=this->instrList)
         Node *curr = BasicBlock::instrList.at(op)->tail;
@@ -627,15 +628,25 @@ public:
                                 std::cout << "currVVsIdent: [" << prevVal->toString() << "]" << std::endl;
                                 std::cout << "ident_valSSA: [" << BasicBlock::ssa_table.at(ident_val)->toString() << "]" << std::endl;
                             #endif
-                            prevVal = this->set_operand(2, prevVal, BasicBlock::ssa_table.at(ident_val), ident);
+                            SSA *ret = this->set_operand(2, prevVal, BasicBlock::ssa_table.at(ident_val), ident);
                             // prevVal->set_operand2(BasicBlock::ssa_table.at(ident_val));
+                            // [12.14.2024]: if we're in main while we shoujldn't overwrite since we assume it's the phi joining from before while-loop
+                            // 【12.26.2024】：if [set_operand()] cretes a new SSA, we should handle it here ig....操
+                            BasicBlock *tmp = this->currBB;
+                            this->currBB = curr;
+                            ret = this->addSSA1(ret, true);
+                            ident_val = this->add_SSA_table(ret);
+                            curr->varVals.insert_or_assign(ident, ident_val);
+                            this->VVs.insert_or_assign(ident, ident_val);
+                            this->currBB = tmp;
+
+                            oldVal = prevVal;
                         } else {
                             #ifdef DEBUG
                                 std::cout << " already assigned to this value! doing nothing..." << std::endl;
                             #endif
                         }
                         // curr->updateInstructions(prevVal, BasicBlock::ssa_table.at(ident_val)); // [12.14.2024]: if we're in main while we shoujldn't overwrite since we assume it's the phi joining from before while-loop
-                        // curr->varVals.insert_or_assign(ident, ident_val); // [12.14.2024]: if we're in main while we shoujldn't overwrite since we assume it's the phi joining from before while-loop
                     } else {
                         // if (prevVal->compare(oldVal)) {            
                         //     curr->varVals.insert_or_assign(ident, ident_val);
@@ -656,7 +667,7 @@ public:
                         ident_val = this->add_SSA_table(retVal);
                         
                         curr->varVals.insert_or_assign(ident, ident_val);
-                        this->VVs.insert_or_assign(ident, ident_val);
+                        // this->VVs.insert_or_assign(ident, ident_val);
                         curr->updateInstructions(prevVal, BasicBlock::ssa_table.at(ident_val));
                         
                         this->currBB = tmp;
@@ -716,6 +727,12 @@ public:
                             std::cout << prevVal->toString() << std::endl;
                             std::cout << BasicBlock::ssa_table.at(ident_val)->toString() << std::endl;
                         #endif
+
+                        if (this->currBB->findSSA(prevVal)) {
+                            // [12.26.2024]: this hsould be the end of [propagateDown()] for this branch right?
+                            // - since prevVal was created in [this->currBB], we can assume future BB's that're DOM by this->currBB will either use that val or update it
+                            return;
+                        }
                     }
                 }
             } else {
@@ -1018,6 +1035,8 @@ public:
         #endif
     }
 
+    // compares then-blk && else-blk to see if we need to update join-blk's phi-instr's
+    // - propagateDown's update after
     inline void conditionalStmtPhiUpdate(std::unordered_set<int> vars, SSA *oldVal = nullptr) {
         // [12.09.2024]: if we have [if && else] blk, assumes [this->currBB == join_blk]
         BasicBlock *then_blk_last = this->currBB->parent;
@@ -1086,6 +1105,7 @@ public:
                 
                 SSA *phi_instr = nullptr;
                 int phi_table_int;
+                bool newAdd = false;
 
                 if (this->currBB->varVals.find(p) != this->currBB->varVals.end()) {
                     #ifdef DEBUG
@@ -1122,16 +1142,19 @@ public:
                                 std::cout << "about to remove ssa [" << BasicBlock::ssa_table.at(this->currBB->varVals.at(p))->toString() << "]" << std::endl;
                             #endif
                             this->currBB->removeSSA(BasicBlock::ssa_table.at(this->currBB->varVals.at(p))); // [12.14.2024]: lets just leavei t there
+                            newAdd = true;
                         }
-                    }
+                    } else { newAdd = true; }
                 }
 
-                phi_instr = this->addSSA1(6, BasicBlock::ssa_table.at(then_blk_last->varVals.at(p)), BasicBlock::ssa_table.at(else_blk_last->varVals.at(p)), true);
-                phi_table_int = this->add_SSA_table(phi_instr);
-                
-                // [10.28.2024]: Update BasicBlock's VV
-                this->currBB->varVals.insert_or_assign(p, phi_table_int);
-                this->VVs.insert_or_assign(p, phi_table_int);
+                if (newAdd) {
+                    phi_instr = this->addSSA1(6, BasicBlock::ssa_table.at(then_blk_last->varVals.at(p)), BasicBlock::ssa_table.at(else_blk_last->varVals.at(p)), true);
+                    phi_table_int = this->add_SSA_table(phi_instr);
+                    
+                    // [10.28.2024]: Update BasicBlock's VV
+                    this->currBB->varVals.insert_or_assign(p, phi_table_int);
+                    this->VVs.insert_or_assign(p, phi_table_int);
+                }
                 
                 #ifdef DEBUG
                     std::cout << "currBB after updtae: " << std::endl << this->currBB->toString() << std::endl;
