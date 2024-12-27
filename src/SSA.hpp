@@ -171,8 +171,8 @@ public:
 
     // [10/18/2024]: What's wrong here??? Why is it segfaulting？
     std::string toString() const {
-        std::string x_val = (this->x) ? "[SSA]: " + std::to_string(this->x->get_debugNum()) : "[SSA]: null";
-        std::string y_val = (this->y) ? "[SSA]: " + std::to_string(this->y->get_debugNum()) : "[SSA]: null";
+        std::string x_val = "[SSA]: " + ((this->x) ? std::to_string(this->x->get_debugNum()) : "null");
+        std::string y_val = "[SSA]: " + ((this->y) ? std::to_string(this->y->get_debugNum()) : "null");
         
         // [07/28/2024]; ToDo: add cases for [const] and finish this function (along with opToString())
         std::string res = "[" + std::to_string(this->debug_num) + "]: \t`" + this->opToString() + "`";

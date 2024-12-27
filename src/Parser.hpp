@@ -628,17 +628,28 @@ public:
                                 std::cout << "currVVsIdent: [" << prevVal->toString() << "]" << std::endl;
                                 std::cout << "ident_valSSA: [" << BasicBlock::ssa_table.at(ident_val)->toString() << "]" << std::endl;
                             #endif
-                            SSA *ret = this->set_operand(2, prevVal, BasicBlock::ssa_table.at(ident_val), ident);
                             // prevVal->set_operand2(BasicBlock::ssa_table.at(ident_val));
                             // [12.14.2024]: if we're in main while we shoujldn't overwrite since we assume it's the phi joining from before while-loop
                             // 【12.26.2024】：if [set_operand()] cretes a new SSA, we should handle it here ig....操
                             BasicBlock *tmp = this->currBB;
                             this->currBB = curr;
+
+                            #ifdef DEBUG
+                                std::cout << "before addSSA()" << std::endl;
+                                std::cout << "tmp looks like: " << tmp->toString() << std::endl;
+                                std::cout << "curr looks like: " << this->currBB->toString() << std::endl;
+                            #endif
+
+                            SSA *ret = this->set_operand(2, prevVal, BasicBlock::ssa_table.at(ident_val), ident);
                             ret = this->addSSA1(ret, true);
                             ident_val = this->add_SSA_table(ret);
                             curr->varVals.insert_or_assign(ident, ident_val);
-                            this->VVs.insert_or_assign(ident, ident_val);
+                            // this->VVs.insert_or_assign(ident, ident_val);
                             this->currBB = tmp;
+
+                            #ifdef DEBUG
+                                std::cout << "after addSSA(), [this->currBB] looks like: " << std::endl << this->currBB->toString() << std::endl;
+                            #endif
 
                             oldVal = prevVal;
                         } else {
@@ -695,7 +706,7 @@ public:
                     curr->updateInstructions(oldVal, BasicBlock::ssa_table.at(ident_val));
                     if ((prevVal->compare(oldVal)) && (curr->findSSA(prevVal) == false) && (BasicBlock::ssa_table.at(curr->varVals.at(ident)))->getBlkNum() != curr->blockNum) {
                         curr->varVals.insert_or_assign(ident, ident_val);
-                        this->VVs.insert_or_assign(ident, ident_val);
+                        // this->VVs.insert_or_assign(ident, ident_val);
                         // curr->removeSSA(prevVal); // [12.14.2024]: what if we don't remove it?
                         #ifdef DEBUG
                             std::cout << "updated ident: [prevVal] from currBB~ looks like: " << std::endl << curr->toString() << std::endl;
@@ -731,6 +742,9 @@ public:
                         if (this->currBB->findSSA(prevVal)) {
                             // [12.26.2024]: this hsould be the end of [propagateDown()] for this branch right?
                             // - since prevVal was created in [this->currBB], we can assume future BB's that're DOM by this->currBB will either use that val or update it
+                            #ifdef DEBUG
+                                std::cout << "prevVal was created in [this->currBB]; looks like: " << std::endl << this->currBB->toString() << std::endl;
+                            #endif
                             return; // stub
                         }
                     }
@@ -759,7 +773,7 @@ public:
 
         if (!first && this->currBB->compare(curr)) {
             #ifdef DEBUG
-                std::cout << "returning: in a loop! found startBB looks like: " << std::endl << this->currBB->toString() << std::endl;
+                std::cout << "returning: in a loop! found startBB" << std::endl;
             #endif
             return;
         }
