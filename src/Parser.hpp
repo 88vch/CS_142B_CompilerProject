@@ -731,7 +731,7 @@ public:
                         if (this->currBB->findSSA(prevVal)) {
                             // [12.26.2024]: this hsould be the end of [propagateDown()] for this branch right?
                             // - since prevVal was created in [this->currBB], we can assume future BB's that're DOM by this->currBB will either use that val or update it
-                            return;
+                            return; // stub
                         }
                     }
                 }
