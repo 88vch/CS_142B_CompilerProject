@@ -337,7 +337,13 @@ public:
         if (dupe) { // if setting operand does nothing we should just do nothing
             return s;
         }
-        SSA *res = new SSA(*s);
+
+        SSA *res = nullptr;
+        if (opNo == 6) {
+            res = s;
+        } else {
+            res = new SSA (*s);
+        }
         
         // #ifdef DEBUG
         //     std::cout << "just created SSA: [" << res->toString() << "]" << std::endl;
@@ -600,8 +606,15 @@ public:
         #ifdef DEBUG
             std::cout << "in propagateDown(currBB[" << std::to_string(curr->blockNum) << "]; ident=" << SymbolTable::symbol_table.at(ident) << ", phi_ident=" << BasicBlock::ssa_table.at(ident_val)->toString() << ", oldVal (SSA) = " << oldVal->toString() << ", ); curr(BB) looks like: " << std::endl << curr->toString() << std::endl;
         #endif
-        if (!first) {
+         if (!first) {
             seen.push_back(curr);
+        }
+
+        if (!first && this->currBB->compare(curr)) {
+            #ifdef DEBUG
+                std::cout << "returning: in a loop! found startBB" << std::endl;
+            #endif
+            return;
         }
 
         if (curr->varVals.find(ident) != curr->varVals.end()) {
@@ -719,6 +732,9 @@ public:
                             if (curr->parent && BasicBlock::ssa_table.at(curr->parent->varVals.at(ident))->compare(prevVal->get_operand1())) {
                                 if (prevVal->get_operand1()->compare(BasicBlock::ssa_table.at(ident_val)) == false) {
                                     prevVal = this->set_operand(2, prevVal, BasicBlock::ssa_table.at(ident_val), ident);
+                                    #ifdef DEBUG
+                                        std::cout << "this path was traversed (set op 2) and prevVal has been updated to: " << prevVal->toString() << std::endl;
+                                    #endif
                                 }
                                 // prevVal->set_operand1(BasicBlock::ssa_table.at(ident_val));
                                 // return; // [12.16.2024]: we can return here since we assume phi is already propagated, and we'rre only updating the [x] tied to [this->ssa obj]
@@ -726,6 +742,9 @@ public:
                             if (curr->parent2 && BasicBlock::ssa_table.at(curr->parent2->varVals.at(ident))->compare(prevVal->get_operand2())) {
                                 if (prevVal->get_operand2()->compare(BasicBlock::ssa_table.at(ident_val)) == false) {
                                     prevVal = this->set_operand(1, prevVal, BasicBlock::ssa_table.at(ident_val), ident);
+                                    #ifdef DEBUG
+                                        std::cout << "this path was traversed (set op 1) and prevVal has been updated to: " << prevVal->toString() << std::endl;
+                                    #endif
                                 }
                                 // prevVal->set_operand1(BasicBlock::ssa_table.at(ident_val));
                                 // return; // [12.16.2024]: we can return here since we assume phi is already propagated, and we'rre only updating the [x] tied to [this->ssa obj]
@@ -739,11 +758,12 @@ public:
                             std::cout << BasicBlock::ssa_table.at(ident_val)->toString() << std::endl;
                         #endif
 
-                        if (this->currBB->findSSA(prevVal)) {
+                        // if (this->currBB->findSSA(prevVal)) {
+                        if (curr->findSSA(prevVal)) {
                             // [12.26.2024]: this hsould be the end of [propagateDown()] for this branch right?
                             // - since prevVal was created in [this->currBB], we can assume future BB's that're DOM by this->currBB will either use that val or update it
                             #ifdef DEBUG
-                                std::cout << "prevVal was created in [this->currBB]; looks like: " << std::endl << this->currBB->toString() << std::endl;
+                                std::cout << "prevVal was created in [curr]; looks like: " << std::endl << curr->toString() << std::endl;
                             #endif
                             return; // stub
                         }
@@ -770,13 +790,6 @@ public:
         #ifdef DEBUG
             std::cout << "after update curr looks like: " << std::endl << curr->toString() << std::endl;
         #endif
-
-        if (!first && this->currBB->compare(curr)) {
-            #ifdef DEBUG
-                std::cout << "returning: in a loop! found startBB" << std::endl;
-            #endif
-            return;
-        }
 
         if ((curr->child) && (std::find(seen.begin(), seen.end(), curr->child) == seen.end())) {
             propagateDown(curr->child, ident, oldVal, ident_val, false, seen, updateIf);
