@@ -609,8 +609,18 @@ SSA* Parser::p2_assignment() {
                 std::cout << "Proceeding with std insert" << std::endl;
             #endif
         }
+
+        // [12.28.2024]: oldVal == nullptr simply indicates that this var hasn't been defined yet (this is first def)
+        // if (this->currBB->varVals.find(ident) == this->currBB->varVals.end()) {
+        //     this->handleUninitVar(ident);
+        //     oldVal = BasicBlock::ssa_table.at(this->currBB->varVals.at(ident));
+            
+        //     #ifdef DEBUG
+        //         std::cout << "updated uninitialized variable to: " << oldVal->toString() << std::endl;
+        //     #endif
+        // }
     }
-    
+
     #ifdef DEBUG
         if (overwrite) {
             std::cout << "overwrite=true;";
@@ -699,17 +709,39 @@ SSA* Parser::p2_assignment() {
         #ifdef DEBUG
             std::cout << "loopHead looks like: " << loopHead->toString() << std::endl;
             std::cout << "this->currBB looks like: " << this->currBB->toString() << std::endl;
+            std::cout << "oldVal looks like: ";
+            if (oldVal) {
+                std::cout << oldVal->toString() << std::endl;
+            } else {
+                std::cout << "nullptr!" << std::endl;
+            }
         #endif
         BasicBlock *tmp = this->currBB;
         this->currBB = loopHead;
-        oldVal = BasicBlock::ssa_table.at(this->currBB->varVals.at(ident));
-        
-        if ((oldVal->get_operator() == 6)) { /* && (
-                (this->currBB->findSSA(oldVal)) || (tmp->findSSA(oldVal)))) { */
+
+        if (this->currBB->varVals.find(ident) != this->currBB->varVals.end()) {
+            oldVal = BasicBlock::ssa_table.at(this->currBB->varVals.at(ident));
+
+            #ifdef DEBUG
+                std::cout << "updated oldVal: " << oldVal->toString() << std::endl;
+            #endif 
+        }
+
+        // [12.28.2024]: oldVal == nullptr simply indicates that this var hasn't been defined yet (this is first def)
+        // if (this->currBB->varVals.find(ident) == this->currBB->varVals.end()) {
+        //     this->handleUninitVar(ident);
+        // }
+
+        // assume that ident will be defined before a loop is entered
+
+        if ((BasicBlock::ssa_table.find(this->currBB->varVals.at(ident)) != BasicBlock::ssa_table.end()) && BasicBlock::ssa_table.at(this->currBB->varVals.at(ident))->get_operator() == 6) {
+        // if ((oldVal->get_operator() == 6)) { /* && (
+        //         (this->currBB->findSSA(oldVal)) || (tmp->findSSA(oldVal)))) { */
             #ifdef DEBUG
                 std::cout << "currBB's ident is PHI! doing NOTHING..." << std::endl;
             #endif
             // BasicBlock::ssa_table.at(this->currBB->varVals.at(ident))->set_operand2(value);
+            oldVal = BasicBlock::ssa_table.at(this->currBB->varVals.at(ident));
         } else {
             SSA *phi = this->addSSA1(6, oldVal, value);
             int phi_table_int = this->add_SSA_table(phi);            
