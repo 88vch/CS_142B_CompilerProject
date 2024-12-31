@@ -67,7 +67,7 @@ public:
 
     std::string toString() const {
         std::string res = "\n ------------------------------------------------------------------------------------------------------------ ";
-        res += "\n| \t\t\t\t\t\t[BB" + std::to_string(this->blockNum) + "] \t\t\t\t\t\t\t\t";
+        res += "\n| \t\t\t\t\t\t[BB" + std::to_string(this->blockNum) + ": " + std::to_string(this->blkType) + " (blkType)] \t\t\t\t\t\t\t\t";
 
         if (this->constList) 
         {

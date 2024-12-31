@@ -538,55 +538,59 @@ SSA* Parser::p2_assignment() {
             #ifdef DEBUG
                 std::cout << "child blk == nullptr!" << std::endl;
             #endif
-            if (this->currBB->child2 && this->currBB->child2->blkType == 2) {
-                if (this->currBB->child2->child == nullptr) {
-                    this->currBB->child2->child = new BasicBlock(this->currBB->varVals, false, this->currBB->blkType, false);
-                    this->currBB->child2->child->parent = this->currBB->child2;
-                    this->currBB->child2->child->child2 = this->currBB->child2->child2;
+            // if (this->currBB->child2 && this->currBB->child2->blkType == 2) {
+            //     #ifdef DEBUG
+            //         std::cout << "child2 blk (join!) == " << this->currBB->child2->toString() << std::endl;
+            //     #endif
+            //     if (this->currBB->child2->child == nullptr) {
+            //         this->currBB->child2->child = new BasicBlock(this->currBB->varVals, false, 1, false);
+            //         this->currBB->child2->child->parent = this->currBB->child2;
+            //         this->currBB->child2->child->child2 = this->currBB->child2->child2;
+                
+            //         this->currBB = this->currBB->child2;
+            //     } else {
+            //         BasicBlock *tmp = this->currBB;
+            //         this->currBB = this->currBB->child2;
+            //         #ifdef DEBUG
+            //             std::cout << "child blk == " << this->currBB->child->toString() << std::endl;
+            //         #endif
+            //         BasicBlock *oldChild = this->currBB->child;
+
+            //         this->currBB->child = new BasicBlock(this->currBB->varVals, false, this->currBB->blkType, false);
+            //         this->currBB->child->parent = this->currBB;
+            //         this->currBB->child->child = oldChild;
+
+            //         if (oldChild->parent->blockNum == this->currBB->blockNum) {
+            //             oldChild->parent = this->currBB->child;
+            //         } else {
+            //             oldChild->parent2 = this->currBB->child;
+            //         }
+
+            //         this->currBB = tmp;
+            //     }
+            // } else {
+            this->currBB->child = new BasicBlock(this->currBB->varVals, false, this->currBB->blkType, false);
+            this->currBB->child->parent = this->currBB;
+
+            if (this->currBB->child2) {
+                #ifdef DEBUG
+                    std::cout << "child2 blk == " << this->currBB->child2->toString() << std::endl;
+                #endif
+                this->currBB->child->child2 = this->currBB->child2;
+                if (this->currBB->child->child2->parent->blockNum == this->currBB->blockNum) {
+                    this->currBB->child->child2->parent = this->currBB->child;
                 } else {
-                    BasicBlock *tmp = this->currBB;
-                    this->currBB = this->currBB->child2;
-                    #ifdef DEBUG
-                        std::cout << "child blk == " << this->currBB->child->toString() << std::endl;
-                    #endif
-                    BasicBlock *oldChild = this->currBB->child;
-
-                    this->currBB->child = new BasicBlock(this->currBB->varVals, false, this->currBB->blkType, false);
-                    this->currBB->child->parent = this->currBB;
-                    this->currBB->child->child = oldChild;
-
-                    if (oldChild->parent->blockNum == this->currBB->blockNum) {
-                        oldChild->parent = this->currBB->child;
-                    } else {
-                        oldChild->parent2 = this->currBB->child;
-                    }
-
-                    this->currBB = tmp;
-                    
-                    // // [12.30.2024]: tf does this do ??? copied from below
-                    // if (this->currBB->child->child2->parent->blockNum == this->currBB->blockNum) {
-                    //     this->currBB->child->child2->parent = this->currBB->child;
-                    // } else {
-                    //     this->currBB->child->child2->parent2 = this->currBB->child;
-                    // }
+                    this->currBB->child->child2->parent2 = this->currBB->child;
                 }
-            } else {
-                this->currBB->child = new BasicBlock(this->currBB->varVals, false, this->currBB->blkType, false);
-                this->currBB->child->parent = this->currBB;
+                this->currBB->child2 = nullptr;
 
-                if (this->currBB->child2) {
-                    #ifdef DEBUG
-                        std::cout << "child2 blk == " << this->currBB->child2->toString() << std::endl;
-                    #endif
-                    this->currBB->child->child2 = this->currBB->child2;
-                    if (this->currBB->child->child2->parent->blockNum == this->currBB->blockNum) {
-                        this->currBB->child->child2->parent = this->currBB->child;
-                    } else {
-                        this->currBB->child->child2->parent2 = this->currBB->child;
-                    }
-                    this->currBB->child2 = nullptr;
+                if (this->currBB->child->child2->parent->blockNum == this->currBB->blockNum) {
+                    this->currBB->child->child2->parent = this->currBB->child;
+                } else {
+                    this->currBB->child->child2->parent2 = this->currBB->child;
                 }
             }
+            // }
         } else if (this->currBB->child) {
             #ifdef DEBUG
                 std::cout << "child blk == " << this->currBB->child->toString() << std::endl;
