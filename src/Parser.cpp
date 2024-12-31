@@ -538,20 +538,54 @@ SSA* Parser::p2_assignment() {
             #ifdef DEBUG
                 std::cout << "child blk == nullptr!" << std::endl;
             #endif
-            this->currBB->child = new BasicBlock(this->currBB->varVals, false, this->currBB->blkType, false);
-            this->currBB->child->parent = this->currBB;
-
-            if (this->currBB->child2) {
-                #ifdef DEBUG
-                    std::cout << "child2 blk == " << this->currBB->child2->toString() << std::endl;
-                #endif
-                this->currBB->child->child2 = this->currBB->child2;
-                if (this->currBB->child->child2->parent->blockNum == this->currBB->blockNum) {
-                    this->currBB->child->child2->parent = this->currBB->child;
+            if (this->currBB->child2 && this->currBB->child2->blkType == 2) {
+                if (this->currBB->child2->child == nullptr) {
+                    this->currBB->child2->child = new BasicBlock(this->currBB->varVals, false, this->currBB->blkType, false);
+                    this->currBB->child2->child->parent = this->currBB->child2;
+                    this->currBB->child2->child->child2 = this->currBB->child2->child2;
                 } else {
-                    this->currBB->child->child2->parent2 = this->currBB->child;
+                    BasicBlock *tmp = this->currBB;
+                    this->currBB = this->currBB->child2;
+                    #ifdef DEBUG
+                        std::cout << "child blk == " << this->currBB->child->toString() << std::endl;
+                    #endif
+                    BasicBlock *oldChild = this->currBB->child;
+
+                    this->currBB->child = new BasicBlock(this->currBB->varVals, false, this->currBB->blkType, false);
+                    this->currBB->child->parent = this->currBB;
+                    this->currBB->child->child = oldChild;
+
+                    if (oldChild->parent->blockNum == this->currBB->blockNum) {
+                        oldChild->parent = this->currBB->child;
+                    } else {
+                        oldChild->parent2 = this->currBB->child;
+                    }
+
+                    this->currBB = tmp;
+                    
+                    // // [12.30.2024]: tf does this do ??? copied from below
+                    // if (this->currBB->child->child2->parent->blockNum == this->currBB->blockNum) {
+                    //     this->currBB->child->child2->parent = this->currBB->child;
+                    // } else {
+                    //     this->currBB->child->child2->parent2 = this->currBB->child;
+                    // }
                 }
-                this->currBB->child2 = nullptr;
+            } else {
+                this->currBB->child = new BasicBlock(this->currBB->varVals, false, this->currBB->blkType, false);
+                this->currBB->child->parent = this->currBB;
+
+                if (this->currBB->child2) {
+                    #ifdef DEBUG
+                        std::cout << "child2 blk == " << this->currBB->child2->toString() << std::endl;
+                    #endif
+                    this->currBB->child->child2 = this->currBB->child2;
+                    if (this->currBB->child->child2->parent->blockNum == this->currBB->blockNum) {
+                        this->currBB->child->child2->parent = this->currBB->child;
+                    } else {
+                        this->currBB->child->child2->parent2 = this->currBB->child;
+                    }
+                    this->currBB->child2 = nullptr;
+                }
             }
         } else if (this->currBB->child) {
             #ifdef DEBUG
@@ -672,6 +706,8 @@ SSA* Parser::p2_assignment() {
     }
 
     this->blksSeen.clear(); // [12.11.2024]: FOR [this->currBBinLoop()] (recursive) 所以我们要先空着
+    bool propagated = false;
+
     // [12.06.2024]: new beginnings (cont.); maybe overwrite is the last detail after we figureout/decide where specifically we are (i.e. blkType 0, 1, 2, 3)
     if (this->currBBinLoop()) { // if [this->currBB] is in a loop
         #ifdef DEBUG
@@ -698,6 +734,7 @@ SSA* Parser::p2_assignment() {
                 oldVal = BasicBlock::ssa_table.at(tmp->parent->varVals.at(ident));
             }
             this->conditionalStmtPhiUpdate(vars, oldVal);
+            propagated = true;
 
             this->currBB = tmp;
         } else if (this->currBB->blkType == 1) { // std-blk type
@@ -717,6 +754,7 @@ SSA* Parser::p2_assignment() {
             }
         #endif
         BasicBlock *tmp = this->currBB;
+        SSA *prevOldVal = oldVal;
         this->currBB = loopHead;
 
         if (this->currBB->varVals.find(ident) != this->currBB->varVals.end()) {
@@ -742,6 +780,20 @@ SSA* Parser::p2_assignment() {
             #endif
             // BasicBlock::ssa_table.at(this->currBB->varVals.at(ident))->set_operand2(value);
             oldVal = BasicBlock::ssa_table.at(this->currBB->varVals.at(ident));
+
+            // if (oldVal->get_operand1()->compare(prevOldVal)) {
+            //     #ifdef DEBUG
+            //         std::cout << "phi's operand1 == prevOldVal!" << std::endl;
+            //     #endif
+            // } else if (oldVal->get_operand2()->compare(prevOldVal)) {
+            //     #ifdef DEBUG
+            //         std::cout << "phi's operand2 == prevOldVal!" << std::endl;
+            //     #endif
+            // }
+
+            if (!propagated) {
+                this->propagateDown(this->currBB, ident, oldVal, table_int, true);
+            }
         } else {
             SSA *phi = this->addSSA1(6, oldVal, value);
             int phi_table_int = this->add_SSA_table(phi);            
@@ -1419,8 +1471,12 @@ SSA* Parser::p2_whileStatement() {
     // [09/20/2024]: Do this before we return. so that the next SSA instr added will be the new jump from [unsuccessful relation: while-loop]
     this->prevJump = true;
     this->prevInstrs.push(jmp_instr);
+    #ifdef DEBUG
+        std::cout << "pushed jmp instr: " << jmp_instr->toString() << std::endl;
+    #endif
     
     // [10.22.2024]: Somehow after [p2_statSeq()], this->currBB gets changed? So we just reset it here...is this ok/right/valid???
+    // afterWhile_blk->varVals = this->currBB->varVals; // [12.30.2024]: update varVals here???
     this->currBB = afterWhile_blk;
     // this->currBB = this->currBB->child2; // [10.21.2024]: Same as above
 

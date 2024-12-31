@@ -339,7 +339,7 @@ public:
         }
 
         SSA *res = nullptr;
-        if (opNo == 6) {
+        if ((s->get_operator() == 6) || ((s->get_operator() >= 8) && (s->get_operator() <= 14))) {
             res = s;
         } else {
             res = new SSA (*s);
@@ -503,7 +503,9 @@ public:
                     //     std::cout << "instr(" << instr->toString() << ") exists already: " << tmp->toString() << std::endl;
                     // #endif
                     // [10.23.2024]: CAN WE DO THIS???
-                    delete instr;
+                    if (tmp->compare(instr) == false) {
+                        delete instr;
+                    }
                     instr = tmp;
 
                     // #ifdef DEBUG
@@ -578,6 +580,10 @@ public:
     // [10/09/2024]: ToDo - should check if [SSA] already exists in [this->BasicBlock::ssa_table] 
     // - specifically for [this->VVs]
     inline int add_SSA_table(SSA *toAdd) {
+        if (BasicBlock::ssa_table_reversed.find(toAdd) != BasicBlock::ssa_table_reversed.end()) {
+            return BasicBlock::ssa_table_reversed.at(toAdd);
+        }
+
         BasicBlock::ssa_table.insert(std::pair<int, SSA *>(BasicBlock::ssa_table.size(), toAdd));
         BasicBlock::ssa_table_reversed.insert(std::pair<SSA *, int>(toAdd, BasicBlock::ssa_table.size() - 1));
 

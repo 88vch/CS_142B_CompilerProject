@@ -4,8 +4,8 @@ var x,k,j,m;
 let x <- call InputNum();
 let k <- call InputNum();
 
-let m <- 0;
-let j <- 0;
+let m <- 3;
+let j <- 9;
 
 while x < 10 do
     let j <- 0 + 1;
@@ -17,5 +17,7 @@ while x < 10 do
 od;
 call OutputNum(x);
 call OutputNum(k);
+call OutputNum(m);
+call OutputNum(j);
 }
 .
