@@ -558,6 +558,9 @@ public:
                     // [11.01.2024]: phi instructions go ontop of [this->newInstrs]
                     // - insert into initial position
                     this->currBB->newInstrs.insert(this->currBB->newInstrs.begin(), BasicBlock::instrList.at(instr->get_operator())->InsertAtTail(instr));
+                    for (size_t i = 0; i < this->currBB->newInstrs.size(); i++) {
+                        // [12.31.2024]: insert into first position behind phi
+                    }
                 } else {
                     // [10.23.2024]: [LinkedList::InsertAtTail()] returns [Node*]
                     Node *retVal = BasicBlock::instrList.at(instr->get_operator())->InsertAtTail(instr);
