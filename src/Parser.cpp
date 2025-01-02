@@ -577,18 +577,12 @@ SSA* Parser::p2_assignment() {
                     std::cout << "child2 blk == " << this->currBB->child2->toString() << std::endl;
                 #endif
                 this->currBB->child->child2 = this->currBB->child2;
-                if (this->currBB->child->child2->parent->blockNum == this->currBB->blockNum) {
+                if (this->currBB->child2->parent->blockNum == this->currBB->blockNum) {
                     this->currBB->child->child2->parent = this->currBB->child;
                 } else {
                     this->currBB->child->child2->parent2 = this->currBB->child;
                 }
                 this->currBB->child2 = nullptr;
-
-                if (this->currBB->child->child2->parent->blockNum == this->currBB->blockNum) {
-                    this->currBB->child->child2->parent = this->currBB->child;
-                } else {
-                    this->currBB->child->child2->parent2 = this->currBB->child;
-                }
             }
             // }
         } else if (this->currBB->child) {
@@ -648,15 +642,15 @@ SSA* Parser::p2_assignment() {
             #endif
         }
 
-        // [12.28.2024]: oldVal == nullptr simply indicates that this var hasn't been defined yet (this is first def)
-        // if (this->currBB->varVals.find(ident) == this->currBB->varVals.end()) {
-        //     this->handleUninitVar(ident);
-        //     oldVal = BasicBlock::ssa_table.at(this->currBB->varVals.at(ident));
+        // [1.1.2024]: if currBB has a prev definition we'll take it
+        if (this->currBB->varVals.find(ident) != this->currBB->varVals.end()) {
+            // this->handleUninitVar(ident);
+            oldVal = BasicBlock::ssa_table.at(this->currBB->varVals.at(ident));
             
-        //     #ifdef DEBUG
-        //         std::cout << "updated uninitialized variable to: " << oldVal->toString() << std::endl;
-        //     #endif
-        // }
+            #ifdef DEBUG
+                std::cout << "updated oldVal to: " << oldVal->toString() << std::endl;
+            #endif
+        }
     }
 
     #ifdef DEBUG

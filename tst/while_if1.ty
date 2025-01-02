@@ -19,5 +19,9 @@ var i;
             let d <- c - b
         fi
     od;
-    call OutputNum(i)
+    call OutputNum(i);
+    call OutputNum(a);
+    call OutputNum(b);
+    call OutputNum(c);
+    call OutputNum(d)
 }.

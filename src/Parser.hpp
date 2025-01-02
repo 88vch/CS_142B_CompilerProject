@@ -557,9 +557,35 @@ public:
                 if (instr->get_operator() == 6) {
                     // [11.01.2024]: phi instructions go ontop of [this->newInstrs]
                     // - insert into initial position
-                    this->currBB->newInstrs.insert(this->currBB->newInstrs.begin(), BasicBlock::instrList.at(instr->get_operator())->InsertAtTail(instr));
-                    for (size_t i = 0; i < this->currBB->newInstrs.size(); i++) {
-                        // [12.31.2024]: insert into first position behind phi
+                    // this->currBB->newInstrs.insert(this->currBB->newInstrs.begin(), BasicBlock::instrList.at(instr->get_operator())->InsertAtTail(instr));
+                    if (this->currBB->newInstrs.size() > 0) {
+                        size_t i = 0;
+                        bool inserted = false;
+                        while (i < this->currBB->newInstrs.size()) {
+                            // [12.31.2024]: insert into first position behind phi
+                            if (this->currBB->newInstrs.at(i)->instr->get_operator() != 6) {
+                                this->currBB->newInstrs.insert(this->currBB->newInstrs.begin() + i, BasicBlock::instrList.at(instr->get_operator())->InsertAtTail(instr));
+                                inserted = true;
+                                break;
+                            }
+                            i++;
+                        }
+
+                        // [1.1.2025]: if BB only contains phi-isntrs, we add to end of [newInstr]
+                        if (i >= this->currBB->newInstrs.size()) {
+                            this->currBB->newInstrs.insert(this->currBB->newInstrs.end(), BasicBlock::instrList.at(instr->get_operator())->InsertAtTail(instr));
+                            inserted = true;
+                        }
+                        
+                        if (!inserted) {
+                            this->currBB->newInstrs.insert(this->currBB->newInstrs.begin(), BasicBlock::instrList.at(instr->get_operator())->InsertAtTail(instr));    
+                        }
+
+                        #ifdef DEBUG
+                            std::cout << "inserted new phi-instr behind old phi's looks like: " << std::endl << this->currBB->toString() << std::endl;
+                        #endif
+                    } else {
+                        this->currBB->newInstrs.insert(this->currBB->newInstrs.begin(), BasicBlock::instrList.at(instr->get_operator())->InsertAtTail(instr));
                     }
                 } else {
                     // [10.23.2024]: [LinkedList::InsertAtTail()] returns [Node*]
@@ -617,13 +643,6 @@ public:
         #endif
          if (!first) {
             seen.push_back(curr);
-        }
-
-        if (!first && this->currBB->compare(curr)) {
-            #ifdef DEBUG
-                std::cout << "returning: in a loop! found startBB" << std::endl;
-            #endif
-            return;
         }
 
         if (curr->varVals.find(ident) != curr->varVals.end()) {
@@ -769,6 +788,7 @@ public:
 
                         // if (this->currBB->findSSA(prevVal)) {
                         if (curr->findSSA(prevVal)) {
+                            curr->updateInstructions(oldVal, BasicBlock::ssa_table.at(ident_val));
                             // [12.26.2024]: this hsould be the end of [propagateDown()] for this branch right?
                             // - since prevVal was created in [this->currBB], we can assume future BB's that're DOM by this->currBB will either use that val or update it
                             #ifdef DEBUG
@@ -799,6 +819,15 @@ public:
         #ifdef DEBUG
             std::cout << "after update curr looks like: " << std::endl << curr->toString() << std::endl;
         #endif
+
+        if (!first && this->currBB->compare(curr)) {
+            curr->updateInstructions(oldVal, BasicBlock::ssa_table.at(ident_val));
+
+            #ifdef DEBUG
+                std::cout << "returning: in a loop! found startBB" << std::endl;
+            #endif
+            return;
+        }
 
         if ((curr->child) && (std::find(seen.begin(), seen.end(), curr->child) == seen.end())) {
             propagateDown(curr->child, ident, oldVal, ident_val, false, seen, updateIf);
@@ -1144,41 +1173,53 @@ public:
                 bool newAdd = false;
 
                 if (this->currBB->varVals.find(p) != this->currBB->varVals.end()) {
+                    SSA *currVal = BasicBlock::ssa_table.at(this->currBB->varVals.at(p));
                     #ifdef DEBUG
-                        std::cout << "conditionalStmtPhiUpdate's [currBB==join-blk], ident's prev Value is: [" << BasicBlock::ssa_table.at(this->currBB->varVals.at(p))->toString() << "]" << std::endl;
+                        std::cout << "conditionalStmtPhiUpdate's [currBB==join-blk], ident's prev Value is: [" << currVal->toString() << "]" << std::endl;
                     #endif
-                    if (this->currBB->findSSA(BasicBlock::ssa_table.at(this->currBB->varVals.at(p)))) {
+                    if (this->currBB->findSSA(currVal)) {
                         #ifdef DEBUG
                             std::cout << "[this->currBB]'s [newInstrs] contains the previous value!" << std::endl;
                         #endif
-                        if (BasicBlock::ssa_table.at(this->currBB->varVals.at(p))->compare(6, BasicBlock::ssa_table.at(then_blk_last->varVals.at(p)), BasicBlock::ssa_table.at(else_blk_last->varVals.at(p)))) {
+                        if (currVal->get_operand1()->compare(then_phi) || currVal->get_operand2()->compare(else_phi)) {
+                            if (currVal->get_operand1()->compare(then_phi)) {
+                                this->currBB->varVals.insert_or_assign(p, BasicBlock::ssa_table_reversed.at(this->set_operand(2, currVal, BasicBlock::ssa_table.at(else_blk_last->varVals.at(p)), p)));
+                            } else if (currVal->get_operand2()->compare(else_phi)) {
+                                this->currBB->varVals.insert_or_assign(p, BasicBlock::ssa_table_reversed.at(this->set_operand(1, currVal, BasicBlock::ssa_table.at(then_blk_last->varVals.at(p)), p)));
+                            }
                             #ifdef DEBUG
-                                std::cout << "\tthe previous value is the same as the value we were planning to add; no need to add or create new SSA!" << std::endl;
-                            #endif
-                            continue;
-                        } else if (BasicBlock::ssa_table.at(this->currBB->varVals.at(p))->get_operand1()->compare(BasicBlock::ssa_table.at(then_blk_last->varVals.at(p)))) {
-                            // [12.17.2024]: the real question is how to denote if-path vs else-path...
-                            // - since one requires us to [set_operand1()] while the other requries [set_operand2()]
-                            // this->set_operand(2, BasicBlock::ssa_table.at(this->currBB->varVals.at(p)), BasicBlock::ssa_table.at(else_blk_last->varVals.at(p)), p);
-                            this->currBB->varVals.insert_or_assign(p, BasicBlock::ssa_table_reversed.at(this->set_operand(2, BasicBlock::ssa_table.at(this->currBB->varVals.at(p)), BasicBlock::ssa_table.at(else_blk_last->varVals.at(p)), p)));
-                            // BasicBlock::ssa_table.at(this->currBB->varVals.at(p))->set_operand2(BasicBlock::ssa_table.at(else_blk_last->varVals.at(p)));
-                            #ifdef DEBUG
-                                std::cout << "updating operand2()" << std::endl;
-                            #endif
-                        } else if (oldVal && (BasicBlock::ssa_table.at(this->currBB->varVals.at(p))->get_operand1()->compare(oldVal))) {
-                            // [12.17.2024]: if [operand1()] is same as [oldVal], implies we should update [operand1()]
-                            // this->set_operand(1, BasicBlock::ssa_table.at(this->currBB->varVals.at(p)), BasicBlock::ssa_table.at(else_blk_last->varVals.at(p)), p);
-                            this->currBB->varVals.insert_or_assign(p, BasicBlock::ssa_table_reversed.at(this->set_operand(1, BasicBlock::ssa_table.at(this->currBB->varVals.at(p)), BasicBlock::ssa_table.at(else_blk_last->varVals.at(p)), p)));
-                            // BasicBlock::ssa_table.at(this->currBB->varVals.at(p))->set_operand1(BasicBlock::ssa_table.at(else_blk_last->varVals.at(p)));
-                            #ifdef DEBUG
-                                std::cout << "updating operand1()" << std::endl;
+                                std::cout << "currBB after updating opernad looks like: " << std::endl << this->currBB->toString() << std::endl;
                             #endif
                         } else {
-                            #ifdef DEBUG
-                                std::cout << "about to remove ssa [" << BasicBlock::ssa_table.at(this->currBB->varVals.at(p))->toString() << "]" << std::endl;
-                            #endif
-                            this->currBB->removeSSA(BasicBlock::ssa_table.at(this->currBB->varVals.at(p))); // [12.14.2024]: lets just leavei t there
-                            newAdd = true;
+                            if (currVal->compare(6, BasicBlock::ssa_table.at(then_blk_last->varVals.at(p)), BasicBlock::ssa_table.at(else_blk_last->varVals.at(p)))) {
+                                #ifdef DEBUG
+                                    std::cout << "\tthe previous value is the same as the value we were planning to add; no need to add or create new SSA!" << std::endl;
+                                #endif
+                                continue;
+                            } else if (currVal->get_operand1()->compare(BasicBlock::ssa_table.at(then_blk_last->varVals.at(p)))) {
+                                // [12.17.2024]: the real question is how to denote if-path vs else-path...
+                                // - since one requires us to [set_operand1()] while the other requries [set_operand2()]
+                                // this->set_operand(2, currVal, BasicBlock::ssa_table.at(else_blk_last->varVals.at(p)), p);
+                                this->currBB->varVals.insert_or_assign(p, BasicBlock::ssa_table_reversed.at(this->set_operand(2, currVal, BasicBlock::ssa_table.at(else_blk_last->varVals.at(p)), p)));
+                                // currVal->set_operand2(BasicBlock::ssa_table.at(else_blk_last->varVals.at(p)));
+                                #ifdef DEBUG
+                                    std::cout << "updating operand2()" << std::endl;
+                                #endif
+                            } else if (oldVal && (currVal->get_operand1()->compare(oldVal))) {
+                                // [12.17.2024]: if [operand1()] is same as [oldVal], implies we should update [operand1()]
+                                // this->set_operand(1, currVal, BasicBlock::ssa_table.at(else_blk_last->varVals.at(p)), p);
+                                this->currBB->varVals.insert_or_assign(p, BasicBlock::ssa_table_reversed.at(this->set_operand(1, currVal, BasicBlock::ssa_table.at(else_blk_last->varVals.at(p)), p)));
+                                // currVal->set_operand1(BasicBlock::ssa_table.at(else_blk_last->varVals.at(p)));
+                                #ifdef DEBUG
+                                    std::cout << "updating operand1()" << std::endl;
+                                #endif
+                            } else {
+                                #ifdef DEBUG
+                                    std::cout << "about to remove ssa [" << currVal->toString() << "]" << std::endl;
+                                #endif
+                                this->currBB->removeSSA(currVal); // [12.14.2024]: lets just leavei t there
+                                newAdd = true;
+                            }
                         }
                     } else { newAdd = true; }
                 }
@@ -1190,7 +1231,7 @@ public:
                     // [10.28.2024]: Update BasicBlock's VV
                     this->currBB->varVals.insert_or_assign(p, phi_table_int);
                     this->VVs.insert_or_assign(p, phi_table_int);
-                }
+                } else { phi_table_int = this->currBB->varVals.at(p); phi_instr = BasicBlock::ssa_table.at(phi_table_int); }
                 
                 #ifdef DEBUG
                     std::cout << "currBB after updtae: " << std::endl << this->currBB->toString() << std::endl;
