@@ -3,6 +3,9 @@ var x,k,j,m;
 {
 let x <- call InputNum();
 let k <- call InputNum();
+let j <- call InputNum();
+let m <- call InputNum();
+
 while x < 10 do
     let j <- 0 + 1;
     let x <- x + 1;

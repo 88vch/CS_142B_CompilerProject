@@ -757,25 +757,31 @@ public:
                             #ifdef DEBUG
                                 std::cout << "phi UPDATE" << std::endl;
                             #endif
-                            if (curr->parent && BasicBlock::ssa_table.at(curr->parent->varVals.at(ident))->compare(prevVal->get_operand1())) {
-                                if (prevVal->get_operand1()->compare(BasicBlock::ssa_table.at(ident_val)) == false) {
-                                    prevVal = this->set_operand(2, prevVal, BasicBlock::ssa_table.at(ident_val), ident);
-                                    #ifdef DEBUG
-                                        std::cout << "this path was traversed (set op 2) and prevVal has been updated to: " << prevVal->toString() << std::endl;
-                                    #endif
+                            if ((curr->blkType == 2) && (BasicBlock::ssa_table.at(curr->parent->varVals.at(ident))->compare(prevVal->get_operand1())) && (BasicBlock::ssa_table.at(curr->parent2->varVals.at(ident))->compare(prevVal->get_operand2()))) {
+                                #ifdef DEBUG
+                                    std::cout << "actually our phi is already updated! " << prevVal->toString() << std::endl;
+                                #endif
+                            } else {
+                                if (curr->parent && BasicBlock::ssa_table.at(curr->parent->varVals.at(ident))->compare(prevVal->get_operand1())) {
+                                    if (prevVal->get_operand1()->compare(BasicBlock::ssa_table.at(ident_val)) == false) {
+                                        prevVal = this->set_operand(2, prevVal, BasicBlock::ssa_table.at(ident_val), ident);
+                                        #ifdef DEBUG
+                                            std::cout << "this path was traversed (set op 2) and prevVal has been updated to: " << prevVal->toString() << std::endl;
+                                        #endif
+                                    }
+                                    // prevVal->set_operand1(BasicBlock::ssa_table.at(ident_val));
+                                    // return; // [12.16.2024]: we can return here since we assume phi is already propagated, and we'rre only updating the [x] tied to [this->ssa obj]
                                 }
-                                // prevVal->set_operand1(BasicBlock::ssa_table.at(ident_val));
-                                // return; // [12.16.2024]: we can return here since we assume phi is already propagated, and we'rre only updating the [x] tied to [this->ssa obj]
-                            }
-                            if (curr->parent2 && BasicBlock::ssa_table.at(curr->parent2->varVals.at(ident))->compare(prevVal->get_operand2())) {
-                                if (prevVal->get_operand2()->compare(BasicBlock::ssa_table.at(ident_val)) == false) {
-                                    prevVal = this->set_operand(1, prevVal, BasicBlock::ssa_table.at(ident_val), ident);
-                                    #ifdef DEBUG
-                                        std::cout << "this path was traversed (set op 1) and prevVal has been updated to: " << prevVal->toString() << std::endl;
-                                    #endif
+                                if (curr->parent2 && BasicBlock::ssa_table.at(curr->parent2->varVals.at(ident))->compare(prevVal->get_operand2())) {
+                                    if (prevVal->get_operand2()->compare(BasicBlock::ssa_table.at(ident_val)) == false) {
+                                        prevVal = this->set_operand(1, prevVal, BasicBlock::ssa_table.at(ident_val), ident);
+                                        #ifdef DEBUG
+                                            std::cout << "this path was traversed (set op 1) and prevVal has been updated to: " << prevVal->toString() << std::endl;
+                                        #endif
+                                    }
+                                    // prevVal->set_operand1(BasicBlock::ssa_table.at(ident_val));
+                                    // return; // [12.16.2024]: we can return here since we assume phi is already propagated, and we'rre only updating the [x] tied to [this->ssa obj]
                                 }
-                                // prevVal->set_operand1(BasicBlock::ssa_table.at(ident_val));
-                                // return; // [12.16.2024]: we can return here since we assume phi is already propagated, and we'rre only updating the [x] tied to [this->ssa obj]
                             }
                         }
                         // ident_val = BasicBlock::ssa_table_reversed.at(prevVal);
@@ -1168,7 +1174,7 @@ public:
                     std::cout << "else_phi[" << std::to_string(else_blk_last->varVals.at(curr)) << "]: " << else_phi->toString() << std::endl;
                 #endif
                 
-                SSA *phi_instr = nullptr;
+                SSA *phi_instr = nullptr, *prevVal = else_phi;
                 int phi_table_int;
                 bool newAdd = false;
 
@@ -1183,8 +1189,10 @@ public:
                         #endif
                         if (currVal->get_operand1()->compare(then_phi) || currVal->get_operand2()->compare(else_phi)) {
                             if (currVal->get_operand1()->compare(then_phi)) {
+                                prevVal = currVal->get_operand2(); 
                                 this->currBB->varVals.insert_or_assign(p, BasicBlock::ssa_table_reversed.at(this->set_operand(2, currVal, BasicBlock::ssa_table.at(else_blk_last->varVals.at(p)), p)));
                             } else if (currVal->get_operand2()->compare(else_phi)) {
+                                prevVal = currVal->get_operand1();
                                 this->currBB->varVals.insert_or_assign(p, BasicBlock::ssa_table_reversed.at(this->set_operand(1, currVal, BasicBlock::ssa_table.at(then_blk_last->varVals.at(p)), p)));
                             }
                             #ifdef DEBUG
@@ -1237,7 +1245,7 @@ public:
                     std::cout << "currBB after updtae: " << std::endl << this->currBB->toString() << std::endl;
                 #endif
                 
-                this->propagateDown(this->currBB, p, else_phi, phi_table_int, true);
+                this->propagateDown(this->currBB, p, prevVal, phi_table_int, true);
                 
                 #ifdef DEBUG
                     std::cout << "phi_instr: " << phi_instr->toString() << std::endl;
