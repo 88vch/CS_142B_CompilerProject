@@ -1496,12 +1496,47 @@ public:
 
             // if we haven't seen the child before indicates this blk [dom] the child
             if (curr->child && (std::find(seen.begin(), seen.end(), curr->child) == seen.end())) {
-                res += "\tbb" + std::to_string(curr->blockNum) +  ":b -> bb" + std::to_string(curr->child->blockNum) + ":b [color=blue, style=dotted, label=\"dom\"];\n";
-                tmp.push(curr->child);
+                if (curr->child->blkType != 2) {
+                    res += "\tbb" + std::to_string(curr->blockNum) +  ":b -> bb" + std::to_string(curr->child->blockNum) + ":b [color=blue, style=dotted, label=\"dom\"];\n";
+                    tmp.push(curr->child);
+                } else {
+                    #ifdef DEBUG
+                        std::cout << "found a join-blk " << std::endl;
+                    #endif
+                    BasicBlock *temp = curr;
+                    while (temp) {
+                        if (temp->blkType == 3) {
+                            temp = temp->parent;
+                            res += "\tbb" + std::to_string(temp->blockNum) +  ":b -> bb" + std::to_string(curr->child->blockNum) + ":b [color=blue, style=dotted, label=\"dom\"];\n";
+                            tmp.push(curr->child);
+                            seen.push_back(curr->child);
+                            break;
+                        }
+                        temp = (temp->parent) ? temp->parent : ((temp->parent2) ? temp->parent2 : nullptr);
+                    }
+                }
+                
             }
             if (curr->child2 && (std::find(seen.begin(), seen.end(), curr->child2) == seen.end())) {
-                res += "\tbb" + std::to_string(curr->blockNum) +  ":b -> bb" + std::to_string(curr->child2->blockNum) + ":b [color=blue, style=dotted, label=\"dom\"];\n";
-                tmp.push(curr->child2);
+                if (curr->child2->blkType != 2) {
+                    res += "\tbb" + std::to_string(curr->blockNum) +  ":b -> bb" + std::to_string(curr->child2->blockNum) + ":b [color=blue, style=dotted, label=\"dom\"];\n";
+                    tmp.push(curr->child2);
+                } else {
+                    #ifdef DEBUG
+                        std::cout << "found a join-blk " << std::endl;
+                    #endif
+                    BasicBlock *temp = curr;
+                    while (temp) {
+                        if (temp->blkType == 3) {
+                            temp = temp->parent;
+                            res += "\tbb" + std::to_string(temp->blockNum) +  ":b -> bb" + std::to_string(curr->child2->blockNum) + ":b [color=blue, style=dotted, label=\"dom\"];\n";
+                            tmp.push(curr->child2);
+                            seen.push_back(curr->child2);
+                            break;
+                        }
+                        temp = (temp->parent) ? temp->parent : ((temp->parent2) ? temp->parent2 : nullptr);
+                    }
+                }
             }
         }
 
