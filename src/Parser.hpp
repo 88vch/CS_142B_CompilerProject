@@ -601,7 +601,11 @@ public:
         }
 
         // [10.20.2024]: Modification
-        this->checkPrevJmp(instr);
+        if (this->currBB->newInstrs.size() > 0) {
+            this->checkPrevJmp(this->currBB->newInstrs.at(0)->instr);
+        } else {
+            this->checkPrevJmp(instr);
+        }
         this->SSA_instrs.push_back(instr);
         return instr;
     }
