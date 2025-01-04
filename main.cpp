@@ -26,7 +26,7 @@
 // std::string in_f = "tst/" + f_name + f_ext;
 #define in_f "tst/nested_nested_if1.ty"
 
-// [10.23.2024]: Silly rabbit
+// [1.4.2025]: stub
 
 // [10.21.2024];
 // every assignment modifies a phi-function in the current join block.
