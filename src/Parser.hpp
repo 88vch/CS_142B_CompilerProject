@@ -1230,7 +1230,7 @@ public:
                             }
                         }
                     } else { newAdd = true; }
-                }
+                } else { newAdd = true; }
 
                 if (newAdd) {
                     phi_instr = this->addSSA1(6, BasicBlock::ssa_table.at(then_blk_last->varVals.at(p)), BasicBlock::ssa_table.at(else_blk_last->varVals.at(p)), true);
