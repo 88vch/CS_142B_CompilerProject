@@ -460,11 +460,6 @@ SSA* Parser::p_assignment() {
         } else {
             std::cout << "none!" << std::endl;
         }
-        // if (this->currBB->varVals.find(ident) != this->currBB->varVals.end()) {
-        //     std::cout << BasicBlock::ssa_table.at(this->currBB->varVals.at(ident))->toString() << std::endl;
-        // } else {
-        //     std::cout << "none!" << std::endl;
-        // }
     #endif
     // [Parser::p_assignment()]
     this->VVs.insert_or_assign(ident, VV_value);
@@ -538,38 +533,10 @@ SSA* Parser::p2_assignment() {
             #ifdef DEBUG
                 std::cout << "child blk == nullptr!" << std::endl;
             #endif
-            // if (this->currBB->child2 && this->currBB->child2->blkType == 2) {
-            //     #ifdef DEBUG
-            //         std::cout << "child2 blk (join!) == " << this->currBB->child2->toString() << std::endl;
-            //     #endif
-            //     if (this->currBB->child2->child == nullptr) {
-            //         this->currBB->child2->child = new BasicBlock(this->currBB->varVals, false, 1, false);
-            //         this->currBB->child2->child->parent = this->currBB->child2;
-            //         this->currBB->child2->child->child2 = this->currBB->child2->child2;
-                
-            //         this->currBB = this->currBB->child2;
-            //     } else {
-            //         BasicBlock *tmp = this->currBB;
-            //         this->currBB = this->currBB->child2;
-            //         #ifdef DEBUG
-            //             std::cout << "child blk == " << this->currBB->child->toString() << std::endl;
-            //         #endif
-            //         BasicBlock *oldChild = this->currBB->child;
-
-            //         this->currBB->child = new BasicBlock(this->currBB->varVals, false, this->currBB->blkType, false);
-            //         this->currBB->child->parent = this->currBB;
-            //         this->currBB->child->child = oldChild;
-
-            //         if (oldChild->parent->blockNum == this->currBB->blockNum) {
-            //             oldChild->parent = this->currBB->child;
-            //         } else {
-            //             oldChild->parent2 = this->currBB->child;
-            //         }
-
-            //         this->currBB = tmp;
-            //     }
-            // } else {
-            this->currBB->child = new BasicBlock(this->currBB->varVals, false, this->currBB->blkType, false);
+            
+            // [1.4.2025]: new 
+            // this->currBB->child = new BasicBlock(this->currBB->varVals, false, this->currBB->blkType, false);
+            this->currBB->child = new BasicBlock(this->currBB->varVals, false, 1, false);
             this->currBB->child->parent = this->currBB;
 
             if (this->currBB->child2) {
@@ -584,14 +551,15 @@ SSA* Parser::p2_assignment() {
                 }
                 this->currBB->child2 = nullptr;
             }
-            // }
         } else if (this->currBB->child) {
             #ifdef DEBUG
                 std::cout << "child blk == " << this->currBB->child->toString() << std::endl;
             #endif
             BasicBlock *oldChild = this->currBB->child;
 
-            this->currBB->child = new BasicBlock(this->currBB->varVals, false, this->currBB->blkType, false);
+            // [1.4.2025]: new 
+            // this->currBB->child = new BasicBlock(this->currBB->varVals, false, this->currBB->blkType, false);
+            this->currBB->child = new BasicBlock(this->currBB->varVals, false, 1, false);
             this->currBB->child->parent = this->currBB;
             this->currBB->child->child = oldChild;
             

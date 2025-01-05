@@ -12,17 +12,22 @@ var x, y, z; {
                 let y <- 8
             fi;
             let a <- call InputNum();
-            let a <- 9;
-
+            let b <- 9;
             let c <- a + a;
             let d <- c * 2;
             let e <- c - d;
         fi;
     else
-        let x <- 6
+        let x <- 6;
+        let b <- a + a;
     fi;    
 
     call OutputNum(x);
     call OutputNum(y);
-    call OutputNum(z)
+    call OutputNum(z);
+    call OutputNum(a);
+    call OutputNum(b);
+    call OutputNum(c);
+    call OutputNum(d);
+    call OutputNum(e)
 }.
