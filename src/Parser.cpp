@@ -110,6 +110,12 @@ SSA* Parser::p2_start() {
     this->CheckFor(Result(2, 16)); // check for `}`
     this->CheckFor(Result(2, 30)); // check for `.`
 
+    #ifdef DEBUG
+        std::cout << "before clean phi dupes printing BBs: " << std::endl;
+        this->blksSeen.clear();
+        this->printBlocks(this->BB0);
+    #endif
+
     this->cleanPhiDupes();
 
     #ifdef DEBUG

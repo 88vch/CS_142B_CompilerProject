@@ -641,7 +641,7 @@ public:
     // }
 
     // recursive; maintains [this->currBB]
-    inline void propagateDown(BasicBlock *curr, int ident, SSA* oldVal, int ident_val, bool first = false, std::vector<BasicBlock *> seen = {}, bool updateIf = false) {    
+    inline void propagateDown(BasicBlock *curr, int ident, SSA* oldVal, int ident_val, bool first = false, std::vector<BasicBlock *> seen = {}, bool updateIf = false, bool phiHardUpdate = false) {    
         #ifdef DEBUG
             std::cout << "in propagateDown(currBB[" << std::to_string(curr->blockNum) << "]; ident=" << SymbolTable::symbol_table.at(ident) << ", phi_ident=" << BasicBlock::ssa_table.at(ident_val)->toString() << ", oldVal (SSA) = " << oldVal->toString() << ", ); curr(BB) looks like: " << std::endl << curr->toString() << std::endl;
         #endif
@@ -798,7 +798,14 @@ public:
 
                         // if (this->currBB->findSSA(prevVal)) {
                         if (curr->findSSA(prevVal)) {
-                            curr->updateInstructions(oldVal, BasicBlock::ssa_table.at(ident_val));
+                            if (!phiHardUpdate) {
+                                curr->updateInstructions(oldVal, BasicBlock::ssa_table.at(ident_val));
+                            } else {
+                                curr->updateInstructions(prevVal, BasicBlock::ssa_table.at(ident_val), phiHardUpdate);
+                                curr->varVals.insert_or_assign(ident, ident_val);
+                                oldVal = prevVal;
+                                // curr->removeSSA(prevVal); // [1.5.2025]: SLDKFJSL:DKFJSD WHY???
+                            }
                             // [12.26.2024]: this hsould be the end of [propagateDown()] for this branch right?
                             // - since prevVal was created in [this->currBB], we can assume future BB's that're DOM by this->currBB will either use that val or update it
                             #ifdef DEBUG
@@ -1268,7 +1275,7 @@ public:
         //      - propagateDown from BB with the higher numbered ssa in [newInstrs]?
     
         LinkedList *phi_lst = BasicBlock::instrList.at(6);
-        std::vector<SSA *> seen = {};
+        std::unordered_set<int> seen = {};
         Node *curr = phi_lst->tail;
 
         while (seen.size() < phi_lst->length) {
@@ -1276,7 +1283,7 @@ public:
                 break;
             }
 
-            if (std::find(seen.begin(), seen.end(), curr->instr) != seen.end()) {
+            if (std::find(seen.begin(), seen.end(), BasicBlock::ssa_table_reversed.at(curr->instr)) != seen.end()) {
                 curr = curr->prev;
                 continue;
             }
@@ -1289,13 +1296,18 @@ public:
                     continue;
                 }
 
-                if (tmp->instr->compare(curr->instr)) {
-                    break;
+
+                if (tmp->instr->comparePhiSimilar(curr->instr)) { 
+                    break; 
                 }
+                // if (tmp->instr->compare(curr->instr)) {
+                //     break;
+                // }
                 tmp = tmp->prev;
             }
             if (!tmp) {
                 // no dupe found
+                seen.emplace(BasicBlock::ssa_table_reversed.at(curr->instr));
                 curr = curr->prev;
                 continue;
             }
@@ -1311,7 +1323,49 @@ public:
             // && update with [replacement]
             //  - find BB with [toRemove] in [newInstrs]
             //  - update then propagateDown()?
+            BasicBlock *start = this->getBBfromSSA(this->BB0, toRemove);
+
+            int removeInt = BasicBlock::ssa_table_reversed.at(toRemove), replaceInt = BasicBlock::ssa_table_reversed.at(replacement);
+            std::unordered_set<int> discovered = {};
+            for (const auto &p : start->varVals) {
+                if (p.second == removeInt) {
+                    discovered.emplace(p.first);
+                }
+            }
+
+            for (int ident : discovered) {
+                this->propagateDown(start, ident, toRemove, replaceInt, true, {}, false, true);
+            }
+
+            seen.emplace(BasicBlock::ssa_table_reversed.at(curr->instr));
+            curr = curr->prev;
         }
+    }
+
+    inline BasicBlock* getBBfromSSA(BasicBlock *b, SSA *s, std::unordered_set<int> seen = {}) {
+        if (std::find(seen.begin(), seen.end(), b->blockNum) != seen.end()) {
+            return nullptr;
+        }
+        
+        BasicBlock *res = nullptr;
+        if (!(b->findSSA(s))) {
+            seen.emplace(b->blockNum);
+            if (b->child) {
+                res = this->getBBfromSSA(b->child, s, seen);
+                if (res) {
+                    return res;
+                }
+            }
+            if (b->child2) {
+                res = this->getBBfromSSA(b->child2, s, seen);
+                if (res) {
+                    return res;
+                }
+            }
+        } else { res = b; }
+
+        seen.emplace(b->blockNum);
+        return res;
     }
 
     static void printResultVec(std::vector<Result> r) { // [11.24.2024]: print result vector subset (for testing) in [funcDecl()]
@@ -1478,12 +1532,6 @@ public:
 
         return res;
     }
-
-    // inline BasicBlock* getIfParent(BasicBlock *k) {
-    //     if (k->parent && k->parent->child->blockNum == k->child2->blockNum) {
-
-    //     }
-    // }
 
     // given a join block, finnd the if-parent associated with it
     inline BasicBlock* getIfParent(BasicBlock *join) {

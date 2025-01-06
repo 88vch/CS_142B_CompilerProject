@@ -7,7 +7,7 @@
   
 class LinkedList {
 public:
-    int length;
+    size_t length;
     Node *tail;
     // Node *head, *tail;
     

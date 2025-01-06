@@ -165,6 +165,31 @@ public:
         return false;
     }
 
+    bool comparePhiSimilar(SSA *s) {
+        if (this->x->get_debugNum() == s->get_debugNum()) {
+            if ((this->y->get_debugNum() == s->get_operand1()->get_debugNum()) || (this->y->get_debugNum() == s->get_operand2()->get_debugNum())) {
+                return true;
+            }
+        }
+        if (this->y->get_debugNum() == s->get_debugNum()) {
+            if ((this->x->get_debugNum() == s->get_operand1()->get_debugNum()) || (this->x->get_debugNum() == s->get_operand2()->get_debugNum())) {
+                return true;
+            }
+        }
+        if (s->x->get_debugNum() == this->get_debugNum()) {
+            if ((s->y->get_debugNum() == this->get_operand1()->get_debugNum()) || (s->y->get_debugNum() == this->get_operand2()->get_debugNum())) {
+                return true;
+            }
+        }
+        if (s->y->get_debugNum() == this->get_debugNum()) {
+            if ((s->x->get_debugNum() == this->get_operand1()->get_debugNum()) || (s->x->get_debugNum() == this->get_operand2()->get_debugNum())) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     std::string opToString() const {
         return SymbolTable::operator_table_reversed.at(this->op);
     }

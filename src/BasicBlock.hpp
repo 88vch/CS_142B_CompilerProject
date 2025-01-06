@@ -216,7 +216,7 @@ public:
         this->mainWhile = true;
     }
 
-    void updateInstructions(SSA *oldVal, SSA *newVal);
+    void updateInstructions(SSA *oldVal, SSA *newVal, bool phiHardUpdate = false);
     SSA *getConstSSA(int constVal);
     void removeSSA(SSA *toRemove);
     // void removeSSA(SSA *toRemove, std::vector<SSA*> &debugSSA_instrs);
