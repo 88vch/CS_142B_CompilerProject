@@ -800,18 +800,23 @@ public:
                         if (curr->findSSA(prevVal)) {
                             if (!phiHardUpdate) {
                                 curr->updateInstructions(oldVal, BasicBlock::ssa_table.at(ident_val));
+                                // [12.26.2024]: this hsould be the end of [propagateDown()] for this branch right?
+                                // - since prevVal was created in [this->currBB], we can assume future BB's that're DOM by this->currBB will either use that val or update it
+                                #ifdef DEBUG
+                                    std::cout << "prevVal was created in [curr]; looks like: " << std::endl << curr->toString() << std::endl;
+                                #endif
+                                return; // stub
                             } else {
                                 curr->updateInstructions(prevVal, BasicBlock::ssa_table.at(ident_val), phiHardUpdate);
                                 curr->varVals.insert_or_assign(ident, ident_val);
                                 oldVal = prevVal;
-                                // curr->removeSSA(prevVal); // [1.5.2025]: SLDKFJSL:DKFJSD WHY???
+                                curr->removeSSA(prevVal); // [1.5.2025]: SLDKFJSL:DKFJSD WHY???
+                                #ifdef DEBUG
+                                    std::cout << "prevVal was created in [curr]; looks like: [" << prevVal->toString() << "]" << std::endl << curr->toString() << std::endl;
+                                #endif
+                                // - TODO: RESUME HERE
                             }
-                            // [12.26.2024]: this hsould be the end of [propagateDown()] for this branch right?
-                            // - since prevVal was created in [this->currBB], we can assume future BB's that're DOM by this->currBB will either use that val or update it
-                            #ifdef DEBUG
-                                std::cout << "prevVal was created in [curr]; looks like: " << std::endl << curr->toString() << std::endl;
-                            #endif
-                            return; // stub
+                            
                         }
                     }
                 }
@@ -847,10 +852,10 @@ public:
         }
 
         if ((curr->child) && (std::find(seen.begin(), seen.end(), curr->child) == seen.end())) {
-            propagateDown(curr->child, ident, oldVal, ident_val, false, seen, updateIf);
+            propagateDown(curr->child, ident, oldVal, ident_val, false, seen, updateIf, phiHardUpdate);
         } 
         if ((curr->child2) && (std::find(seen.begin(), seen.end(), curr->child2) == seen.end())) {
-            propagateDown(curr->child2, ident, oldVal, ident_val, false, seen, updateIf);
+            propagateDown(curr->child2, ident, oldVal, ident_val, false, seen, updateIf, phiHardUpdate);
         }
         // stub
         // #ifdef DEBUG
@@ -1317,7 +1322,7 @@ public:
             if (tmp->instr->get_debugNum() > curr->instr->get_debugNum()) {
                 toRemove = tmp->instr;
                 replacement = curr->instr;
-            } else { toRemove = curr->instr; replacement = tmp->instr; }
+            } else { toRemove = curr->instr; replacement = tmp->instr; curr = tmp; }
 
             // [1.5.2024]: find all ident:identVal mappings where identVal == [toRemove]
             // && update with [replacement]
@@ -1337,6 +1342,9 @@ public:
                 this->propagateDown(start, ident, toRemove, replaceInt, true, {}, false, true);
             }
 
+            #ifdef DEBUG
+                std::cout << "updated instr: [" << replacement->toString() << "]" << std::endl;
+            #endif
             seen.emplace(BasicBlock::ssa_table_reversed.at(curr->instr));
             curr = curr->prev;
         }
