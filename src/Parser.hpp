@@ -1300,7 +1300,7 @@ public:
                 continue;
             }
 
-            SSA *toRemove, *replacement;
+            SSA *toRemove, *replacement; // stub
 
             if (tmp->instr->get_debugNum() > curr->instr->get_debugNum()) {
                 toRemove = tmp->instr;
