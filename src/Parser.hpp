@@ -1262,6 +1262,58 @@ public:
         }
     }
 
+    inline void cleanPhiDupes() {
+        // for each phi instr, compare against every other in phi-linkedlist (6) to see if dupe exists;
+        // - if a dupe exists, remove the higher numbered (debugNum) ssa && update its [ident:identVal] ident to point to the lower-numbered-ssa
+        //      - propagateDown from BB with the higher numbered ssa in [newInstrs]?
+    
+        LinkedList *phi_lst = BasicBlock::instrList.at(6);
+        std::vector<SSA *> seen = {};
+        Node *curr = phi_lst->tail;
+
+        while (seen.size() < phi_lst->length) {
+            if (!curr) {
+                break;
+            }
+
+            if (std::find(seen.begin(), seen.end(), curr->instr) != seen.end()) {
+                curr = curr->prev;
+                continue;
+            }
+
+            // this could be a function: checkPhiDupe(ssa *phi, linkedList *phiLst);
+            Node *tmp = phi_lst->tail;
+            while (tmp) {
+                if (tmp->instr->get_debugNum() == curr->instr->get_debugNum()) {
+                    tmp = tmp->prev;
+                    continue;
+                }
+
+                if (tmp->instr->compare(curr->instr)) {
+                    break;
+                }
+                tmp = tmp->prev;
+            }
+            if (!tmp) {
+                // no dupe found
+                curr = curr->prev;
+                continue;
+            }
+
+            SSA *toRemove, *replacement;
+
+            if (tmp->instr->get_debugNum() > curr->instr->get_debugNum()) {
+                toRemove = tmp->instr;
+                replacement = curr->instr;
+            } else { toRemove = curr->instr; replacement = tmp->instr; }
+
+            // [1.5.2024]: find all ident:identVal mappings where identVal == [toRemove]
+            // && update with [replacement]
+            //  - find BB with [toRemove] in [newInstrs]
+            //  - update then propagateDown()?
+        }
+    }
+
     static void printResultVec(std::vector<Result> r) { // [11.24.2024]: print result vector subset (for testing) in [funcDecl()]
         std::string resultStr = "";
         
@@ -1427,6 +1479,46 @@ public:
         return res;
     }
 
+    // inline BasicBlock* getIfParent(BasicBlock *k) {
+    //     if (k->parent && k->parent->child->blockNum == k->child2->blockNum) {
+
+    //     }
+    // }
+
+    // given a join block, finnd the if-parent associated with it
+    inline BasicBlock* getIfParent(BasicBlock *join) {
+        BasicBlock *last1 = join->parent, *last2 = join->parent2;
+
+        if (last1->blkType == 2) {
+            last1 = this->getIfParent(last1);
+        }
+        if (last2->blkType == 2) {
+            last2 = this->getIfParent(last2);
+        }
+
+        // 1.5.2025]: nott sure if this is right
+        while (last1->blkType != 3) {
+            last1 = last1->parent;
+        }
+        while (last2->blkType != 3) {
+            last2 = last2->parent;
+        }
+
+        
+        if (last1->parent && last1->parent->blockNum == last2->blockNum) {
+            return last2;
+        }
+        if (last2->parent && last2->parent->blockNum == last1->blockNum) {
+            return last1;
+        }
+        if (last1->parent->blockNum == last2->parent->blockNum) {
+            return last1->parent;
+        }
+        // [1.5.2025]: may need to add more cases as the ycome up
+        // if (last1->blockNum == last2->blockNum) {}
+        return last1; // stub (?)
+    }
+
     inline std::string BBtoDOT() {
         std::string res = "digraph G {\n\trankdir=TB;\n\n";
         std::string c_res = "";
@@ -1505,13 +1597,18 @@ public:
                     tmp.push(curr->child);
                 } else {
                     #ifdef DEBUG
-                        std::cout << "found a join-blk " << std::endl;
+                        std::cout << "found a join-blk: " << std::endl << curr->child->toString() << std::endl;
                     #endif
                     BasicBlock *temp = curr;
                     while (temp) {
                         if (temp->blkType == 3) {
-                            temp = temp->parent;
-                            res += "\tbb" + std::to_string(temp->blockNum) +  ":b -> bb" + std::to_string(curr->child->blockNum) + ":b [color=blue, style=dotted, label=\"dom\"];\n";
+                            BasicBlock *join = curr->child, *ifParent = this->getIfParent(join);
+                            #ifdef DEBUG
+                                std::cout << "got ifParent: [" << ifParent->toString() << "]" << std::endl;
+                            #endif
+
+                            // temp = temp->parent;
+                            res += "\tbb" + std::to_string(ifParent->blockNum) +  ":b -> bb" + std::to_string(curr->child->blockNum) + ":b [color=blue, style=dotted, label=\"dom\"];\n";
                             tmp.push(curr->child);
                             seen.push_back(curr->child);
                             break;
@@ -1527,13 +1624,18 @@ public:
                     tmp.push(curr->child2);
                 } else {
                     #ifdef DEBUG
-                        std::cout << "found a join-blk " << std::endl;
+                        std::cout << "found a join-blk " << std::endl << curr->child->toString() << std::endl;
                     #endif
                     BasicBlock *temp = curr;
                     while (temp) {
                         if (temp->blkType == 3) {
-                            temp = temp->parent;
-                            res += "\tbb" + std::to_string(temp->blockNum) +  ":b -> bb" + std::to_string(curr->child2->blockNum) + ":b [color=blue, style=dotted, label=\"dom\"];\n";
+                            BasicBlock *join = curr->child2, *ifParent = this->getIfParent(join);
+                            #ifdef DEBUG
+                                std::cout << "got ifParent: [" << ifParent->toString() << "]" << std::endl;
+                            #endif
+
+                            // temp = temp->parent;
+                            res += "\tbb" + std::to_string(ifParent->blockNum) +  ":b -> bb" + std::to_string(curr->child2->blockNum) + ":b [color=blue, style=dotted, label=\"dom\"];\n";
                             tmp.push(curr->child2);
                             seen.push_back(curr->child2);
                             break;
