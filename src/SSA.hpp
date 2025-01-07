@@ -165,7 +165,7 @@ public:
         return false;
     }
 
-    bool comparePhiSimilar(SSA *s) {
+    bool comparePhiSimilar(const SSA *s) const {
         if (this->x->get_debugNum() == s->get_debugNum()) {
             if ((this->y->get_debugNum() == s->get_operand1()->get_debugNum()) || (this->y->get_debugNum() == s->get_operand2()->get_debugNum())) {
                 return true;
@@ -188,6 +188,57 @@ public:
         }
 
         return false;
+    }
+
+    bool comparePhiDupe(const SSA *s) const {
+        if (this->get_operator() == s->get_operator() && this->get_operator() == 6) {
+            if (this->x->get_debugNum() == s->get_operand1()->get_debugNum()) {
+                if ((this->y->get_debugNum() == s->get_debugNum()) && (this->debug_num == s->get_operand2()->get_debugNum())) {
+                    return true;
+                }
+            }
+            if (this->x->get_debugNum() == s->get_operand2()->get_debugNum()) {
+                if ((this->y->get_debugNum() == s->get_debugNum()) && (this->debug_num == s->get_operand1()->get_debugNum())) {
+                    return true;
+                }
+            }
+            if (this->y->get_debugNum() == s->get_operand1()->get_debugNum()) {
+                if ((this->x->get_debugNum() == s->get_debugNum()) && (this->debug_num == s->get_operand2()->get_debugNum())) {
+                    return true;
+                }
+            }
+            if (this->y->get_debugNum() == s->get_operand2()->get_debugNum()) {
+                if ((this->x->get_debugNum() == s->get_debugNum()) && (this->debug_num == s->get_operand1()->get_debugNum())) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    // this func only run if [comparePhiDupe returns true]
+    static SSA* getDupeVal(const SSA *s, const SSA *f) {
+        if (f->x->get_debugNum() == s->get_operand1()->get_debugNum()) {
+            if ((f->y->get_debugNum() == s->get_debugNum()) && (f->debug_num == s->get_operand2()->get_debugNum())) {
+                return f->x;
+            }
+        }
+        if (f->x->get_debugNum() == s->get_operand2()->get_debugNum()) {
+            if ((f->y->get_debugNum() == s->get_debugNum()) && (f->debug_num == s->get_operand1()->get_debugNum())) {
+                return f->x;
+            }
+        }
+        if (f->y->get_debugNum() == s->get_operand1()->get_debugNum()) {
+            if ((f->x->get_debugNum() == s->get_debugNum()) && (f->debug_num == s->get_operand2()->get_debugNum())) {
+                return f->y;
+            }
+        }
+        if (f->y->get_debugNum() == s->get_operand2()->get_debugNum()) {
+            if ((f->x->get_debugNum() == s->get_debugNum()) && (f->debug_num == s->get_operand1()->get_debugNum())) {
+                return f->y;
+            }
+        }
+        return nullptr;
     }
 
     std::string opToString() const {

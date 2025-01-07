@@ -24,7 +24,7 @@
 // std::string f_name = file_name;
 // std::string f_full = f_name + f_ext;
 // std::string in_f = "tst/" + f_name + f_ext;
-#define in_f "tst/nested_nested_if2.ty"
+#define in_f "tst/nested_nested_while.ty"
 
 // [1.4.2025]: stub
 

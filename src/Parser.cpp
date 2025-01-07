@@ -717,6 +717,9 @@ SSA* Parser::p2_assignment() {
         this->blksSeen.clear();
         // [12.08.2024]: new func todo - [Parser::getLoopHead()]; returns BB start of while-loop (contains cmp instr?) (NOTE: figure out how to denote start of while loop (considering nesting!!!))
         BasicBlock *loopHead = this->getLoopHead();
+        if (!oldVal) {
+            this->handleUninitVar(ident);
+        }
         #ifdef DEBUG
             std::cout << "loopHead looks like: " << loopHead->toString() << std::endl;
             std::cout << "this->currBB looks like: " << this->currBB->toString() << std::endl;
@@ -728,7 +731,6 @@ SSA* Parser::p2_assignment() {
             }
         #endif
         BasicBlock *tmp = this->currBB;
-        SSA *prevOldVal = oldVal;
         this->currBB = loopHead;
 
         if (this->currBB->varVals.find(ident) != this->currBB->varVals.end()) {
@@ -737,6 +739,9 @@ SSA* Parser::p2_assignment() {
             #ifdef DEBUG
                 std::cout << "updated oldVal: " << oldVal->toString() << std::endl;
             #endif 
+        } else {
+            this->handleUninitVar(ident);
+            oldVal = BasicBlock::ssa_table.at(this->currBB->varVals.at(ident));
         }
 
         // [12.28.2024]: oldVal == nullptr simply indicates that this var hasn't been defined yet (this is first def)
@@ -755,19 +760,13 @@ SSA* Parser::p2_assignment() {
             // BasicBlock::ssa_table.at(this->currBB->varVals.at(ident))->set_operand2(value);
             oldVal = BasicBlock::ssa_table.at(this->currBB->varVals.at(ident));
 
-            // if (oldVal->get_operand1()->compare(prevOldVal)) {
-            //     #ifdef DEBUG
-            //         std::cout << "phi's operand1 == prevOldVal!" << std::endl;
-            //     #endif
-            // } else if (oldVal->get_operand2()->compare(prevOldVal)) {
-            //     #ifdef DEBUG
-            //         std::cout << "phi's operand2 == prevOldVal!" << std::endl;
-            //     #endif
-            // }
-
             if (!propagated) {
                 this->propagateDown(this->currBB, ident, oldVal, table_int, true);
             }
+        } else if (oldVal->compare(value)) {
+            #ifdef DEBUG
+                std::cout << "oldVal == value; doing NOTHING..." << std::endl;
+            #endif
         } else {
             SSA *phi = this->addSSA1(6, oldVal, value);
             int phi_table_int = this->add_SSA_table(phi);            
@@ -1405,13 +1404,13 @@ SSA* Parser::p2_whileStatement() {
     BasicBlock *parent_blk = this->currBB;
     parent_blk->setMainWhile(); // [12.11.2024]: this should be the proper mainWhile
     BasicBlock *while_blk = new BasicBlock(this->currBB->varVals, false, 1, false);
-    #ifdef DEBUG
-        std::cout << "created new BB (while-body)" << std::endl << while_blk->toString() << std::endl;
-    #endif
     // 11.04.2024: dummy modification to write commit
     parent_blk->child = while_blk;
     while_blk->parent = parent_blk;
     while_blk->child2 = parent_blk; // [10/30/2024]: changed to child2
+    #ifdef DEBUG
+        std::cout << "created new BB (while-body)" << std::endl << while_blk->toString() << std::endl;
+    #endif
     // this->currBB = while_blk;
     // this->currBB = this->currBB->child; // [10.21.2024]: same as right above
     // END
@@ -1419,6 +1418,7 @@ SSA* Parser::p2_whileStatement() {
     // [10.24.2024]: Moved; 10.30.2024: this is essentially the join-blk
     BasicBlock *afterWhile_blk = new BasicBlock(this->currBB->varVals, false, 1, false);
     afterWhile_blk->parent = parent_blk;
+    afterWhile_blk->child2 = parent_blk->child2;
     parent_blk->child2 = afterWhile_blk;
     #ifdef DEBUG
         std::cout << "created new BB after-While" << std::endl << afterWhile_blk->toString() << std::endl;

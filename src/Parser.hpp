@@ -812,7 +812,7 @@ public:
                                 oldVal = prevVal;
                                 curr->removeSSA(prevVal); // [1.5.2025]: SLDKFJSL:DKFJSD WHY???
                                 #ifdef DEBUG
-                                    std::cout << "prevVal was created in [curr]; looks like: [" << prevVal->toString() << "]" << std::endl << curr->toString() << std::endl;
+                                    std::cout << "prevVal was created in [curr]; after REMOVED from [newInstrs], looks like: [" << prevVal->toString() << "]" << std::endl << curr->toString() << std::endl;
                                 #endif
                                 // - TODO: RESUME HERE
                             }
@@ -1301,13 +1301,10 @@ public:
                     continue;
                 }
 
-
-                if (tmp->instr->comparePhiSimilar(curr->instr)) { 
+                if (tmp->instr->comparePhiSimilar(curr->instr) || 
+                    tmp->instr->comparePhiDupe(curr->instr)) { 
                     break; 
                 }
-                // if (tmp->instr->compare(curr->instr)) {
-                //     break;
-                // }
                 tmp = tmp->prev;
             }
             if (!tmp) {
@@ -1316,35 +1313,81 @@ public:
                 curr = curr->prev;
                 continue;
             }
+            if (tmp->instr->comparePhiDupe(curr->instr)) {
+                #ifdef DEBUG
+                    std::cout << "found phi duplicate!" << std::endl;
+                #endif
+                SSA *res = SSA::getDupeVal(tmp->instr, curr->instr);
+                int tmpInt = BasicBlock::ssa_table_reversed.at(tmp->instr);
+                int currInt = BasicBlock::ssa_table_reversed.at(curr->instr);
+                int replaceInt = this->add_SSA_table(res);
 
-            SSA *toRemove, *replacement; // stub
-
-            if (tmp->instr->get_debugNum() > curr->instr->get_debugNum()) {
-                toRemove = tmp->instr;
-                replacement = curr->instr;
-            } else { toRemove = curr->instr; replacement = tmp->instr; curr = tmp; }
-
-            // [1.5.2024]: find all ident:identVal mappings where identVal == [toRemove]
-            // && update with [replacement]
-            //  - find BB with [toRemove] in [newInstrs]
-            //  - update then propagateDown()?
-            BasicBlock *start = this->getBBfromSSA(this->BB0, toRemove);
-
-            int removeInt = BasicBlock::ssa_table_reversed.at(toRemove), replaceInt = BasicBlock::ssa_table_reversed.at(replacement);
-            std::unordered_set<int> discovered = {};
-            for (const auto &p : start->varVals) {
-                if (p.second == removeInt) {
-                    discovered.emplace(p.first);
+                // find BB of smaller blockNum instr let that be startBB
+                BasicBlock *start = nullptr;
+                if (tmp->instr->get_debugNum() > curr->instr->get_debugNum()) {
+                    start = this->getBBfromSSA(this->BB0, curr->instr);
+                } else { 
+                    start = this->getBBfromSSA(this->BB0, tmp->instr);
                 }
-            }
 
-            for (int ident : discovered) {
-                this->propagateDown(start, ident, toRemove, replaceInt, true, {}, false, true);
-            }
+                #ifdef DEBUG
+                    std::cout << "res SSA: " << res->toString() << std::endl;
+                    std::cout << BasicBlock::ssa_table.at(replaceInt)->toString() << std::endl;
+                    std::cout << "tmp SSA: " << tmp->instr->toString() << std::endl;
+                    std::cout << "curr SSA: " << curr->instr->toString() << std::endl;
+                    std::cout << "start BB: " << std::endl << start->toString() << std::endl;
+                #endif
 
-            #ifdef DEBUG
-                std::cout << "updated instr: [" << replacement->toString() << "]" << std::endl;
-            #endif
+                std::unordered_set<int> discovered = {};
+                for (const auto &p : start->varVals) {
+                    if (p.second == tmpInt || p.second == currInt) {
+                        discovered.emplace(p.first);
+                    }
+                }
+
+                for (int ident : discovered) {
+                    this->propagateDown(start, ident, tmp->instr, replaceInt, true, {}, false, true);
+                    this->propagateDown(start, ident, curr->instr, replaceInt, true, {}, false, true);
+                }
+
+                #ifdef DEBUG
+                    std::cout << "updated instr: [" << res->toString() << "]" << std::endl;
+                #endif
+            } else {
+                SSA *toRemove, *replacement; // stub
+
+                if (tmp->instr->get_debugNum() > curr->instr->get_debugNum()) {
+                    toRemove = tmp->instr;
+                    replacement = curr->instr;
+                } else { toRemove = curr->instr; replacement = tmp->instr; curr = tmp; }
+
+                // [1.5.2024]: find all ident:identVal mappings where identVal == [toRemove]
+                // && update with [replacement]
+                //  - find BB with [toRemove] in [newInstrs]
+                //  - update then propagateDown()?
+                BasicBlock *start = this->getBBfromSSA(this->BB0, toRemove);
+
+                #ifdef DEBUG
+                    std::cout << "remove SSA: " << toRemove->toString() << std::endl;
+                    std::cout << "replacement SSA: " << replacement->toString() << std::endl;
+                    std::cout << "start BB: " << std::endl << start->toString() << std::endl;
+                #endif
+
+                int removeInt = BasicBlock::ssa_table_reversed.at(toRemove), replaceInt = BasicBlock::ssa_table_reversed.at(replacement);
+                std::unordered_set<int> discovered = {};
+                for (const auto &p : start->varVals) {
+                    if (p.second == removeInt) {
+                        discovered.emplace(p.first);
+                    }
+                }
+
+                for (int ident : discovered) {
+                    this->propagateDown(start, ident, toRemove, replaceInt, true, {}, false, true);
+                }
+                #ifdef DEBUG
+                    std::cout << "updated instr: [" << replacement->toString() << "]" << std::endl;
+                #endif
+            }
             seen.emplace(BasicBlock::ssa_table_reversed.at(curr->instr));
             curr = curr->prev;
         }
