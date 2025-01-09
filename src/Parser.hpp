@@ -1765,7 +1765,7 @@ public:
                     tmp.push(curr->child2);
                 } else {
                     #ifdef DEBUG
-                        std::cout << "found a join-blk " << std::endl << curr->child->toString() << std::endl;
+                        std::cout << "found a join-blk " << std::endl << curr->child2->toString() << std::endl;
                     #endif
                     BasicBlock *temp = curr;
                     while (temp) {
