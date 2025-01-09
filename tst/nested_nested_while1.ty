@@ -5,6 +5,8 @@ var a, b, c, d, i, j; {
     let c <- 0;
     let d <- 0;
     let i <- 0;
+    let j <- call InputNum();
+    
     while i < a do
         let j <- 0;
 
@@ -17,6 +19,7 @@ var a, b, c, d, i, j; {
         let i <- i + 1;
         let j <- a * a;
     od;
+
     call OutputNum(a);
     call OutputNum(b);
     call OutputNum(c);

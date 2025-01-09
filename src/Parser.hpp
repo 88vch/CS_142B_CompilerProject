@@ -300,15 +300,6 @@ public:
     
     // -, concern is placed on the [BasicBlock::constList] since we don't know how we will map / check instructions?...ignoring for now :(
     
-    // inline std::unordered_map<int, LinkedList*> copyInstrList() const {
-    //     std::unordered_map<int, LinkedList*> res = {};
-
-    //     for (const auto &pair : this->instrList) {
-    //         res.insert({pair.first, new LinkedList(*pair.second)});
-    //     }
-
-    //     return res;
-    // }
 
     inline SSA* set_operand(int opNo, SSA *s, SSA *y, int ident = -1) {
         #ifdef DEBUG
@@ -623,6 +614,21 @@ public:
         return BasicBlock::ssa_table.size() - 1; // [09/30/2024]: return the int that is associated with SSA-instr
     }
 
+    // assumption: node already exists somewhere in the linkedList
+    inline Node* getNode(SSA *value) const {
+        LinkedList *lst = BasicBlock::instrList.at(value->get_operator());
+
+        for (Node *curr = lst->tail; curr; curr = curr->prev) {
+            if (curr->instr->compare(value)) {
+                return curr;
+            }
+        }
+        #ifdef DEBUG
+            std::cout << "Warning: [Parser::getNode()] returning nullptr!" << std::endl;
+        #endif
+        return nullptr;
+    }
+
     // // [12.02.2024]: assumes the SSA was created in this->currBB
     // inline void removeSSA(SSA *s) {
     //     for (auto &ssa : this->currBB->newInstrs) {
@@ -685,12 +691,29 @@ public:
                                 std::cout << "curr looks like: " << this->currBB->toString() << std::endl;
                             #endif
 
-                            SSA *ret = this->set_operand(2, prevVal, BasicBlock::ssa_table.at(ident_val), ident);
-                            ret = this->addSSA1(ret, true);
-                            ident_val = this->add_SSA_table(ret);
-                            curr->varVals.insert_or_assign(ident, ident_val);
-                            // this->VVs.insert_or_assign(ident, ident_val);
-                            this->currBB = tmp;
+                            if (oldVal->compare(prevVal->get_operand1()) && curr->findSSA(prevVal)) {
+                                #ifdef DEBUG
+                                    std::cout << "prevVal was created in [cuyrr]; set_operand1() instead" << std::endl;
+                                #endif
+                                SSA *ret = this->set_operand(1, prevVal, BasicBlock::ssa_table.at(ident_val), ident);
+                                ret = this->addSSA1(ret, true);
+                                if (!phiHardUpdate) {
+                                    ident_val = this->add_SSA_table(ret);
+                                }
+                                curr->varVals.insert_or_assign(ident, ident_val);
+                                // this->VVs.insert_or_assign(ident, ident_val);
+                                this->currBB = tmp;
+                            } else {
+                                SSA *ret = this->set_operand(2, prevVal, BasicBlock::ssa_table.at(ident_val), ident);
+                                ret = this->addSSA1(ret, true);
+                                if (!phiHardUpdate) {
+                                    ident_val = this->add_SSA_table(ret);
+                                }
+                                curr->varVals.insert_or_assign(ident, ident_val);
+                                // this->VVs.insert_or_assign(ident, ident_val);
+                                this->currBB = tmp;
+                            }
+
 
                             #ifdef DEBUG
                                 std::cout << "after addSSA(), [this->currBB] looks like: " << std::endl << this->currBB->toString() << std::endl;
@@ -699,8 +722,19 @@ public:
                             oldVal = prevVal;
                         } else {
                             #ifdef DEBUG
-                                std::cout << " already assigned to this value! doing nothing..." << std::endl;
+                                std::cout << " already assigned to this value! ";
                             #endif
+                            if (phiHardUpdate) {
+                                #ifdef DEBUG
+                                    std::cout << "phiHardUpdate updating ident!" << std::endl;
+                                    std::cout << "from [" << BasicBlock::ssa_table.at(curr->varVals.at(ident))->toString() << "] to [" << BasicBlock::ssa_table.at(ident_val)->toString() << "]" << std::endl;
+                                #endif
+                                curr->varVals.insert_or_assign(ident, ident_val);
+                            } else {
+                                #ifdef DEBUG
+                                    std::cout << "doing nothing..." << std::endl;
+                                #endif
+                            }
                         }
                         // curr->updateInstructions(prevVal, BasicBlock::ssa_table.at(ident_val)); // [12.14.2024]: if we're in main while we shoujldn't overwrite since we assume it's the phi joining from before while-loop
                     } else {
@@ -798,15 +832,7 @@ public:
 
                         // if (this->currBB->findSSA(prevVal)) {
                         if (curr->findSSA(prevVal)) {
-                            if (!phiHardUpdate) {
-                                curr->updateInstructions(oldVal, BasicBlock::ssa_table.at(ident_val));
-                                // [12.26.2024]: this hsould be the end of [propagateDown()] for this branch right?
-                                // - since prevVal was created in [this->currBB], we can assume future BB's that're DOM by this->currBB will either use that val or update it
-                                #ifdef DEBUG
-                                    std::cout << "prevVal was created in [curr]; looks like: " << std::endl << curr->toString() << std::endl;
-                                #endif
-                                return; // stub
-                            } else {
+                            if (phiHardUpdate && prevVal->get_operator() == 6) {
                                 curr->updateInstructions(prevVal, BasicBlock::ssa_table.at(ident_val), phiHardUpdate);
                                 curr->varVals.insert_or_assign(ident, ident_val);
                                 oldVal = prevVal;
@@ -815,6 +841,14 @@ public:
                                     std::cout << "prevVal was created in [curr]; after REMOVED from [newInstrs], looks like: [" << prevVal->toString() << "]" << std::endl << curr->toString() << std::endl;
                                 #endif
                                 // - TODO: RESUME HERE
+                            } else {
+                                curr->updateInstructions(oldVal, BasicBlock::ssa_table.at(ident_val));
+                                // [12.26.2024]: this hsould be the end of [propagateDown()] for this branch right?
+                                // - since prevVal was created in [this->currBB], we can assume future BB's that're DOM by this->currBB will either use that val or update it
+                                #ifdef DEBUG
+                                    std::cout << "prevVal was created in [curr]; looks like: " << std::endl << curr->toString() << std::endl;
+                                #endif
+                                return; // stub
                             }
                             
                         }
@@ -824,6 +858,9 @@ public:
                 #ifdef DEBUG
                     std::cout << "currBB's varVals contains [ident:ident_val] pair!" << std::endl;
                 #endif
+                if (phiHardUpdate) {
+                    // curr->varVals.insert_or_assign(ident, ident_val); // (?)
+                }
                 // 11.09.2024: no need to update instructions if proper mapping already exists
             }
         } else {
@@ -1346,6 +1383,7 @@ public:
                 }
 
                 for (int ident : discovered) {
+                    start->varVals.insert_or_assign(ident, replaceInt);
                     this->propagateDown(start, ident, tmp->instr, replaceInt, true, {}, false, true);
                     this->propagateDown(start, ident, curr->instr, replaceInt, true, {}, false, true);
                 }
@@ -1353,6 +1391,8 @@ public:
                 #ifdef DEBUG
                     std::cout << "updated instr: [" << res->toString() << "]" << std::endl;
                 #endif
+                start->removeSSA(tmp->instr);
+                start->removeSSA(curr->instr);
             } else {
                 SSA *toRemove, *replacement; // stub
 
@@ -1382,11 +1422,13 @@ public:
                 }
 
                 for (int ident : discovered) {
+                    start->varVals.insert_or_assign(ident, replaceInt);
                     this->propagateDown(start, ident, toRemove, replaceInt, true, {}, false, true);
                 }
                 #ifdef DEBUG
                     std::cout << "updated instr: [" << replacement->toString() << "]" << std::endl;
                 #endif
+                start->removeSSA(toRemove);
             }
             seen.emplace(BasicBlock::ssa_table_reversed.at(curr->instr));
             curr = curr->prev;

@@ -42,6 +42,9 @@ SSA::SSA(int op, int blkNum) {
     }
 
     this->blockNum = blkNum;
+    this->xIdent = -1;
+    this->yIdent = -1;
+    this->ident = -1;
 
     #ifdef DEBUG
         std::cout << "created SSA instruction: " << this->toString() << std::endl;
@@ -67,6 +70,9 @@ SSA::SSA(int op, int opnd, int blkNum) {
     }
 
     this->blockNum = blkNum;
+    this->xIdent = -1;
+    this->yIdent = -1;
+    this->ident = -1;
 
     #ifdef DEBUG
         std::cout << "created SSA instruction: " << this->toString() << std::endl;
@@ -98,6 +104,9 @@ SSA::SSA(int op, SSA *retVal, int blkNum) {
     }
 
     this->blockNum = blkNum;
+    this->xIdent = -1;
+    this->yIdent = -1;
+    this->ident = -1;
 }
 
 SSA::SSA(int op, SSA *opnd1, SSA *opnd2, int blkNum) {
@@ -114,4 +123,7 @@ SSA::SSA(int op, SSA *opnd1, SSA *opnd2, int blkNum) {
     }
 
     this->blockNum = blkNum;
+    this->xIdent = -1;
+    this->yIdent = -1;
+    this->ident = -1;
 };

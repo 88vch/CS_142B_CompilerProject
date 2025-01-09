@@ -644,15 +644,17 @@ SSA* Parser::p2_assignment() {
 
     // EXPRESSION; [10.24.2024]: Slightly refactored...
     SSA *value = p_expr();
+    if (value->get_operator() == 0) {
+        Node *n = this->getNode(value);
+        if (std::find(this->currBB->newInstrs.begin(), this->currBB->newInstrs.end(), n) == this->currBB->newInstrs.end()) {
+            this->currBB->newInstrs.push_back(n);
+        }
+    }
     #ifdef DEBUG
         std::cout << "[Parser::p_expr()] returned: " << value->toString() << std::endl;
         // std::cout << "current BB: " << this->currBB->toString() << std::endl;
     #endif
-    // [10.29.2024]: Maybe we don't need to add into SSA here?
-    // if (!value->get_constVal()) {
-    //     value = this->addSSA1(value->get_operator(), value->get_operand1(), value->get_operand2(), true);
-    // }
-    // 11.04.2024 = dummy coommit
+
     int table_int = this->add_SSA_table(value);
     #ifdef DEBUG
         std::cout << "returned SSA value assignment has table int of : " << std::to_string(table_int) << std::endl;
@@ -666,8 +668,8 @@ SSA* Parser::p2_assignment() {
         #ifdef DEBUG
             std::cout << "[blkType: " << this->currBB->blkType << "] overwrite == true" << std::endl;
         #endif
-        this->currBB->varVals.insert_or_assign(ident, table_int);
-        this->VVs.insert_or_assign(ident, table_int);
+        // this->currBB->varVals.insert_or_assign(ident, table_int);
+        // this->VVs.insert_or_assign(ident, table_int);
 
         // [12.06.2024]: updating a blk (in if/else) requires updating the previous phi-SSA (in  join-blk)
         // [12.06.2024]: updating a blk (in while)   requires updating the previous phi-SSA (in while-blk)
@@ -675,9 +677,9 @@ SSA* Parser::p2_assignment() {
         #ifdef DEBUG
             std::cout << "[blkType: " << this->currBB->blkType << "] overwrite == false" << std::endl;
         #endif
-        this->currBB->varVals.insert_or_assign(ident, table_int);
-        this->VVs.insert_or_assign(ident, table_int);
     }
+    this->currBB->varVals.insert_or_assign(ident, table_int);
+    this->VVs.insert_or_assign(ident, table_int);
 
     this->blksSeen.clear(); // [12.11.2024]: FOR [this->currBBinLoop()] (recursive) 所以我们要先空着
     bool propagated = false;
@@ -807,13 +809,14 @@ SSA* Parser::p2_assignment() {
     }
 
     // [12.22.2024]: committing to new [p2_assignment()]
-
     Parser::printVVs(this->currBB->varVals);
     
     #ifdef DEBUG
         std::cout << "[Parser::p2_assignment()]: returning " << value->toString() << std::endl;
         std::cout << "current BB: " << this->currBB->toString() << std::endl;
     #endif
+
+    value->setIdent(ident);
 
     // [10/01/2024]: Don't we need to assign [this->VVs] to this->currBB first?
     return value;
@@ -889,14 +892,7 @@ SSA* Parser::p_funcCall() {
         } else if (f->name == "OutputNewLine") {
             this->CheckFor_udf_optional_paren();
             // std::cout << std::endl; // new line (?)
-            // SSA *tmp = new SSA(25);
             res = this->addSSA1(25, nullptr, nullptr, true);
-            // if (res != tmp) {
-            //     delete tmp;
-            //     tmp = nullptr;
-            // }
-
-            // res = this->addSSA(new SSA(25));
         } else {
             // [12.02.2024]: handled in [p2_funcCall()]...
         }
@@ -1251,11 +1247,6 @@ SSA* Parser::p2_ifStatement() {
     }
     // BasicBlock *ifStat_else = nullptr; // should use some similar logic to check for existence of [else block]
     SSA *if2 = nullptr;
-    // [11.07.2024]: nah, it just falls through...
-    // [09/20/2024]: if `else` exists, we need a jump at the end of `if` right?
-    // jmpIf_instr = this->addSSA1(8, nullptr, nullptr); // [check=false(?)]
-        // [10/10/2024]: this is the last SSA of the if-BasicBlock right?
-    
     SSA *if1_bra = new SSA(8, nullptr, nullptr);
     this->addSSA1(if1_bra);
     next();
@@ -1469,10 +1460,6 @@ SSA* Parser::p_return() {
         std::cout << "[Parser::p_return(" << this->sym.to_string() << ")]" << std::endl;
     #endif
     SSA *retVal = p_expr();
-
-    // SSA *ret = nullptr, *tmp = new SSA(16, retVal); // [SSA constructor] should handle checking of [retVal](nullptr)
-    // this->SSA_instrs.push_back(ret);
-    // ret = this->addSSA1(tmp, true);
     SSA *ret = this->addSSA1(16, retVal, nullptr, true);
 
     return ret; // [08/31/2024]: compilation stub
@@ -1496,15 +1483,11 @@ SSA* Parser::p2_return() {
 }
 
 SSA* Parser::p_relation() {
-    // SSA *ret = nullptr;
-
     #ifdef DEBUG
         std::cout << "[Parser::p_relation(" << this->sym.to_string() << ")]" << std::endl;
     #endif
     SSA *x = p_expr();
-    
-    // Old Version
-    // this->CheckForMultiple(this->relational_operations, RELATIONAL_OP_SIZE);
+    int xIdent = x->getIdent();
 
     // New Version [07/19/2024]
     if (!(this->CheckFor(Result(2, 8), true) || this->CheckFor(Result(2, 9), true) || 
@@ -1547,42 +1530,10 @@ SSA* Parser::p_relation() {
     next();
     SSA *y = p_expr();
     
-    
-    // ToDo: get [instr_num] from [cmp SSA] -> [cmp_instr_num] so that you can pass it below 
-    // SSA *cmp_instr = new SSA(5, x, y); // [SymbolTable::operator_table `cmp`: 5]
-    // this->SSA_instrs.push_back(cmp_instr);
-    // ret = this->addSSA(cmp_instr);
-    // ret = this->addSSA1(cmp_instr);
     SSA *cmp_instr = this->addSSA1(5, x, y); // [check=false(?)]
-
-    // if (ret != cmp_instr) {
-    //     delete cmp_instr;
-    //     cmp_instr = nullptr;
-    // }
-
-    // return cmp_instr; // [07/28/2024]: might need this here(?)
-    
-    // SSA *jmp_instr = new SSA(op, cmp_instr, nullptr); // [nullptr bc we don't know where to jump to yet]
-    // this->SSA_instrs.push_back(jmp_instr);
-    // ret = this->addSSA1(jmp_instr);
-    
+    cmp_instr->setIdents(xIdent, y->getIdent());
     SSA *jmp_instr = this->addSSA1(op, cmp_instr, nullptr); // [check=false(?)]
-    // this->prevJump = true;
-    // this->prevInstrs.push(jmp_instr);
-
-    // if (ret != jmp_instr) {
-    //     delete jmp_instr;
-    //     jmp_instr = ret;
-
-    //     #ifdef DEBUG
-    //         std::cout << "jmp_instr dupe existed already; using dupe: " << cmp_instr->toString() << std::endl;
-    //     #endif
-    // } else {
-    //     #ifdef DEBUG
-    //         std::cout << "created new jmp_instr: " << cmp_instr->toString() << std::endl;
-    //     #endif
-    // }
-
+ 
     #ifdef DEBUG
         std::cout << "returning jmp_instr: " << jmp_instr->toString() << std::endl;
     #endif
@@ -1666,6 +1617,7 @@ SSA* Parser::p_factor() {
             // exit(EXIT_FAILURE);
         }
         res = BasicBlock::ssa_table.at(this->currBB->varVals.at(ident));
+        res->setIdent(ident);
         #ifdef DEBUG
             std::cout << "got ident with value: " << res->toString() << std::endl;
         #endif

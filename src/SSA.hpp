@@ -63,13 +63,25 @@ public:
             #ifdef DEBUG
                 std::cout << "updated [SSA->x]" << std::endl;
             #endif
-            this->x = newVal;
+            if (this->getXIdent() != -1 && this->getXIdent() != oldVal->getIdent()) {
+                #ifdef DEBUG
+                    std::cout << "x's ident not -1 and != oldVal's ident" << std::endl;
+                #endif
+            } else {
+                this->x = newVal;
+            }
         }
         if (this->y == oldVal) {
             #ifdef DEBUG
                 std::cout << "updated [SSA->y]" << std::endl;
             #endif
-            this->y = newVal;
+            if (this->getYIdent() != -1 && this->getYIdent() != oldVal->getIdent()) {
+                #ifdef DEBUG
+                    std::cout << "y's ident not -1 and != oldVal's ident" << std::endl;
+                #endif
+            } else {
+                this->y = newVal;
+            }
         }
     }
 
@@ -327,6 +339,17 @@ public:
         return this->blockNum;
     }
 
+    void setIdents(int x, int y) {
+        this->xIdent = x;
+        this->yIdent = y;
+    }
+
+    int getXIdent() const { return this->xIdent; }
+    int getYIdent() const { return this->yIdent; } 
+
+    void setIdent(int z) { this->ident = z; }
+    int getIdent() const { return this->ident; }
+
     static void resetDebug() {
         curr_instr_num = 1;
         curr_const_num = -1;
@@ -336,7 +359,7 @@ private:
     // std::vector<int> instr;
     
     // [07/25/2024]: (New) Pointers to other SSA instructions
-    int op, debug_num, *constVal;
+    int op, debug_num, *constVal, xIdent, yIdent, ident; // [Ident] only used for phi
     SSA *x, *y;
     int blockNum; // [12.16.2024]; the bb blockNum that this SSA belongs to (only used for p2)
 

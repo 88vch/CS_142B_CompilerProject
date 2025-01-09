@@ -17,4 +17,6 @@ var c, d, i, j; {
     
     call OutputNum(c);
     call OutputNum(d);
+    call OutputNum(i);
+    call OutputNum(j)
 }.
