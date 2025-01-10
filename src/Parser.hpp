@@ -403,9 +403,11 @@ public:
             if (this->prevInstr->get_operator() == 8) {
                 this->prevInstr = this->set_operand(1, this->prevInstr, instr);
                 // this->prevInstr->set_operand1(instr);
+                this->prevInstr->setIdents(instr->getIdent(), -1);
             } else {
                 this->prevInstr = this->set_operand(2, this->prevInstr, instr);
                 // this->prevInstr->set_operand2(instr);
+                this->prevInstr->setIdents(this->prevInstr->getXIdent(), instr->getIdent());
             }
 
             // this->prevJump = false;
@@ -749,7 +751,10 @@ public:
                         // [12.16.2024]: in mainWhile and no phi? create it
                         #ifdef DEBUG
                             std::cout << "mainWhile and no phi? create it. " << std::endl;
+                            std::cout << "\tcurr oldVal looks like: " << oldVal->toString() << std::endl;
+                            std::cout << "\t" << BasicBlock::ssa_table.at(curr->varVals.at(ident))->toString() << std::endl;;
                         #endif
+                        SSA *tmpOldVal = BasicBlock::ssa_table.at(curr->varVals.at(ident));
                         BasicBlock *tmp = this->currBB;
                         this->currBB = curr;
 
@@ -761,6 +766,7 @@ public:
                         curr->updateInstructions(prevVal, BasicBlock::ssa_table.at(ident_val));
                         
                         this->currBB = tmp;
+                        oldVal = tmpOldVal;
                         #ifdef DEBUG
                             std::cout << "mainWhiel-blk looks like: " << std::endl << curr->toString() << std::endl;
                         #endif
@@ -1026,6 +1032,31 @@ public:
         return (r1 || r2);
     }
 
+    // assumes we know we are in an if-statement sequence
+    inline BasicBlock* getIfHead(BasicBlock *then_blk) {
+        if (std::find(this->blksSeen.begin(), this->blksSeen.end(), then_blk->blockNum) == this->blksSeen.end()) {
+            this->blksSeen.push_back(then_blk->blockNum);
+
+            if (then_blk->newInstrs.size() >= 2) {
+                SSA *last1 = then_blk->newInstrs.at(then_blk->newInstrs.size() - 1)->instr;
+                SSA *last2 = then_blk->newInstrs.at(then_blk->newInstrs.size() - 2)->instr;
+                
+                // [cmp] && [some branch(x, y)]
+                if (last2->get_operator() == 5 && ((last1->get_operator() > 8) && (last1->get_operator() < 15))) {
+                    return then_blk;
+                }
+            }
+
+        }
+        BasicBlock *r1 = nullptr, *r2 = nullptr;
+        if (then_blk->parent) {
+            r1 = this->getIfHead(then_blk->parent);
+        } else if (then_blk->parent2) {
+            r2 = this->getIfHead(then_blk->parent2); // [1.10.2025]: will this ever happen?
+        }
+        return (r1) ? r1 : (r2 ? r2 : nullptr);
+    }
+
     // [12.08.2024]: this func should only be run in [p2_assignment()]
     // - assumes we know we are in a loop
     inline BasicBlock* getLoopHead() {
@@ -1233,6 +1264,9 @@ public:
 
                 if (this->currBB->varVals.find(p) != this->currBB->varVals.end()) {
                     SSA *currVal = BasicBlock::ssa_table.at(this->currBB->varVals.at(p));
+                    if (currVal->get_operator() != 6) { // if not phi, then must be oldVal
+                        prevVal = currVal;
+                    }
                     #ifdef DEBUG
                         std::cout << "conditionalStmtPhiUpdate's [currBB==join-blk], ident's prev Value is: [" << currVal->toString() << "]" << std::endl;
                     #endif
@@ -1297,8 +1331,15 @@ public:
                 #ifdef DEBUG
                     std::cout << "currBB after updtae: " << std::endl << this->currBB->toString() << std::endl;
                 #endif
-                
-                this->propagateDown(this->currBB, p, prevVal, phi_table_int, true);
+
+                this->blksSeen.clear();
+                BasicBlock *ifHead = this->getIfHead(then_blk_last);
+                #ifdef DEBUG
+                    std::cout << "got ifHead: " << std::endl << ifHead->toString() << std::endl;
+                #endif
+
+
+                this->propagateDown(this->currBB, p, prevVal, phi_table_int, true, {ifHead});
                 
                 #ifdef DEBUG
                     std::cout << "phi_instr: " << phi_instr->toString() << std::endl;
