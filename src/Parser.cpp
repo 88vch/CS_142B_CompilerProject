@@ -1283,6 +1283,9 @@ SSA* Parser::p2_ifStatement() {
         std::cout << "jmp_instr (after set): " << jmp_instr->toString() << std::endl;
     #endif
 
+    // note: else-blk doesn't have this problem since it's created after if-blk (inherits modifications from propagateDown())
+    this->updateIfBlk(); // update if-blk's vv's if else-blk modified since propagateDown() stops after the ifHead
+
     // FI
     this->CheckFor(Result(2, 21)); // check `fi`
 

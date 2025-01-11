@@ -1339,7 +1339,7 @@ public:
                 #endif
 
 
-                this->propagateDown(this->currBB, p, prevVal, phi_table_int, true, {ifHead});
+                this->propagateDown(this->currBB, p, prevVal, phi_table_int, true, {ifHead->child, ifHead->child2});
                 
                 #ifdef DEBUG
                     std::cout << "phi_instr: " << phi_instr->toString() << std::endl;
