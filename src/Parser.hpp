@@ -1476,6 +1476,20 @@ public:
         }
     }
 
+    // [1.11.2025]: update if-blk's vv's if else-blk modified since propagateDown() stops after the ifHead
+    inline void updateIfBlk(BasicBlock *join) {
+        for (const auto &i : this->currBB->varVals) {
+            if (BasicBlock::ssa_table.at(i.second)->get_operator() == 6) {
+                // maybe we don't include [join-blk] in {seen}?
+                this->propagateDown(
+                    this->currBB->child, i.first, 
+                    BasicBlock::ssa_table.at(this->currBB->child->varVals.at(i.first)), 
+                    i.second, true, {this->currBB->child2, join}, false, false
+                );
+            }
+        }
+    }
+
     inline BasicBlock* getBBfromSSA(BasicBlock *b, SSA *s, std::unordered_set<int> seen = {}) {
         if (std::find(seen.begin(), seen.end(), b->blockNum) != seen.end()) {
             return nullptr;
