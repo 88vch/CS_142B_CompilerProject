@@ -177,79 +177,95 @@ public:
         return false;
     }
 
-    bool comparePhiSimilar(const SSA *s) const {
-        if (this->x->get_debugNum() == s->get_debugNum()) {
-            if ((this->y->get_debugNum() == s->get_operand1()->get_debugNum()) || (this->y->get_debugNum() == s->get_operand2()->get_debugNum())) {
-                return true;
-            }
-        }
-        if (this->y->get_debugNum() == s->get_debugNum()) {
-            if ((this->x->get_debugNum() == s->get_operand1()->get_debugNum()) || (this->x->get_debugNum() == s->get_operand2()->get_debugNum())) {
-                return true;
-            }
-        }
-        if (s->x->get_debugNum() == this->get_debugNum()) {
-            if ((s->y->get_debugNum() == this->get_operand1()->get_debugNum()) || (s->y->get_debugNum() == this->get_operand2()->get_debugNum())) {
-                return true;
-            }
-        }
-        if (s->y->get_debugNum() == this->get_debugNum()) {
-            if ((s->x->get_debugNum() == this->get_operand1()->get_debugNum()) || (s->x->get_debugNum() == this->get_operand2()->get_debugNum())) {
-                return true;
-            }
+    static SSA* comparePhiSimilar(SSA *j, SSA *s, std::vector<int> seen = {}) {
+        if (j->get_debugNum() == s->get_debugNum()) {
+            return nullptr;
         }
 
-        return false;
+        if (j->get_operator() == s->get_operator() && j->get_operator() == 6) {
+            if (j->get_operand1()->get_debugNum() == s->get_debugNum()) {
+                if ((j->get_operand2()->get_debugNum() == s->get_operand1()->get_debugNum()) || (j->get_operand2()->get_debugNum() == s->get_operand2()->get_debugNum())) {
+                    return (j->get_debugNum() < s->get_debugNum()) ? j : s;
+                }
+            }
+            if (j->get_operand2()->get_debugNum() == s->get_debugNum()) {
+                if ((j->get_operand1()->get_debugNum() == s->get_operand1()->get_debugNum()) || (j->get_operand1()->get_debugNum() == s->get_operand2()->get_debugNum())) {
+                    return (j->get_debugNum() < s->get_debugNum()) ? j : s;
+                }
+            }
+            if (s->get_operand1()->get_debugNum() == j->get_debugNum()) {
+                if ((s->get_operand2()->get_debugNum() == j->get_operand1()->get_debugNum()) || (s->get_operand2()->get_debugNum() == j->get_operand2()->get_debugNum())) {
+                    return (j->get_debugNum() < s->get_debugNum()) ? j : s;
+                }
+            }
+            if (s->get_operand2()->get_debugNum() == j->get_debugNum()) {
+                if ((s->get_operand1()->get_debugNum() == j->get_operand1()->get_debugNum()) || (s->get_operand1()->get_debugNum() == j->get_operand2()->get_debugNum())) {
+                    return (j->get_debugNum() < s->get_debugNum()) ? j : s;
+                }
+            }
+
+            // 2 below: copied from comparePhiDupe()
+            // [11]: phi (-1)(10) | [10]: phi (9)(11)
+            // [16]: phi (-1)(15) | [15]: phi (16)(9)
+            if (j->get_operand1()->get_debugNum() == s->get_operand2()->get_debugNum()) {
+                if ((j->get_operand2()->get_debugNum() == s->get_debugNum()) && (j->get_debugNum() == s->get_operand1()->get_debugNum())) {
+                    return j->get_operand1();
+                } else if ((std::find(seen.begin(), seen.end(), j->get_operand2()->getBlkNum()) != seen.end()) && 
+                           (std::find(seen.begin(), seen.end(), s->get_operand1()->getBlkNum()) != seen.end())) {
+                    return (j->get_debugNum() < s->get_debugNum()) ? j : s;
+                }
+            }
+            if (j->get_operand2()->get_debugNum() == s->get_operand1()->get_debugNum()) {
+                if ((j->get_operand1()->get_debugNum() == s->get_debugNum()) && (j->get_debugNum() == s->get_operand2()->get_debugNum())) {
+                    return j->get_operand2();
+                } else if ((std::find(seen.begin(), seen.end(), j->get_operand1()->getBlkNum()) != seen.end()) && 
+                           (std::find(seen.begin(), seen.end(), s->get_operand2()->getBlkNum()) != seen.end())) {
+                    return (j->get_debugNum() < s->get_debugNum()) ? j : s;
+                }
+            }
+
+            // [11]: phi (-1)(10) | [10]: phi (9)(11)
+            // [16]: phi (-1)(15) | [15]: phi (16)(9)
+            if (j->get_operand1()->get_debugNum() == s->get_operand1()->get_debugNum()) {
+                seen.push_back(j->get_debugNum());
+                seen.push_back(s->get_debugNum());
+                // return SSA::comparePhiSimilar(j->get_operand2(), s->get_operand2(), seen);
+                if (SSA::comparePhiSimilar(j->get_operand2(), s->get_operand2(), seen) != nullptr) {
+                    return (j->get_debugNum() < s->get_debugNum()) ? j : s;
+                }
+            }
+        }
+        return nullptr;
     }
 
-    bool comparePhiDupe(const SSA *s) const {
-        if (this->get_operator() == s->get_operator() && this->get_operator() == 6) {
-            if (this->x->get_debugNum() == s->get_operand1()->get_debugNum()) {
-                if ((this->y->get_debugNum() == s->get_debugNum()) && (this->debug_num == s->get_operand2()->get_debugNum())) {
-                    return true;
-                }
-            }
-            if (this->x->get_debugNum() == s->get_operand2()->get_debugNum()) {
-                if ((this->y->get_debugNum() == s->get_debugNum()) && (this->debug_num == s->get_operand1()->get_debugNum())) {
-                    return true;
-                }
-            }
-            if (this->y->get_debugNum() == s->get_operand1()->get_debugNum()) {
-                if ((this->x->get_debugNum() == s->get_debugNum()) && (this->debug_num == s->get_operand2()->get_debugNum())) {
-                    return true;
-                }
-            }
-            if (this->y->get_debugNum() == s->get_operand2()->get_debugNum()) {
-                if ((this->x->get_debugNum() == s->get_debugNum()) && (this->debug_num == s->get_operand1()->get_debugNum())) {
-                    return true;
-                }
-            }
+    static SSA* comparePhiDupe(SSA *j, SSA *s) {
+        if (j->get_debugNum() == s->get_debugNum()) {
+            return nullptr;
         }
-        return false;
-    }
 
-    // this func only run if [comparePhiDupe returns true]
-    static SSA* getDupeVal(const SSA *s, const SSA *f) {
-        if (f->x->get_debugNum() == s->get_operand1()->get_debugNum()) {
-            if ((f->y->get_debugNum() == s->get_debugNum()) && (f->debug_num == s->get_operand2()->get_debugNum())) {
-                return f->x;
+        if (j->get_operator() == s->get_operator() && j->get_operator() == 6) {
+            // ex. j: [(a)op: b, c], s: [(c)op: b, a]
+            if (j->get_operand1()->get_debugNum() == s->get_operand1()->get_debugNum()) {
+                if ((j->get_operand2()->get_debugNum() == s->get_debugNum()) && (j->get_debugNum() == s->get_operand2()->get_debugNum())) {
+                    return j->get_operand1();
+                }
             }
-        }
-        if (f->x->get_debugNum() == s->get_operand2()->get_debugNum()) {
-            if ((f->y->get_debugNum() == s->get_debugNum()) && (f->debug_num == s->get_operand1()->get_debugNum())) {
-                return f->x;
+            if (j->get_operand1()->get_debugNum() == s->get_operand2()->get_debugNum()) {
+                if ((j->get_operand2()->get_debugNum() == s->get_debugNum()) && (j->get_debugNum() == s->get_operand1()->get_debugNum())) {
+                    return j->get_operand1();
+                }
             }
-        }
-        if (f->y->get_debugNum() == s->get_operand1()->get_debugNum()) {
-            if ((f->x->get_debugNum() == s->get_debugNum()) && (f->debug_num == s->get_operand2()->get_debugNum())) {
-                return f->y;
+            if (j->get_operand2()->get_debugNum() == s->get_operand1()->get_debugNum()) {
+                if ((j->get_operand1()->get_debugNum() == s->get_debugNum()) && (j->get_debugNum() == s->get_operand2()->get_debugNum())) {
+                    return j->get_operand2();
+                }
             }
-        }
-        if (f->y->get_debugNum() == s->get_operand2()->get_debugNum()) {
-            if ((f->x->get_debugNum() == s->get_debugNum()) && (f->debug_num == s->get_operand1()->get_debugNum())) {
-                return f->y;
+            if (j->get_operand2()->get_debugNum() == s->get_operand2()->get_debugNum()) {
+                if ((j->get_operand1()->get_debugNum() == s->get_debugNum()) && (j->get_debugNum() == s->get_operand1()->get_debugNum())) {
+                    return j->get_operand2();
+                }
             }
-        }
+        } 
         return nullptr;
     }
 

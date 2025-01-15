@@ -152,8 +152,8 @@ SSA *BasicBlock::getConstSSA(int val) {
     return res;
 }
 
-// returns the updated vector after remove
-void BasicBlock::removeSSA(SSA *toRemove) { /* ,  std::vector<SSA*> &debugSSA_instrs) { */
+// returns true if removedSSA was top of newInstrs
+bool BasicBlock::removeSSA(SSA *toRemove) { /* ,  std::vector<SSA*> &debugSSA_instrs) { */
     Node *curr = nullptr;
 
     for (auto it = this->newInstrs.begin(); it != this->newInstrs.end(); ++it) {
@@ -205,7 +205,12 @@ void BasicBlock::removeSSA(SSA *toRemove) { /* ,  std::vector<SSA*> &debugSSA_in
                 std::cout << "instrList at ident looks like: " << std::endl;
                 BasicBlock::instrList.at(op)->printList();
             #endif
-            break;  // Exit after deletion to avoid invalid iterator usage
+
+            if (it == this->newInstrs.begin()) {
+                return true;
+            }
+            return false;
+            // break;  // Exit after deletion to avoid invalid iterator usage
         }
     }
 

@@ -218,7 +218,7 @@ public:
 
     void updateInstructions(SSA *oldVal, SSA *newVal, bool phiHardUpdate = false);
     SSA *getConstSSA(int constVal);
-    void removeSSA(SSA *toRemove);
+    bool removeSSA(SSA *toRemove);
     // void removeSSA(SSA *toRemove, std::vector<SSA*> &debugSSA_instrs);
     bool identDefinedHere(SSA *prevVal);
 
