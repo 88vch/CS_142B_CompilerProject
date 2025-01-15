@@ -4,6 +4,7 @@
 #include <fstream>
 #include <sstream>
 #include <unistd.h>
+#include <filesystem>
 
 #include "src/SymbolTable.hpp"
 #include "src/FileReader.hpp"
@@ -24,7 +25,10 @@
 // std::string f_name = file_name;
 // std::string f_full = f_name + f_ext;
 // std::string in_f = "tst/" + f_name + f_ext;
-#define in_f "tst/nested_nested_if_while1.ty"
+#define in_f "tst/func_basic_nofuncCall.ty" // next: phi-nesting.ty
+#define runOne true
+
+// [1.14.2025]: should create a type of run where we run all the files in [tst] and generate dots for all of them (must add name of file to DOT img or else overwrites!)
 
 // [1.4.2025]: stub
 
@@ -52,7 +56,7 @@
 // [10.22.2024]: Removed
 // Note: maybe we don't need [head && tail] in [LinkedList]. maybe just [tail] is enough (?)
 
-int main() {
+void oneFile() { // [in_f]
     std::string symbolTable_f = "res/_SymbolTable_result.txt";
     std::string identifiers_f = "res/_Identifiers_result.txt";
     std::string numbers_f = "res/_Numbers_result.txt";
@@ -186,6 +190,119 @@ int main() {
     #ifdef DEBUG
         std::cout << "done clearing [Parser::funcMap] && generating DOT graphs (main & func's)" << std::endl;
     #endif
+
+    // return 0;
+}
+
+void printAllFiles() {
+    // get all files in [tst] folder
+    for (const auto & entry : std::filesystem::directory_iterator("tst")) {
+        if (entry.is_regular_file()) {
+            std::cout << entry.path() << std::endl;
+        }
+    }
+}
+
+void allFiles() {
+    // get all files in [tst] folder
+    for (const auto & entry : std::filesystem::directory_iterator("tst")) {
+        if (entry.is_regular_file()) {
+            // std::cout << entry.path() << std::endl;
+            std::string file = entry.path();
+            std::string name = file.substr(file.find('/') + 1, file.find('.'));
+
+            // create a folder with [name]
+            std::string folderPath = "res/" + name;
+
+            if (!std::filesystem::exists(folderPath)) {
+                if (std::filesystem::create_directory(folderPath)) {
+                    std::cout << "Folder created successfully: " << folderPath << std::endl;
+                } else {
+                    std::cerr << "Error creating folder: " << folderPath << std::endl;
+                    exit(EXIT_FAILURE);
+                }
+            } else {
+                std::cout << "Folder already exists: " << folderPath << std::endl;
+            }
+
+            std::string symbolTable_f = folderPath + "/_SymbolTable_result.txt";
+            std::string identifiers_f = folderPath + "/_Identifiers_result.txt";
+            std::string numbers_f = folderPath + "/_Numbers_result.txt";
+            std::string tokenize_f = folderPath + "/Tokenizer_results.txt";
+            std::string results_f = folderPath + "/Results_results.txt";
+            std::string parser1_f = folderPath + "/Parser1_results.txt";
+            std::string parser2_f = folderPath + "/Parser2_results.txt";
+            std::string varVal1_f = folderPath + "/VarVal1_results.txt";
+            std::string varVal2_f = folderPath + "/VarVal3_BB_ssa_table_results.txt";
+            std::string linkedList1_f = folderPath + "/LinkedList1_results.txt";
+            std::string linkedList2_f = folderPath + "/LinkedList2_results.txt";
+            std::string basicBlock_f = folderPath + "/BasicBlock_results.txt";
+
+
+            const std::string out_f = folderPath + "/Lexer_results.txt";
+
+            try {
+                FileReader fr = FileReader(file.c_str());
+                fr.read_file();
+                std::string contents = fr.get_inFile_contents();
+
+                // Tokenizer will be here
+                Tokenizer tokenizer = Tokenizer(contents);
+                std::vector<int> tokens = tokenizer.tokenize();
+                std::vector<Result> results = Result::int_to_result(tokens);
+            
+                bool st = fr.write_file_contents(symbolTable_f, SymbolTable::symbol_table, "Symbol Table");
+                bool ids = fr.write_file_contents(identifiers_f, SymbolTable::identifiers, "Identifiers");
+                bool nums = fr.write_file_contents(numbers_f, SymbolTable::numbers, "Numbers");
+                bool toks = fr.write_file_contents(tokenize_f, tokens, "Tokenizer Tokens");
+                bool res = fr.write_file_contents(results_f, results, "Results");
+                
+                // [10.26.2024]: Parser2
+                // #ifdef DEBUG
+                //     std::cout << "[Parser]: Before SECOND [parse](BasicBlock Generation)" << std::endl;
+                // #endif
+                SSA::resetDebug();
+                Parser parser2(results, true);
+                parser2.parse();
+                // #ifdef DEBUG
+                //     std::cout << "[Parser]: After SECOND [parse.parse()]" << std::endl;
+                // #endif
+
+                parser2.generateMainDOT();
+                parser2.generateFuncDOTS();
+                // #ifdef DEBUG
+                //     std::cout << "done generating main && funcDOTS" << std::endl;
+                // #endif
+
+                std::vector<SSA*> SSA_instrs2 = parser2.getSSA();
+                bool SSA_exists2 = fr.write_file_contents(parser2_f, SSA_instrs2, "SSA Instructions");
+                std::unordered_map<std::string, SSA*> varVals2 = parser2.getVarVal();
+                bool vv2 = fr.write_file_contents(varVal2_f, varVals2, "Var-Val");
+                bool ll2 = fr.write_file_contents(linkedList2_f, parser2.instrListToString(), "LinkedList");
+                bool bb = fr.write_file_contents(basicBlock_f, parser2.BBListToString(), "BasicBlocks");
+                
+                // [11.25.2024]: delete [Parser] obj's for [Func]'s
+                Parser::clearFuncMap();
+                // [11.25.2024]: generate and output all the diff [Func]'s DOT graph's
+                FileReader::generateDOTsGraph();
+                // #ifdef DEBUG
+                //     std::cout << "done clearing [Parser::funcMap] && generating DOT graphs (main & func's)" << std::endl;
+                // #endif
+            } catch (...) {
+                std::cout << "Error occured when trying to write results for [" << name << "]" << std::endl;
+            }
+        }
+    }
+}
+
+int main() {
+    if (runOne) {
+        oneFile();
+    } else {
+        allFiles();
+    }
+
+    // printAllFiles();
 
     return 0;
 }

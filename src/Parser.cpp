@@ -265,7 +265,7 @@ void Parser::p_funcDecl(bool retVal) {
     std::vector<Result> subset(this->source.begin() + this->s_index, this->source.end());
 
     #ifdef DEBUG
-        std::cout << "created [std::vector<Result> subset]; looks like: " << std::endl;
+        std::cout << "created [std::vector<Result> subset]; looks like (includes rest of code): " << std::endl;
         Parser::printResultVec(subset);
     #endif
     

@@ -1376,8 +1376,6 @@ public:
                 curr = curr->prev;
             }
         }
-
-
         // stub
     }
 
@@ -1981,13 +1979,16 @@ public:
         }
     }
 
-    inline void generateMainDOT() {
+    inline void generateMainDOT(std::string name = "") {
         #ifdef DEBUG
             std::cout << "generating DOT..." << std::endl;
         #endif
 
         // Open the file for writing
-        std::ofstream file("res/DOT.dot");
+        std::string f = "";
+        if (name == "") { f = "res/DOT.dot"; } 
+        else { f = name + "_DOT.dot"; }
+        std::ofstream file(f);
 
         // Check if the file was opened successfully
         if (!file.is_open()) {
@@ -2057,8 +2058,15 @@ public:
 
     // [11.29.2024]: called after each func to check & add new CONST-SSA to main-BB0
     inline void updateConstBlk(Parser *p) {
+        #ifdef DEBUG
+            std::cout << "in updateConstBlk() this->currBB constLst looks like: " << std::endl << this->currBB->constList->printList() << std::endl;
+        #endif
         LinkedList *toAdd = p->BB0->constList;
         Node *curr = toAdd->tail;
+
+        #ifdef DEBUG
+            std::cout << "parser p's constLst looks like: " << std::endl << p->BB0->constList->printList() << std::endl;
+        #endif
 
         while (curr) {
             if (this->BB0->constList->contains(curr->instr) == nullptr) {

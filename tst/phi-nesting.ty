@@ -1,8 +1,10 @@
 main
 var x,k,j,m;
+
 {
 let x <- call InputNum;
 let k <- call InputNum();
+
 while x < 10 do
     let j <- 0;
     let m <- 1;
@@ -32,6 +34,7 @@ while x < 10 do
     call OutputNum(k);
     call OutputNewLine
 od;
+
 call OutputNum(x);
 call OutputNewLine;
 call OutputNum(k);
