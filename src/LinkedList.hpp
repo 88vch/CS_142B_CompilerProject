@@ -3,7 +3,7 @@
 
 #include "Node.hpp"
 
-#define DEBUG
+#undef DEBUG
   
 class LinkedList {
 public:
@@ -129,29 +129,19 @@ public:
 
     void printList() const {
         if (this->tail == nullptr) {
-            std::cout << std::endl;
+            std::cout << "List is empty." << std::endl;
             return;
         }
 
         // Node *curr = this->head;
         Node *curr = this->tail;
-        // #ifdef DEBUG
-        //     std::cout << "LinkedList::printList()" << std::endl;
-        // #endif
 
         while (curr) {
-            std::cout << curr->instr->toString();
-            // if (curr != this->tail) {
-            // if (curr != this->head) {
-                std::cout << ", " << std::endl << "\t";
-            // }
-            // curr = curr->next;
+            std::cout << "\t" << curr->instr->toString();
+            std::cout << ", " << std::endl << "\t";
             curr = curr->prev;
         }
         std::cout << std::endl;
-        // #ifdef DEBUG
-        //     std::cout << "Printed LinkedList" << std::endl;
-        // #endif
     }
 
     std::string listToString() const {
@@ -160,12 +150,7 @@ public:
         Node *curr = this->tail;
 
         while (curr) {
-            lst += curr->instr->toString();
-            // if (curr != this->tail) {
-            // if (curr != this->head) {
-                lst += ", \n\t";
-            // }
-            // curr = curr->next;
+            lst += curr->instr->toString() + ", \n\t";
             curr = curr->prev;
         }
         lst += "\n";

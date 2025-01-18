@@ -12,7 +12,7 @@
 #include "Result.hpp"
 #include "SSA.hpp"
 
-#define DEBUG
+#undef DEBUG
 
 class FileReader {
 public:

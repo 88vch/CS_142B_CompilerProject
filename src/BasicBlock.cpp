@@ -29,8 +29,8 @@ BasicBlock::BasicBlock(bool isConst, int blkType, bool mainWhile)
     this->mainWhile = mainWhile;
 
     if (isConst) {
-        // this->constList = new LinkedList();
-        this->constList = BasicBlock::instrList.at(0); // [12.08.2024]: why create new when we can js use pre-existing? isnt' this more efficent and accurate?
+        this->constList = new LinkedList(); // [1.15.2025]: create new for funcCalls
+        // this->constList = BasicBlock::instrList.at(0); // [12.08.2024]: why create new when we can js use pre-existing? isnt' this more efficent and accurate?
         // this->constPtr = new Node();
         this->blkType = 0;
     } else {
@@ -63,8 +63,8 @@ BasicBlock::BasicBlock(std::unordered_map<int, int> DOM_vv_map, bool isConst, in
     this->mainWhile = mainWhile;
 
     if (isConst) {
-        // this->constList = new LinkedList();
-        this->constList = BasicBlock::instrList.at(0); // [12.08.2024]: why create new when we can js use pre-existing? isnt' this more efficent and accurate?
+        this->constList = new LinkedList(); // [1.15.2025]: create new for funcCalls
+        // this->constList = BasicBlock::instrList.at(0); // [12.08.2024]: why create new when we can js use pre-existing? isnt' this more efficent and accurate?
         // this->constPtr = new Node();
         this->blkType = 0;
     } else {

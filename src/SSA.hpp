@@ -4,7 +4,7 @@
 #include <vector>
 #include "SymbolTable.hpp"
 
-#define DEBUG
+#undef DEBUG
 
 // format: [#instruction_no: debugging] [operation::operator_table] [operand(s)]
 class SSA {

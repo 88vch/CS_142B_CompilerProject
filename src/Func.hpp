@@ -2,7 +2,7 @@
 #include <string>
 #include <iostream>
 
-#define DEBUG
+#undef DEBUG
 
 // [08/27/2024]: Simple Func Struct
 // [08/31/2024]: Welp, the good news is that this constructor works

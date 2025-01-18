@@ -15,7 +15,7 @@
 // #include "src/Node.hpp"
 // #include "src/Lexer.hpp"
 
-#define DEBUG
+// #define DEBUG
 
 // class SymbolTable; // forward declaration (?)
 

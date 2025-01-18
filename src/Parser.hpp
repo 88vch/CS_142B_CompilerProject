@@ -16,7 +16,7 @@
 #include "LinkedList.hpp"
 #include "TinyExceptions.hpp"
 
-#define DEBUG
+#undef DEBUG
 
 
 
@@ -2059,13 +2059,15 @@ public:
     // [11.29.2024]: called after each func to check & add new CONST-SSA to main-BB0
     inline void updateConstBlk(Parser *p) {
         #ifdef DEBUG
-            std::cout << "in updateConstBlk() this->currBB constLst looks like: " << std::endl << this->currBB->constList->printList() << std::endl;
+            std::cout << "in updateConstBlk() this->currBB constLst looks like: " << std::endl;
+            this->currBB->constList->printList();
         #endif
         LinkedList *toAdd = p->BB0->constList;
         Node *curr = toAdd->tail;
 
         #ifdef DEBUG
-            std::cout << "parser p's constLst looks like: " << std::endl << p->BB0->constList->printList() << std::endl;
+            std::cout << "parser p's constLst looks like: " << std::endl;
+            p->BB0->constList->printList();
         #endif
 
         while (curr) {
