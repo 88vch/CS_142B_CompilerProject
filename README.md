@@ -1,4 +1,4 @@
-# **Run;**
+# **Run**
 **[1.18.2025]**
 type `make` in the terminal to compile the program
 to run the executable type `./bin/tiny`
