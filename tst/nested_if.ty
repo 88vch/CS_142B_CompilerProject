@@ -1,0 +1,22 @@
+main
+var x, y, z; {
+    let x <- call InputNum();
+    let y <- call InputNum();
+    let z <- x + y;
+
+    if x == 1 then
+        let z <- 3 * 3;
+        if z > 1 then
+            let y <- 4
+        else
+            let y <- 8
+        fi;
+        let x <- 6 * 6;
+        let a <- 9 * 1;
+    fi;
+
+    call OutputNum(a);
+    call OutputNum(x);
+    call OutputNum(y);
+    call OutputNum(z)
+}.

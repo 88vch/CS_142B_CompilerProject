@@ -1,3 +1,4 @@
+
 ## CS 142B: Language Processor (Compiler) Construction
 [hello; this is my first modification for a push on the downstairs window computer]
 ### TODO
@@ -75,3 +76,8 @@
         1. "Lowering": Optimize IR -> *.o (optimization step)
             - register allocation / optimization (graph coloring)
 
+the [main.cpp] file has 2 run methods:
+1) runOne=true - run one test file
+    - defined in `in_f` [main.cpp::28]
+2) runOne=false - run test suite
+    - will parse through all files in [tst/] and generate respective DOTs

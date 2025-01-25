@@ -1,0 +1,30 @@
+main 
+var x;
+
+function isEven(b); {
+  while b >= 2 do
+    let b <- b - 2;
+  od;
+  if b == 0 then
+    return 1;
+  else 
+    return 0;
+  fi;
+};
+
+otherFunction(n); {
+  while n > 1 do
+    let m <- call isEven(n);
+    if m == 1 then
+      call OutputNum(n);
+      call OutputNewline();
+    fi;
+    let n <- n - 1;
+   od;
+};
+
+{
+  let x <- call InputNum();
+  call otherFunction(x);
+};
+  

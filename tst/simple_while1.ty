@@ -1,0 +1,23 @@
+main
+var x,k,j,m;
+{
+let x <- call InputNum();
+let k <- call InputNum();
+
+let m <- 3;
+let j <- 9;
+
+while x < 10 do
+    let j <- 0 + 1;
+    let x <- x + 1;
+    let m <- k * 2;
+
+    let j <- x + m;
+    let m <- j * 2;
+od;
+call OutputNum(x);
+call OutputNum(k);
+call OutputNum(m);
+call OutputNum(j);
+}
+.

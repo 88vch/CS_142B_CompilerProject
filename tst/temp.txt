@@ -1,0 +1,31 @@
+outlines the test that's happening in [temp.ty];
+
+main var a1, a2, asdfjkl; { let a2 <- 3; if 3 == a2 then let a2 <- 6; let a1 <- 3 fi}.
+- assuming [varDecl] works, testing [statSequence: statement]
+
+
+[test while]
+while 12345 == a2 do
+    if 3 == a2 then 
+        if a1 < 1 then 
+            let a2 <- 6;
+            if a1 < 1 then 
+                let a2 <- 666666;
+            else
+                let a1 <- 333333
+            fi;
+            let a2 <- 99999
+        else
+            let a1 <- 3 
+        fi;
+        return ;
+        let a2 <- 8
+    else 
+        let a2 <- 5;
+        if a1 > 3 then 
+            let a2 <- 111111;
+        else
+            let a1 <- 444
+        fi 
+    fi 
+od

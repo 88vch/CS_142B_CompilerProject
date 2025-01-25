@@ -1,0 +1,27 @@
+main
+var i;
+{
+    let i <- 0;
+    let a <- call InputNum();
+    let b <- call InputNum();
+    let c <- call InputNum();
+    let d <- call InputNum();
+
+    while i < 10 do
+        let i <- i + 1;
+        if i == 2 then
+            let i <- i + 1;
+            let a <- 9; 
+
+            let a <- i;
+            let b <- a + i;
+            let c <- b * 2;
+            let d <- c - b
+        fi
+    od;
+    call OutputNum(i);
+    call OutputNum(a);
+    call OutputNum(b);
+    call OutputNum(c);
+    call OutputNum(d)
+}.

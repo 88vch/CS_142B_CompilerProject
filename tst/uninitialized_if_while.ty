@@ -1,0 +1,30 @@
+main
+var x, y, a; {
+    let x <- call InputNum;
+    let y <- call InputNum;
+
+    if x == y then 
+        let a <- 2
+    else 
+        let a <- call InputNum
+    fi;
+
+    if a < 10 then
+        let b <- 5
+    else
+        let c <- 2
+    fi;
+
+    while b <= 20 do
+        let c <- 1;
+        let a <- a + 10;
+    od;
+
+    call OutputNum(a);
+    call OutputNum(b);
+    call OutputNum(c);
+}.
+
+// Tests variable initialization in CFGs. 
+// var a is initialized, 
+// but b and c are uninitialized & should emit warning messages.

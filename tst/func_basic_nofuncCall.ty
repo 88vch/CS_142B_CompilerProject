@@ -1,0 +1,16 @@
+main
+var x;
+
+function add(a, b); {
+    return a + b + 2
+};
+
+void function println(n); {
+    call OutputNum(n);
+    call OutputNewLine
+};
+
+{
+    let a <- call InputNum() + call InputNum();
+    let b <- 2 * 5;
+}.
